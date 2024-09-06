@@ -1,0 +1,1 @@
+﻿Scaffold-DbContext "Server=.\SQLSERVER2014;Database=ActivosFijos_I;User ID=sa;Password=sa;MultipleActiveResultSets=true" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models/BdMap -Context aftContext -DataAnnotations -Force

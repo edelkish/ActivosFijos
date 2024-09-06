@@ -1,0 +1,32 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.Configuracion>
+<table class="table table-bordered table-hover table-condensed" id="tablaConfiguraciones">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+            <th style="text-align:center" width="250px">
+                @Html.DisplayNameFor(model => model.Columna)
+            </th>
+            <th style="text-align:center" width="250px">
+                @Html.DisplayNameFor(model => model.Fila)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdConfiguracion">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:center">
+                    @Html.DisplayFor(modelItem => item.Columna)
+                </td>
+                <td style="text-align:center">
+                    @Html.DisplayFor(modelItem => item.Fila)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,21 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.Clasificador>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaClasificadores">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify">
+                Nombre
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdClasificador">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

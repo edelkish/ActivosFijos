@@ -1,0 +1,183 @@
+﻿@using ActivosFijos.Clases;
+@using ActivosFijos.Models.EntidadesBD;
+
+@model ActivosFijos.Models.EntidadesBD.ActFijo
+
+@{
+    ViewData["Title"] = "Editar activos fijos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Formulario a llenar para la edición de Activos Fijos";
+    clResponse<ActFijo> respuesta = new clResponse<ActFijo>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+}
+
+@section PluginsCSS {
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/bootstrap-touchspin/bootstrap.touchspin.css" rel="stylesheet" />
+        <link href="~/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+    </environment>
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE TITLE -->
+        <div class="page-title">
+            <h1>
+                Activos Fijos | Editar activo fijo
+            </h1>
+        </div>
+        <!-- END PAGE TITLE -->
+    </div>
+</div>
+<!-- BEGIN PAGE CONTENT BODY -->
+<div class="page-content">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE BREADCRUMBS -->
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Submayor</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <a asp-action="ActivosFijos" asp-controller="ctActFijos">Activos Fijos</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Edici&oacute;n de activos fijos existentes</span>
+            </li>
+        </ul>
+        <!-- END PAGE BREADCRUMBS -->
+        <!-- BEGIN PAGE CONTENT INNER -->
+        <div class="page-content-inner">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Editar activo fijo con No. Inv. = @Model.NoInventario
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body form">
+                            <!-- BEGIN FORM-->
+                            <form asp-action="ModificarActivoFijo" asp-controller="ctActFijos" id="modificarActivoFijo">
+                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                <div class="form-body">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" asp-for="NoInventario" />
+                                    <input type="hidden" asp-for="FechaSubmayor" />
+                                    <input type="hidden" asp-for="Clasificador" />
+                                    <div class="form-group">
+                                        <label asp-for="AreaResponsabilidad" class="control-label">&Aacute;rea <span class="required"> (*) </span></label>
+                                        <select asp-for="AreaResponsabilidad" class="form-control select2" asp-items="ViewBag.AreaResponsabilidad"></select>
+                                        <span asp-validation-for="AreaResponsabilidad" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label">Nombre <span class="required"> (*) </span></label>
+                                        <input asp-for="Descripcion" type="text" class="form-control" placeholder="Nombre del activo fijo" autocomplete="off">
+                                        <span asp-validation-for="Descripcion" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Valor Contable </label>
+                                        <input type="text" asp-for="ValorContable" class="form-control" placeholder="Valor contable" autocomplete="off">
+                                        <span asp-validation-for="ValorContable" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Depreciaci&oacute;n Acumulada </label>
+                                        <input type="text" asp-for="DepreciacionAcum" class="form-control" placeholder="Depreciaci&oacute;n acumulada" autocomplete="off">
+                                        <span asp-validation-for="DepreciacionAcum" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="Responsable" class="control-label">Responsable <span class="required"> (*) </span></label>
+                                        <select asp-for="Responsable" class="form-control select2" asp-items="ViewBag.Responsable"></select>
+                                        <span asp-validation-for="Responsable" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="CentroCosto" class="control-label">Centro Costo <span class="required"> (*) </span></label>
+                                        <select asp-for="CentroCosto" class="form-control select2" asp-items="ViewBag.CentroCosto"></select>
+                                        <span asp-validation-for="CentroCosto" class="required"></span>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <div class="btn-set pull-left">
+                                        <a asp-action="ActivosFijosImportados" asp-controller="ctActFijos" asp-route-area="@Model.AreaResponsabilidad" asp-route-responsable="@Model.Responsable" asp-route-fecha="@Model.FechaSubmayor.ToString("yyyy-MM-dd")" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-close"></i> Cancelar</a>
+                                    </div>
+                                    <div class="btn-set pull-right">
+                                        <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-check"></i> Guardar cambios</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <!-- END FORM-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END PAGE CONTENT INNER -->
+    </div>
+</div>
+<!-- END PAGE CONTENT BODY -->
+@section PluginsJS {
+    <environment names="Development,Staging,Production">
+        <script src="~/global/plugins/bootstrap-touchspin/bootstrap.touchspin.js"></script>
+        <script src="~/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
+    </environment>
+}
+
+
+@section Scripts{
+    <script type="text/javascript">
+        var siSatisfactorio = '@respuesta.SiSatisfactorio';
+        var mensaje = '@respuesta.Mensaje';
+
+        $("#DepreciacionAcum").TouchSpin({
+            min: 0,
+            max: 9999999999,
+            step: .01,
+            decimals: 2,
+            boostat: 5,
+            maxboostedstep: 10,
+            verticalbuttons: true,
+            prefix: "$"
+        });
+
+        $("#ValorContable").TouchSpin({
+            min: 0,
+            max: 9999999999,
+            step: .01,
+            decimals: 2,
+            boostat: 5,
+            maxboostedstep: 10,
+            verticalbuttons: true,
+            prefix: "$"
+        });
+
+        InicializarSelect2("#CentroCosto", "Seleccione el centro de costo");
+        InicializarSelect2("#AreaResponsabilidad", "Seleccione el área");
+        InicializarSelect2("#Responsable", "Seleccione el responsable");
+
+        function InicializarSelect2(idSelect2, placeHolder) {
+            $.fn.select2.defaults.set("theme", "bootstrap");
+            $(idSelect2).select2({
+                allowClear: !0,
+                placeholder: placeHolder,
+                width: null
+            });
+        }
+    </script>
+    <script type="text/javascript" src="~/global/scripts/toastr.js"></script>
+}
+
+

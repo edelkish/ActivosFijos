@@ -1,0 +1,396 @@
+﻿@using ActivosFijos.Clases;
+@using ActivosFijos.Models.Vistas;
+
+@{
+    ViewData["Title"] = "Importar Submayor de Activos Fijos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    clResponse<mdVExcellDataImport> respuesta = new clResponse<mdVExcellDataImport>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+}
+
+@section PluginsCSS {
+<environment names="Development,Staging,Production">
+    <link href="~/global/plugins/bootstrap-fileinput/bootstrap-fileinput.css" rel="stylesheet" type="text/css" />
+    <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+
+    <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+    <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
+
+    <link href="~/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+</environment>
+}
+
+@section Styles{
+<style type="text/css">
+    .form-horizontal .form-group {
+        margin-left: unset;
+        margin-right: unset;
+    }
+
+    label {
+        margin-bottom: 5px !important;
+    }
+
+    .fileinput {
+        display: unset;
+    }
+
+    .portlet-form .form-section, .form .form-section {
+        margin: 0px 0px 15px 0px !important;
+    }
+
+    .jconfirm .jconfirm-box.jconfirm-animation-news {
+        transform: rotate(400deg) scale(0);
+    }
+</style>
+}
+
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@functions
+{
+    public string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+
+@model ActivosFijos.Models.Vistas.mdVExcellDataImport
+
+<input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken"
+       value="@GetAntiXsrfRequestToken()">
+
+<!-- BEGIN CONTENT BODY -->
+<!-- BEGIN PAGE HEAD-->
+<div class="page-head">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE TITLE -->
+        <div class="page-title">
+            <h1>Importaci&oacute;n de Datos | Submayor de Activos Fijos </h1>
+        </div>
+        <!-- END PAGE TITLE -->
+    </div>
+</div>
+<!-- END PAGE HEAD-->
+<!-- BEGIN PAGE CONTENT BODY -->
+<div class="page-content">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE BREADCRUMBS -->
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Importaci&oacute;n de Datos</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <a asp-action="Areas" asp-controller="ctAreasDeResponsabilidad">&Aacute;reas de Responsabilidad</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Listado de &Aacute;reas importadas</span>
+            </li>
+        </ul>
+        <!-- END PAGE BREADCRUMBS -->
+        <!-- BEGIN PAGE CONTENT INNER -->
+        <div class="page-content-inner util-btn-margin-bottom-5" id="cargar">
+            <div class="row">
+                <div class="col-md-12">
+                    <!-- BEGIN Portlet PORTLET-->
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Importaci&oacute;n de datos
+                            </div>
+                            <div class="tools">
+                                <a href="javascript:;" class="collapse"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body form">
+                            <!-- BEGIN FORM-->
+                            <form class="" id="frmImpSubmayor" role="form" enctype="multipart/form-data" method="post">
+                                @Html.AntiForgeryToken()
+                                <div class="form-body">
+                                    <h3 class="form-section">Ubicaci&oacute;n del Excell:</h3>
+                                    <div class="form-group">
+                                        <label class="control-label">Seleccione:</label>
+                                        <div class="fileinput fileinput-new" data-provides="fileinput">
+                                            <div class="input-group">
+                                                <div class="form-control uneditable-input input-fixed" data-trigger="fileinput">
+                                                    <i class="fa fa-file fileinput-exists"></i>&nbsp;
+                                                    <span class="fileinput-filename"> </span>
+                                                </div>
+                                                <span class="input-group-addon btn default btn-file">
+                                                    <span class="fileinput-new"> Buscar </span>
+                                                    <span class="fileinput-exists"> Cambiar </span>
+                                                    <input asp-for="MyExcelFile" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" data-val="true" data-val-required="Este campo es obligatorio." type="file" value="" />
+                                                    <span class="field-validation-valid" data-valmsg-for="MyExcelFile" data-valmsg-replace="true"></span>
+
+                                                </span>
+                                                <a href="javascript:;" class="input-group-addon btn red fileinput-exists" data-dismiss="fileinput"> Cancelar </a>
+                                            </div>
+                                            <input type="hidden" asp-for="MSExcelTable" value="HHLL" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <div class="btn-set pull-right">
+                                        <a class="btn blue-hoki btn-outline sbold uppercase" href="javascript:;" id="cargarDatos"><i class="fa fa-eye"></i> Cargar Datos</a>
+                                    </div>
+                                </div>
+                                <!-- END FORM-->
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- END Portlet PORTLET-->
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div id="datosAdicionales">
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div id="tablaDatosSubmayorCargados">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END PAGE CONTENT INNER -->
+    <!-- END PAGE CONTENT INNER -->
+</div>
+
+@section PluginsJS {
+<environment names="Development,Staging,Production">
+    <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+    <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+    <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+
+    <script src="~/global/plugins/notifications/noty.min.js"></script>
+
+    <script type="text/javascript" src="~/global/plugins/bootstrap-fileinput/bootstrap-fileinput.js"></script>
+    <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
+    <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
+    <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+
+    <script src="~/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
+</environment>
+}
+
+@section Scripts{
+<script src="~/global/paginas/cargandoFiles.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+    var baseUrl = $('base').attr('href');
+
+    var siSatisfactorio = '@respuesta.SiSatisfactorio';
+    var mensaje = '@respuesta.Mensaje';
+
+    if ((siSatisfactorio == "True") && (mensaje != "")) {
+        MiApp.Mensajes.mostrarNotificacion("success", mensaje);
+    }
+    else if ((siSatisfactorio == "False") && (mensaje != "")) {
+        MiApp.Mensajes.mostrarNotificacion("error", mensaje);
+    }
+
+    $('#cargarDatos').on('click', function () {
+        if (window.FormData !== undefined){
+            var formData = new FormData();
+
+            formData.append("MyExcelFile", $('#MyExcelFile')[0].files[0]);
+            formData.append("MSExcelTable", $('#MSExcelTable').val());
+
+            CargarDatos(formData);
+        }
+
+    });
+
+    function CargarDatos(formData){
+        mostrarLoadingPanel("cargar", "Impartando datos");
+
+        $.ajax({
+            url: baseUrl + 'ctImportacionDeDatos/CargarDatosImportados',
+            method: 'POST',
+            data: formData,
+            //async: false,
+            processData: false,
+            contentType: false,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+            },
+            success: function (data) {
+                CargarDatosAdicionales();
+
+                MiApp.Mensajes.mostrarNotificacion("success", "Los datos han sido cargados satisfactoriamente");
+
+                $('#tablaDatosSubmayorCargados').html(data);
+
+                TableDatatablesButtons.init();
+
+                InicializarSelect2("#AreaResponsabilidad", "Seleccione el área");
+
+                $('#AreaResponsabilidad').on('change', function (){
+                    var areaResponsabilidad = $('#AreaResponsabilidad').val();
+
+                    $.ajax({
+                        url: baseUrl + 'ctImportacionDeDatos/CargarDatosResponsablesPorAreaDeResponsabilidad',
+                        method: 'POST',
+                        async: false,
+                        data: { area: areaResponsabilidad },
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+                        },
+                        success: function (data) {
+                            $('#selectResponsables').html(data);
+
+                            InicializarSelect2("#Responsable", "Seleccione el responsable");
+
+                            $('#Responsable').on('change', function (){
+                                CargarDatosPorResponsableYAreaDeResponsabilidad();
+                            });
+                        },
+                        error: function (err){
+                            console.log(err);
+                        }
+
+                    });
+
+                    CargarDatosPorResponsableYAreaDeResponsabilidad();
+                });
+
+                InicializarSelect2("#Responsable", "Seleccione el responsable");
+
+                $('#Responsable').on('change', function (){
+                    CargarDatosPorResponsableYAreaDeResponsabilidad();
+                });
+            },
+            error: function (err){
+                MiApp.Mensajes.mostrarNotificacion("error", err);
+            },
+            complete: function (){
+                ocultarLoadingPanel("cargar");
+            }
+        });
+    }
+
+    function CargarDatosAdicionales(){
+        $.ajax({
+            url: baseUrl + 'ctImportacionDeDatos/CargarDatosAdicionales',
+            method: 'POST',
+            data: {},
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+            },
+            success: function (data) {
+                $('#datosAdicionales').html(data);
+
+                $('#datetimepickerImportar').datetimepicker({
+                    format: 'MM/YYYY',
+                    locale: 'es',
+                    viewMode: 'months'
+                }).on('dp.change', function (event) {
+
+                });
+
+                var fecha = moment(new Date()).format("MM/YYYY");
+                document.getElementById('fGeneracion').value = fecha;
+            },
+            complete: function (){
+
+            }
+        });
+    }
+
+    function InicializarSelect2(idSelect2, placeHolder) {
+        $.fn.select2.defaults.set("theme", "bootstrap");
+        $(idSelect2).select2({
+            //allowClear: !0,
+            placeholder: placeHolder,
+            width: null
+        });
+    }
+
+    function CargarDatosPorResponsableYAreaDeResponsabilidad(){
+        var areaResponsabilidad = $('#AreaResponsabilidad').val(),
+        responsable = $('#Responsable').val();
+
+        mostrarLoadingPanel("tablaDatosSubmayorCargados", "Impartando datos");
+
+        $.ajax({
+            url: baseUrl + 'ctImportacionDeDatos/CargarDatosPorResponsablesYAreaDeResponsabilidad',
+            method: 'POST',
+            data: { responsable: responsable, area: areaResponsabilidad },
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+            },
+            success: function (data) {
+                $('#tablaDatosSubmayor').html(data);
+
+                TableDatatablesButtons.init();
+            },
+            error: function (err){
+                console.log(err);
+            },
+            complete: function (){
+                ocultarLoadingPanel("tablaDatosSubmayorCargados");
+            }
+        });
+    }
+
+    var TableDatatablesButtons = function () {
+        var e = function () {
+            var e = $("#tblExcel");
+            e.dataTable({
+                language: {
+                    url: baseUrl + "global/language/Spanish.json",
+                    aria: {
+                        sortAscending: ": activate to sort column ascending",
+                        sortDescending: ": activate to sort column descending"
+                    },
+                    emptyTable: "No data available in table",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "No entries found",
+                    infoFiltered: "(filtered1 from _MAX_ total entries)",
+                    lengthMenu: "_MENU_ entries",
+                    search: "Search:",
+                    zeroRecords: "No matching records found"
+                },
+                buttons: [],
+                order: [],
+                lengthMenu: [[10, 15, 20, -1], [10, 15, 20, "All"]],
+                pageLength: 20,
+                pagingType: "bootstrap_full_number",
+                dom: "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>"
+            });
+
+            $('#tblExcel').on('click', 'tr', function () {
+                if ($(this).hasClass('selected')) {
+                    $(this).removeClass('selected');
+                    idFilaSeleccionada = null;
+                    //document.getElementById('editar').setAttribute('disabled', true);
+                    //document.getElementById('eliminar').setAttribute('disabled', true);
+                }
+                else {
+                    e.$('tr.selected').removeClass('selected');
+                    $(this).addClass('selected');
+                    idFilaSeleccionada = $(this).data('info');
+                    //document.getElementById('editar').removeAttribute('disabled');
+                    //document.getElementById('eliminar').removeAttribute('disabled');
+                }
+            });
+        }
+
+        return {
+            init: function () {
+                jQuery().dataTable && (e())
+            }
+        }
+    }();
+</script>
+
+}

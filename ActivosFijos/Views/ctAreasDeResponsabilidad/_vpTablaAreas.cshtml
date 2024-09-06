@@ -1,0 +1,27 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.AreaDeResponsabilidad>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaAreas">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify">
+                Nombre del &aacute;rea
+            </th>
+            <th scope="col" style="text-align:justify">
+                Descripci&oacute;n
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdArea">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

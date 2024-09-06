@@ -1,0 +1,39 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.Responsable>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaResponsables">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify">
+                Nombre
+            </th>
+            <th scope="col" style="text-align:justify">
+                Apellidos
+            </th>
+            <th scope="col" style="text-align:justify">
+                Cargo
+            </th>
+            <th scope="col" style="text-align:justify">
+                &Aacute;rea (s)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdResponsable">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Apellidos)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.CargoNavigation.Nombre)
+                </td>
+                <td style="text-align:justify">
+                   @Html.DisplayFor(modelItem => item.AreaResponsabilidadNavigation.Nombre)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

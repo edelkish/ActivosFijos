@@ -1,0 +1,165 @@
+﻿@using ActivosFijos.Helpers
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Activos Fijos</title>
+    <base href='@Url.Content("~/")'>
+    <environment names="Development">
+        <link href="~/global/css/openSans.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/font-awesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/simple-line-icons/simple-line-icons.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap/css/bootstrap.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap-switch/css/bootstrap-switch.css" rel="stylesheet" type="text/css" />
+        <!-- END GLOBAL MANDATORY STYLES -->
+        <!-- Add local styles, mostly for plugins css file -->
+        @if (IsSectionDefined("PluginsCSS"))
+        {
+            @RenderSection("PluginsCSS", required: false)
+        }
+
+        <link href="~/global/plugins/bootstrap-toastr/toastr.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="~/global/plugins/waitMe/waitMe.css" />
+
+        <!-- BEGIN THEME GLOBAL STYLES -->
+        <link href="~/global/css/components.css" rel="stylesheet" id="style_components" type="text/css" />
+        <link href="~/global/css/plugins.css" rel="stylesheet" type="text/css" />
+        <!-- END THEME GLOBAL STYLES -->
+        <!-- BEGIN THEME LAYOUT STYLES -->
+        <link href="~/css/layout.css" rel="stylesheet" type="text/css" />
+        <link href="~/css/themes/default.css" rel="stylesheet" type="text/css" id="style_color" />
+        <link href="~/css/custom.css" rel="stylesheet" type="text/css" />
+        <!-- END THEME LAYOUT STYLES -->
+        <link rel="shortcut icon" href="~/favicon.ico" />
+
+        <!-- Add local styles, mostly for plugins css file -->
+        @if (IsSectionDefined("Styles"))
+        {
+            @RenderSection("Styles", required: false)
+        }
+    </environment>
+
+    <environment names="Staging,Production">
+        <link href="http://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&subset=all" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap-switch/css/bootstrap-switch.min.css" rel="stylesheet" type="text/css" />
+        <!-- END GLOBAL MANDATORY STYLES -->
+        <!-- Add local styles, mostly for plugins css file -->
+        @if (IsSectionDefined("PluginsCSS"))
+        {
+            @RenderSection("PluginsCSS", required: false)
+        }
+
+        <link href="~/global/plugins/bootstrap-toastr/toastr.min.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="~/global/plugins/waitMe/waitMe.min.css" />
+
+        <!-- BEGIN THEME GLOBAL STYLES -->
+        <link href="~/global/css/components.min.css" rel="stylesheet" id="style_components" type="text/css" />
+        <link href="~/global/css/plugins.min.css" rel="stylesheet" type="text/css" />
+        <!-- END THEME GLOBAL STYLES -->
+        <!-- BEGIN THEME LAYOUT STYLES -->
+        <link href="~/css/layout.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/css/themes/default.min.css" rel="stylesheet" type="text/css" id="style_color" />
+        <link href="~/css/custom.css" rel="stylesheet" type="text/css" />
+        <!-- END THEME LAYOUT STYLES -->
+        <link rel="shortcut icon" href="~/favicon.ico" />
+
+        <!-- Add local styles, mostly for plugins css file -->
+        @if (IsSectionDefined("Styles"))
+        {
+            @RenderSection("Styles", required: false)
+        }
+    </environment>
+</head>
+<body class="page-container-bg-solid">
+    <div class="page-wrapper @Html.PageClass()">
+        <partial name="_vpHeader" />
+
+        <div class="page-wrapper-row full-height">
+            <div class="page-wrapper-middle">
+                <!-- BEGIN CONTAINER -->
+                <div class="page-container">
+                    <!-- BEGIN CONTENT -->
+                    <div class="page-content-wrapper">
+                        <!-- BEGIN CONTENT BODY -->
+                        @RenderBody()
+                        <!-- END PAGE CONTENT BODY -->
+                        <!-- END CONTENT BODY -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <partial name="_vpFooter" />
+    </div>
+
+    <environment names="Development">
+        <!-- BEGIN CORE PLUGINS -->
+        <script src="~/global/plugins/jquery.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap/js/bootstrap.js" type="text/javascript"></script>
+        <script src="~/global/plugins/js.cookie.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery-slimscroll/jquery.slimscroll.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap-switch/js/bootstrap-switch.js" type="text/javascript"></script>
+        <!-- END CORE PLUGINS -->
+        @if (IsSectionDefined("PluginsJS"))
+        {
+            @RenderSection("PluginsJS", required: false)
+        }
+
+        <script src="~/global/plugins/bootstrap-toastr/toastr.js" type="text/javascript"></script>
+        <script src="~/global/plugins/waitMe/waitMe.js" type="text/javascript"></script>
+
+        <!-- BEGIN THEME GLOBAL SCRIPTS -->
+        <script src="~/global/scripts/app.js" type="text/javascript"></script>
+        <script src="~/global/scripts/miApp/miApp.js"></script>
+        <script src="~/global/scripts/miApp/mensajes.js"></script>
+        <!-- END THEME GLOBAL SCRIPTS -->
+        @if (IsSectionDefined("LevelPluginsJS"))
+        {
+            @RenderSection("LevelPluginsJS", required: false)
+        }
+
+        <!-- BEGIN THEME LAYOUT SCRIPTS -->
+        <script src="~/scripts/layout.js" type="text/javascript"></script>
+        <script src="~/scripts/demo.js" type="text/javascript"></script>
+        <!-- END THEME LAYOUT SCRIPTS -->
+    </environment>
+    <environment names="Staging,Production">
+        <!-- BEGIN CORE PLUGINS -->
+        <script src="~/global/plugins/jquery.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/js.cookie.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
+        <!-- END CORE PLUGINS -->
+        @if (IsSectionDefined("PluginsJS"))
+        {
+            @RenderSection("PluginsJS", required: false)
+        }
+
+        <script src="~/global/plugins/bootstrap-toastr/toastr.min.js" type="text/javascript"></script>  
+        <script src="~/global/plugins/waitMe/waitMe.min.js" type="text/javascript"></script>
+
+        <!-- BEGIN THEME GLOBAL SCRIPTS -->
+        <script src="~/global/scripts/app.min.js" type="text/javascript"></script>
+        <script src="~/global/scripts/miApp/miApp.js"></script>
+        <script src="~/global/scripts/miApp/mensajes.js"></script>
+        <!-- END THEME GLOBAL SCRIPTS -->
+        @if (IsSectionDefined("LevelPluginsJS"))
+        {
+            @RenderSection("LevelPluginsJS", required: false)
+        }
+
+        <!-- BEGIN THEME LAYOUT SCRIPTS -->
+        <script src="~/scripts/layout.min.js" type="text/javascript"></script>
+        <script src="~/scripts/demo.min.js" type="text/javascript"></script>
+    </environment>
+
+    @RenderSection("scripts", required: false)
+</body>
+</html>

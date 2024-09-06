@@ -1,0 +1,86 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.ActFijo>
+@{
+    //List<ActivosFijos.Models.AuxBD.ExistenciaMovimiento> existenciaMovimientos = new List<ActivosFijos.Models.AuxBD.ExistenciaMovimiento>();
+    //existenciaMovimientos = ViewBag.ExistenciaDeMovimiento;
+
+    //string colorDeFondo = string.Empty;
+    string colorDeTexto = string.Empty;
+    string styleTexto = string.Empty;
+}
+
+<table class="table table-striped table-bordered table-hover" id="tablaActivosFijos">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify;min-width:75px" width="75px">
+                No. Inv.
+            </th>
+            <th scope="col" style="text-align:justify;min-width:250px" width="350px">
+                Descripci&oacute;n
+            </th>            
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                &Aacute;rea
+            </th>
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                Responsable
+            </th>
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                Centro de Costo
+            </th>   
+            <th scope="col" style="text-align:right;min-width:100px" width="100px">
+                V. Contable
+            </th>
+            <th scope="col" style="text-align:right;min-width:100px" width="100px">
+                Dep. Acum.
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {   
+            string nombreCompleto = item.ResponsableNavigation.Nombre + " " + item.ResponsableNavigation.Apellidos;
+
+            @*if (existenciaMovimientos.Any(c => c.NoInventario == item.NoInventario))
+            {
+                colorDeFondo = "background-color:#84c584;";
+            } else
+            {
+                colorDeFondo = string.Empty;
+            }*@
+
+            if (item.ResponsableNavigation.Nombre.ToLower().Trim().Equals(("<<S/R>>").ToLower()))
+            {
+                colorDeTexto = "color:red;";
+                nombreCompleto = item.ResponsableNavigation.Nombre;
+            } else
+            {
+                colorDeTexto = string.Empty;
+            }
+
+            styleTexto = colorDeTexto.Trim();
+                        
+            <tr data-info="@item.NoInventario" data-fecha="@item.FechaSubmayor.ToString("yyyy-MM-dd")" style="@styleTexto">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.NoInventario)
+                </td style="text-align:justify">
+                <td>
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>                             
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.AreaResponsabilidadNavigation.Nombre)
+                </td>                
+                <td style="text-align:justify">
+                    @nombreCompleto
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.CentroCostoNavigation.Nombre)
+                </td>
+                <td style="text-align:right">
+                    @Html.DisplayFor(modelItem => item.ValorContable)
+                </td>
+                <td style="text-align:right">
+                    @Html.DisplayFor(modelItem => item.DepreciacionAcum)
+                </td>   
+            </tr>
+        }
+    </tbody>
+</table>

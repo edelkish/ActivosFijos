@@ -1,0 +1,33 @@
+﻿@model IEnumerable<ActivosFijos.Models.AuxBD.ActivosFijosMovimientos>
+
+<table class="table table-striped table-bordered table-hover" id="tablaMovimientosActivosFijos">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>                   
+            <th scope="col" style="text-align:justify;min-width:150px" width="15%">
+                Responsable
+            </th>
+            <th scope="col" style="text-align:justify;min-width:270px" width="275px">
+                &Aacute;rea
+            </th>
+            <th scope="col" style="text-align:justify;min-width:200px" width="225px">
+                Fecha
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {                          
+            <tr data-info="@item.noInventario" data-fecha="@item.fechaSubmayor.ToString("yyyy-MM-dd")">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.nombreResponsable)
+                </td>                
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.nombreAreaResponsabilidad)
+                </td>
+                <td style="text-align:justify">
+                    @item.fechaSubmayor.ToString("MM/yyyy")
+                </td>   
+            </tr>
+        }
+    </tbody>
+</table>

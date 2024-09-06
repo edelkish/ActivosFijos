@@ -1,0 +1,31 @@
+﻿@model IEnumerable<ActivosFijos.Models.AuxBD.ClasificadoresTotales>
+@{
+    string colorDeTexto = string.Empty;
+    string styleTexto = string.Empty;
+}
+
+<table class="table table-striped table-bordered table-hover" id="tablaClasificadoresTotales">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify;min-width:150px" width="150px">
+                Clasificador
+            </th>
+            <th scope="col" style="text-align:center;min-width:75px" width="75px">
+                Cantidad
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {               
+            <tr data-info="" style="">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.clasificador)
+                </td style="text-align:justify">
+                <td style="text-align:center">
+                    @Html.DisplayFor(modelItem => item.cantidad)
+                </td>   
+            </tr>
+        }
+    </tbody>
+</table>

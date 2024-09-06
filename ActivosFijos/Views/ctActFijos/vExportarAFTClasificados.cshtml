@@ -1,0 +1,284 @@
+﻿@using ActivosFijos.Clases
+@{
+    ViewData["Title"] = "Listado de activos fijos importados";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    clResponse<ActivosFijos.Models.Auxiliar.mdExportarAFTClasificados> respuesta = new clResponse<ActivosFijos.Models.Auxiliar.mdExportarAFTClasificados>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+
+}
+
+@model ActivosFijos.Models.Auxiliar.mdExportarAFTClasificados
+
+@section PluginsCSS{
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
+
+        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+
+        <link href="~/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+    </environment>
+}
+@section Styles{
+    <style type="text/css">
+        .mt-checkbox-list, .mt-radio-list {
+            padding: 0 0;
+        }
+    </style>
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@functions
+{
+    public string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+<div class="page-head">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE TITLE -->
+        <div class="page-title">
+            <h1>
+                Activos Fijos | Exportar Clasificados
+            </h1>
+        </div>
+        <!-- END PAGE TITLE -->
+    </div>
+</div>
+<!-- BEGIN PAGE CONTENT BODY -->
+<div class="page-content">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE BREADCRUMBS -->
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Activos Fijos</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <a asp-action="ExportarAFTClasificados" asp-controller="ctActFijos">Exportar Clasificados</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Listado de AFT Clasificados a exportar</span>
+            </li>
+        </ul>
+        <!-- END PAGE BREADCRUMBS -->
+        <div class="page-content-inner util-btn-margin-bottom-5">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Filtros
+                            </div>
+                            <div class="tools">
+                            </div>
+                        </div>
+                        <div class="portlet-body form">
+                            <form asp-action="ExportarAFTClasificados" asp-controller="ctActFijos" method="post">
+                                <div class="form-body">
+                                    @Html.AntiForgeryToken()
+                                    <div id="selectCentrosDeCostos">
+                                        <partial name="_vpCentroDeCostosAFT" model="Model" />
+                                    </div>
+                                    <div id="selectClasificadores">
+                                        <partial name="_vpClasificadoresAFT" model="Model" />
+                                    </div>                                    
+                                </div>
+                                <div class="form-actions">
+                                    <div class="btn-set pull-right">
+                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="mostrar"><i class="fa fa-search"></i> Buscar Activos Fijos</button>
+                                    </div>
+                                    <div class="btn-set pull-left">
+                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="exportar"><i class="fa fa-file-excel-o"></i> Exportar</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="cargar">
+                    <!-- BEGIN Portlet PORTLET-->
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Activos Fijos
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken"
+                                   value="@GetAntiXsrfRequestToken()">
+                            <div id="gridActivosFijosClasificados">
+                                <table class="table table-striped table-bordered table-hover">
+                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                        <tr>
+                                            <th scope="col" style="text-align:justify">
+                                                No. Inv.
+                                            </th>
+                                            <th scope="col" style="text-align:justify">
+                                                Descripci&oacute;n
+                                            </th>
+                                            <th scope="col" style="text-align:justify">
+                                                Centro de Costo
+                                            </th>
+                                            <th scope="col" style="text-align:justify">
+                                                Clasificador
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>                                            
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END Portlet PORTLET-->
+                </div>
+                <div class="col-md-3" id="cargarClasificadoresTotales">
+                    <!-- BEGIN Portlet PORTLET-->
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Clasificadores Totales
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <div id="gridClasificadoresTotales">
+                                <table class="table table-striped table-bordered table-hover">
+                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                        <tr>
+                                            <th scope="col" style="text-align:justify">
+                                                Clasificador
+                                            </th>
+                                            <th scope="col" style="text-align:justify">
+                                                Cantidad
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>
+                                            <td style="text-align:justify">
+                                                <b></b>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END Portlet PORTLET-->
+                </div>
+            </div>
+        </div>
+        <!-- END PAGE CONTENT INNER -->
+    </div>
+</div>
+<!-- END PAGE CONTENT BODY -->
+@section PluginsJS {
+    <environment names="Development,Staging,Production">
+        <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+
+        <script src="~/global/plugins/notifications/noty.min.js"></script>
+        <script src="~/global/plugins/jquery-confirm/js/jquery-confirm.js"></script>
+
+        <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
+        <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
+        <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+
+        <script src="~/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
+    </environment>
+}
+
+@section Scripts {
+    <script src="~/global/paginas/cargandoFiles.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        var baseUrl = $('base').attr('href'), idFilaSeleccionada = -1, idFilaSeleccionadaAux = "";
+
+        var siSatisfactorio = '@respuesta.SiSatisfactorio';
+        var mensaje = '@respuesta.Mensaje';
+
+        if ((siSatisfactorio == "True") && (mensaje != "")) {
+            MiApp.Mensajes.mostrarNotificacion("success", mensaje);
+        }
+        else if ((siSatisfactorio == "False") && (mensaje != "")) {
+            MiApp.Mensajes.mostrarNotificacion("error", mensaje);
+        }
+                
+        var subMayor;
+
+    </script>
+
+    <script src="~/global/paginas/tablaActivosFijosClasificados.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+
+        InicializarSelect2("#CentroCosto", "Seleccione el centro de costo");
+        InicializarSelect2("#Clasificador", "Seleccione el clasificador");
+
+        $('#refrescar').on('click', function () {
+            var valueFecha = $('#fGeneracion').val();
+            CargarTablaActivosFijosClasificados();
+            CargarTablaClasificadoresTotales();
+        });
+
+        $('#CentroCosto').on('change', function () {
+            CargarTablaActivosFijosClasificados();
+            CargarTablaClasificadoresTotales();
+        });
+
+        $('#Clasificador').on('change', function () {
+            CargarTablaActivosFijosClasificados();
+            CargarTablaClasificadoresTotales();
+        });
+
+        $('#exportar').on('click', function () {
+            var link = '@Html.Raw(Url.Action("ExportarExcelClasificadoresTotalesEPPlus", "ctActFijos", new { centroCosto = "v_centroCosto" }))';
+            link = link.replace("v_centroCosto", $('#CentroCosto').val());
+            window.location.href = link;
+        });
+
+        function InicializarSelect2(idSelect2, placeHolder) {
+            $.fn.select2.defaults.set("theme", "bootstrap");
+            $(idSelect2).select2({
+                //allowClear: !0,
+                placeholder: placeHolder,
+                width: null
+            });
+        }
+    </script>
+}

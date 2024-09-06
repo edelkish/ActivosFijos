@@ -1,0 +1,20 @@
+﻿var FormRepeater = function () {
+    return {
+        init: function () {
+            $(".mt-repeater").each(function () {
+                $(this).repeater({
+                    show: function () {
+                        $(this).slideDown()
+                    },
+                    hide: function (e) {
+                        confirm("Est&aacute; seguro que desea eliminar este elemento?") && $(this).slideUp(e)
+                    },
+                    ready: function (e) { }
+                })
+            })
+        }
+    }
+}();
+jQuery(document).ready(function () {
+    FormRepeater.init()
+});

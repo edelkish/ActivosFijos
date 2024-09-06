@@ -1,0 +1,161 @@
+﻿@using System.Data;
+@using ActivosFijos.Clases;
+@model DataTable
+
+@{
+    DataTable listado = new DataTable();
+    listado = Model ?? new DataTable();
+
+    clResponse<DataTable> respuesta = new clResponse<DataTable>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="portlet box blue-hoki">
+            <div class="portlet-title">
+                <div class="caption">
+                    Selecci&oacute;n de Filtros
+                </div>
+                <div class="tools">
+                    <a href="javascript:;" class="collapse"> </a>
+                </div>
+            </div>
+            <div class="portlet-body form">
+                <form class="form-horizontal" method="post" id="frmFiltros">
+                    <div class="form-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label">&Aacute;reas de Responsabilidad </label>
+                                    <select class="form-control select2" id="AreaResponsabilidad" name="AreaResponsabilidad" asp-items="ViewBag.Areas"></select>
+                                </div>
+                            </div>
+                            <!--/span-->
+                            <div class="col-md-4">
+                                <div id="selectResponsables">
+                                    <partial name="_vpResponsables" model="ViewBag.Responsables" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div id="tablaDatosSubmayor">
+            <div class="portlet box blue-hoki">
+                <div class="portlet-title">
+                    <div class="caption">
+                        Submayor de Activos Fijos
+                    </div>
+                    <div class="tools">
+                        <a href="" class="fullscreen"> </a>
+                    </div>
+                </div>
+                <div class="portlet-body">
+                    <table class="table table-bordered table-hover" id="tblExcel">
+                        <thead style="background-color: #444d58 !important; color: #ced5de">
+                            <tr>
+                                <th style="text-align:justify;min-width:85px;width:85px;"> No. Inv. </th>
+                                <th style="text-align:justify;min-width:275px;"> Descripci&oacute;n </th>
+                                <th style="text-align:justify;min-width:180px;width:180px;"> Responsable </th>
+                                <th style="text-align:justify;min-width:200px;width:200px;"> &Aacute;rea </th>
+                                <th style="text-align:justify;min-width:200px;"> Centro Costo </th>
+                                <th style="text-align:right;min-width:100px;width:100px;"> V. Adquisici&oacute;n </th>
+                                <th style="text-align:right;min-width:100px;width:100px;"> V. Contable </th>
+                                <th style="text-align:right;min-width:100px;width:100px;"> Dep. Acumulada </th>
+                                <th style="text-align:right;min-width:100px;width:100px;"> V. Residual </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int countRows = 0;
+
+                                double vAdquisicion = 0;
+                                double vContable = 0;
+                                double dAcumulada = 0;
+                                double vResidual = 0;
+
+                                string classFilaConErrores = string.Empty;
+
+                                foreach (DataRow row in listado.Rows)
+                                {
+                                    if (row[5].ToString() == string.Empty)
+                                        classFilaConErrores = "color: red;";
+                                    else
+                                        classFilaConErrores = string.Empty;
+
+                                    if (!row[0].ToString().Contains("-  Área de responsabilidad: "))
+                                    {
+                                        if (!row[0].ToString().Contains("Importe total: "))
+                                        {
+                                            try
+                                            {
+                                                if (Int64.TryParse(row[2].ToString(), out _))
+                                                {
+                                                    var cellValue6 = row[6] != null ? double.Parse(row[6].ToString()) : 0;
+                                                    var cellValue7 = row[7] != null ? double.Parse(row[7].ToString()) : 0;
+                                                    var cellValue8 = row[8] != null ? double.Parse(row[8].ToString()) : 0;
+                                                    var cellValue9 = row[9] != null ? double.Parse(row[9].ToString()) : 0;
+
+                                                    vAdquisicion += cellValue6;
+                                                    vContable += cellValue7;
+                                                    dAcumulada += cellValue8;
+                                                    vResidual += cellValue9;
+
+                                                    //var vAdq = Math.Round(Convert.ToDouble(cellValue), 3);
+                                                    <tr data-info="@row[2].ToString()" style="@classFilaConErrores">
+                                                        <td style="text-align:justify;vertical-align:middle;">@row[2].ToString()</td>
+                                                        <td style="text-align:justify;vertical-align:middle;">@row[1].ToString()</td>
+                                                        <td style="text-align:justify;vertical-align:middle;">@row[5].ToString()</td>
+                                                        <td style="text-align:justify;vertical-align:middle;">@row[4].ToString()</td>
+                                                        <td style="text-align:justify;vertical-align:middle;">@row[13].ToString()</td>
+                                                        <td style="text-align:right;vertical-align:middle;">@String.Format("{0:#,##0.##}", Math.Round(cellValue6, 3))</td>
+                                                        <td style="text-align:right;vertical-align:middle;">@String.Format("{0:#,##0.##}", Math.Round(cellValue7, 3))</td>
+                                                        <td style="text-align:right;vertical-align:middle;">@String.Format("{0:#,##0.##}", Math.Round(cellValue8, 3))</td>
+                                                        <td style="text-align:right;vertical-align:middle;">@String.Format("{0:#,##0.##}", Math.Round(cellValue9, 3))</td>
+                                                    </tr>
+
+                                                    countRows++;
+                                                }
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                continue;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
+
+                                    }
+                                }
+                            }
+                        </tbody>
+                        <tfoot style="background-color:#444d58 !important;color:#FFFFFF;">
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td style="text-align:right;vertical-align:middle;">= @String.Format("{0:#,##0.##}", Math.Round(vAdquisicion, 3))</td>
+                                <td style="text-align:right;vertical-align:middle;">= @String.Format("{0:#,##0.##}", Math.Round(vContable, 3))</td>
+                                <td style="text-align:right;vertical-align:middle;">= @String.Format("{0:#,##0.##}", Math.Round(dAcumulada, 3))</td>
+                                <td style="text-align:right;vertical-align:middle;">= @String.Format("{0:#,##0.##}", Math.Round(vResidual, 3))</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

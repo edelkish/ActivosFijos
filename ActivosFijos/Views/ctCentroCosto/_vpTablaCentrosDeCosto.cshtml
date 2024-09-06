@@ -1,0 +1,27 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.CentroCosto>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaCentrosC">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify;min-width:75px" width="100px">
+                N&uacute;mero
+            </th>
+            <th scope="col" style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdCentroCosto">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Numero)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

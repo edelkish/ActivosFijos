@@ -1,0 +1,63 @@
+﻿@model ActivosFijos.Models.Auxiliar.mdDatosAdicionales
+<!-- BEGIN Portlet PORTLET-->
+<div class="portlet box blue-hoki">
+    <div class="portlet-title">
+        <div class="caption">
+            Info General
+        </div>
+        <div class="tools">
+            
+        </div>
+    </div>
+    <div class="portlet-body form">
+        <!-- BEGIN FORM-->
+        <!-- BEGIN FORM-->
+        <form asp-action="GuardarDatosImportados" asp-controller="ctImportacionDeDatos" class="" role="form" method="post">
+            <div class="form-body">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label class="control-label">Entidad: </label>
+                    <p class="form-control-static"> @Model.Entidad </p>
+                </div>
+                <!--/span-->
+                <div class="form-group">
+                    <label class="control-label">Productos:</label>
+                    <p class="form-control-static"> @Model.TotalProductos </p>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">V. Adquisici&oacute;n:</label>
+                    <p class="form-control-static"> $ @String.Format("{0:#,##0.##}", Math.Round(Model.vAdquisicion, 3)) </p>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">V. Contable:</label>
+                    <p class="form-control-static"> $ @String.Format("{0:#,##0.##}", Math.Round(Model.vContable, 3)) </p>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Dep. Acumulada:</label>
+                    <p class="form-control-static"> $ @String.Format("{0:#,##0.##}", Math.Round(Model.dAcumulada, 3)) </p>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">V. Residual:</label>
+                    <p class="form-control-static"> $ @String.Format("{0:#,##0.##}", Math.Round(Model.vResidual, 3)) </p>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Fecha:</label>
+                    <div class='input-group date' id='datetimepickerImportar'>
+                        <input type='text' class="form-control" asp-for="fGeneracion" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>                
+            </div>
+            <div class="form-actions">
+                <div class="btn-set pull-left">
+                </div>
+                <div class="btn-set pull-right">
+                    <button type="submit" class="btn blue-hoki btn-outline sbold uppercase" id="guardar"><i class="fa fa-download"></i> Guardar</button>
+                </div>
+            </div>
+        </form>
+        <!-- END FORM-->
+    </div>
+</div>

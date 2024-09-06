@@ -1,0 +1,71 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.UtilesHerramienta>
+@{
+    string colorDeTexto = string.Empty;
+    string styleTexto = string.Empty;
+
+    ActivosFijos.Models.Auxiliar.mdSubmayorErrores subMayor = new ActivosFijos.Models.Auxiliar.mdSubmayorErrores();
+    subMayor = ViewBag.SubMayor;
+}
+
+<table class="table table-striped table-bordered table-hover" id="tablaUTH">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify;min-width:75px" width="75px">
+                C&oacute;digo
+            </th>
+            <th scope="col" style="text-align:justify;min-width:250px" width="350px">
+                Descripci&oacute;n
+            </th>            
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                &Aacute;rea
+            </th>
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                Responsable
+            </th>
+            <th scope="col" style="text-align:justify;min-width:175px" width="250px">
+                Centro de Costo
+            </th>   
+            <th scope="col" style="text-align:right;min-width:100px" width="100px">
+                V. Contable
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {   
+            string nombreCompleto = item.ResponsableNavigation.Nombre + " " + item.ResponsableNavigation.Apellidos;
+            
+            if (item.ResponsableNavigation.Nombre.ToLower().Trim().Equals(("<<S/R>>").ToLower()))
+            {
+                colorDeTexto = "color:red;";
+                nombreCompleto = item.ResponsableNavigation.Nombre;
+            } else
+            {
+                colorDeTexto = string.Empty;
+            }
+
+            styleTexto = (colorDeTexto).Trim();
+            
+            <tr data-info="@item.IdUth" data-fecha="@item.FechaListadoUth.ToString("yyyy-MM-dd")" style="@styleTexto">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Codigo)
+                </td style="text-align:justify">
+                <td>
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>                             
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.AreaResponsabilidadNavigation.Nombre)
+                </td>                
+                <td style="text-align:justify">
+                    @nombreCompleto
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.CentroCostoNavigation.Nombre)
+                </td>
+                <td style="text-align:right">
+                    @Html.DisplayFor(modelItem => item.ValorContable)
+                </td>   
+            </tr>
+        }
+    </tbody>
+</table>

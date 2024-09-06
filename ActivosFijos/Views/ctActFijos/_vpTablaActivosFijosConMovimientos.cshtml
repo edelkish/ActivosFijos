@@ -1,0 +1,53 @@
+﻿@model IEnumerable<ActivosFijos.Models.AuxBD.ActivosFijosConMovimientos>
+@{
+    DateTime fechaSubmayor = ViewBag.FechaSubmayor;
+}
+<table class="table table-striped table-bordered table-hover" id="tablaActivosFijos">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify;min-width:75px" width="75px">
+                No. Inv.
+            </th>
+            <th scope="col" style="text-align:justify;min-width:350px" width="400px">
+                Descripci&oacute;n
+            </th>            
+            <th scope="col" style="text-align:justify;min-width:270px" width="275px">
+                &Aacute;rea anterior
+            </th>
+            <th scope="col" style="text-align:justify;min-width:270px" width="275px">
+                &Aacute;rea actual
+            </th>
+            <th scope="col" style="text-align:justify;min-width:200px" width="225px">
+                Responsable anterior
+            </th>
+            <th scope="col" style="text-align:justify;min-width:200px" width="225px">
+                Responsable actual
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {                          
+            <tr data-info="@item.NoInventario" data-fecha="@fechaSubmayor.ToString("yyyy-MM-dd")">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.NoInventario)
+                </td style="text-align:justify">
+                <td>
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>                             
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.AreaAnterior)
+                </td>                
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.AreaActual)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.ResponsableAnterior)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.ResponsableActual)
+                </td>   
+            </tr>
+        }
+    </tbody>
+</table>
