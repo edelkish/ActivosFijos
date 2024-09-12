@@ -12,12 +12,14 @@ namespace ActivosFijos.Repositorios
     {
         private readonly repoActivosFijos _repoActivosFijos;
         private readonly repoResponsables _repoResponsables;
+        private readonly repoUtilesHerramientas _repoUtilesHerramientas;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public repoServcioActas(repoActivosFijos repoActivosFijos, repoResponsables repoResponsables, IWebHostEnvironment webHostEnvironment)
+        public repoServcioActas(repoActivosFijos repoActivosFijos, repoResponsables repoResponsables, repoUtilesHerramientas repoUtilesHerramientas, IWebHostEnvironment webHostEnvironment)
         {
             _repoActivosFijos = repoActivosFijos;
             _repoResponsables = repoResponsables;
+            _repoUtilesHerramientas = repoUtilesHerramientas;
             _webHostEnvironment = webHostEnvironment;
         }
         public byte[] ExportarADocx(out bool result, out string msg, Guid responsable, Guid area, DateTime fecha, string responsableArea)
@@ -66,6 +68,89 @@ namespace ActivosFijos.Repositorios
                     actFijos = _repoActivosFijos.ActivosFijos(fecha, area, responsable);
 
                     SetBookmarkValueWithTable(doc, "TABLA", actFijos, fecha);
+
+                    var mainPart = doc.MainDocumentPart;
+
+                    //mainPart.Document.Append(table_);
+
+                    foreach (var p in mainPart.Document.Descendants<Paragraph>())
+                    {
+                        ApplyStyleToParagraph(doc, "BasicParagraphStyle", "Basic Paragraph Style", p);
+                        p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "300", LineRule = LineSpacingRuleValues.Auto };
+                    }
+
+                    foreach (var t in mainPart.Document.Descendants<Table>())
+                    {
+                        foreach (var cell_p in t.Descendants<Paragraph>())
+                        {
+                            cell_p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "0", LineRule = LineSpacingRuleValues.Auto };
+                        }
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                result = false;
+                msg = ex.Message;
+            }
+
+            if (result)
+            {
+                return ms.ToArray();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public byte[] ExportarUTHADocx(out bool result, out string msg, Guid responsable, Guid area, DateTime fecha, string responsableArea)
+        {
+            result = true;
+            msg = "";
+            MemoryStream ms = new MemoryStream();
+
+            try
+            {
+                string webRootPath = _webHostEnvironment.WebRootPath;
+
+                string path = "";
+                path = Path.Combine(webRootPath, "plantillas\\Plantilla Acta Resp. Material UTH.docx");
+
+                byte[] templateBytes = System.IO.File.ReadAllBytes(path);
+                new MemoryStream(templateBytes).CopyTo(ms);
+                using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
+                {
+                    Responsable resp = new Responsable();
+
+                    if (responsable == Guid.Empty)
+                    {
+                        resp = _repoResponsables.ObtenerInfoDirector().Result;
+                    }
+                    else
+                    {
+                        resp = _repoResponsables.SeleccionarResponsablesPorID(responsable).Result;
+                    }
+
+                    string diasDelMes = DateTime.DaysInMonth(fecha.Year, fecha.Month).ToString();
+
+                    SetBookmarkValue(doc, "RESPONSABLE", resp == null ? "<<S/R>>" : resp.Nombre + " " + resp.Apellidos);
+                    SetBookmarkValue(doc, "CARGO", resp == null ? "<<S/C>>" : resp.CargoNavigation?.Nombre);
+                    SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
+                    SetBookmarkValue(doc, "MES", GetNameMonth(fecha.Month, fecha.Year).Split('/')[0] ?? "<<S/D>");
+                    SetBookmarkValue(doc, "ANNO", fecha.Year.ToString() ?? "<<S/D>");
+
+                    Responsable respCont = new Responsable();
+                    respCont = _repoResponsables.ObtenerInfoEncargadoEconomia().Result;
+
+                    SetBookmarkValue(doc, "FIRMACONTABILIDAD", respCont == null ? "<<S/D>>" : respCont.Nombre + " " + respCont.Apellidos);
+                    SetBookmarkValue(doc, "FIRMARESPONSABLEAREA", resp == null ? "<<S/R>>" : resp.Nombre + " " + resp.Apellidos);
+
+                    List<UtilesHerramienta> utilesHerr = new List<UtilesHerramienta>();
+                    utilesHerr = _repoUtilesHerramientas.UTHs(fecha, area, responsable);
+
+                    SetBookmarkValueWithTable(doc, "TABLA", utilesHerr, fecha);
 
                     var mainPart = doc.MainDocumentPart;
 
@@ -204,6 +289,107 @@ namespace ActivosFijos.Repositorios
             }
         }
 
+        public byte[] ExportarPorAreasUTHDocx(out bool result, out string msg, Guid responsable, Guid area, DateTime fecha, string responsableArea)
+        {
+            result = true;
+            msg = "";
+            MemoryStream ms = new MemoryStream();
+
+            try
+            {
+                List<UtilesHerramienta> utilesHerr = new List<UtilesHerramienta>();
+                utilesHerr = _repoUtilesHerramientas.UTHs(fecha, area, responsable);
+
+                if (utilesHerr.Count == 0)
+                {
+                    result = false;
+                }
+                else
+                {
+                    Responsable resp = new Responsable();
+                    string respArea = "<<S/D>>";
+                    if (responsable == null)
+                    {
+                        resp = null;
+                    }
+                    else if (responsable.Equals(Guid.Empty))
+                    {
+                        resp = _repoResponsables.SeleccionarResponsableEPDelArea(area).Result;
+                        if (resp == null && utilesHerr.Count() > 0)
+                            respArea = utilesHerr.Select(c => c.AreaResponsabilidadNavigation).Distinct().FirstOrDefault().Nombre;
+                    }
+                    else
+                    {
+                        resp = _repoResponsables.SeleccionarResponsablesPorID(responsable).Result;
+                    }
+
+                    CentroCosto centroCosto = new CentroCosto();
+                    centroCosto = utilesHerr.Select(c => c.CentroCostoNavigation).Distinct().FirstOrDefault();
+
+                    string webRootPath = _webHostEnvironment.WebRootPath;
+
+                    string path = "";
+                    path = Path.Combine(webRootPath, "plantillas\\Plantilla Acta Resp. Material Areas UTH.docx");
+
+                    byte[] templateBytes = System.IO.File.ReadAllBytes(path);
+                    new MemoryStream(templateBytes).CopyTo(ms);
+                    using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
+                    {
+                        string diasDelMes = DateTime.DaysInMonth(fecha.Year, fecha.Month).ToString();
+
+                        SetBookmarkValue(doc, "RESPONSABLE", resp != null ? resp.Nombre + " " + resp.Apellidos : "<<S/D>>");
+                        SetBookmarkValue(doc, "CARGO", (resp == null || resp.CargoNavigation == null) ? "<<S/D>>" : resp.CargoNavigation.Nombre);
+                        SetBookmarkValue(doc, "AREA", resp != null ? resp.AreaResponsabilidadNavigation.Nombre : respArea);
+                        SetBookmarkValue(doc, "CENTROCOSTO", centroCosto == null ? "<<S/D>>" : centroCosto.Numero.ToString());
+                        SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
+                        SetBookmarkValue(doc, "MES", GetNameMonth(fecha.Month, fecha.Year).Split('/')[0] ?? "<<S/D>");
+                        SetBookmarkValue(doc, "ANNO", fecha.Year.ToString() ?? "<<S/D>");
+
+                        resp = new Responsable();
+                        resp = _repoResponsables.ObtenerInfoEncargadoEconomia().Result;
+
+                        SetBookmarkValue(doc, "FIRMADECONTABILIDAD", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
+
+                        SetBookmarkValue(doc, "FIRMARESPONSABLEAREA", responsableArea ?? "");
+
+                        SetBookmarkValueWithTable(doc, "TABLA", utilesHerr, fecha, false);
+
+                        var mainPart = doc.MainDocumentPart;
+
+                        //mainPart.Document.Append(table_);
+
+                        foreach (var p in mainPart.Document.Descendants<Paragraph>())
+                        {
+                            ApplyStyleToParagraph(doc, "BasicParagraphStyle", "Basic Paragraph Style", p);
+                            p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "300", LineRule = LineSpacingRuleValues.Auto };
+                        }
+
+                        foreach (var t in mainPart.Document.Descendants<Table>())
+                        {
+                            foreach (var cell_p in t.Descendants<Paragraph>())
+                            {
+                                cell_p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "0", LineRule = LineSpacingRuleValues.Auto };
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result = false;
+                msg = ex.Message;
+            }
+
+            if (result)
+            {
+                return ms.ToArray();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public byte[] ExportarPorAreasIndividualDocx(out bool result, out string msg, Guid responsable, Guid area, DateTime fecha, string responsableArea)
         {
             result = true;
@@ -248,6 +434,85 @@ namespace ActivosFijos.Repositorios
                         SetBookmarkValue(doc, "FIRMATRABAJADOR", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
                         SetBookmarkValue(doc, "FIRMADERESPONSABLEDEAREA", responsableArea ?? "");
                         SetBookmarkValueWithTable(doc, "TABLA", actFijos, fecha, false);
+
+                        var mainPart = doc.MainDocumentPart;
+
+                        foreach (var p in mainPart.Document.Descendants<Paragraph>())
+                        {
+                            ApplyStyleToParagraph(doc, "BasicParagraphStyle", "Basic Paragraph Style", p);
+                            p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "300", LineRule = LineSpacingRuleValues.Auto };
+                        }
+
+                        foreach (var t in mainPart.Document.Descendants<Table>())
+                        {
+                            foreach (var cell_p in t.Descendants<Paragraph>())
+                            {
+                                cell_p.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines() { After = "0", LineRule = LineSpacingRuleValues.Auto };
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result = false;
+                msg = ex.Message;
+            }
+
+            if (result)
+            {
+                return ms.ToArray();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public byte[] ExportarUTHPorAreasIndividualDocx(out bool result, out string msg, Guid responsable, Guid area, DateTime fecha, string responsableArea)
+        {
+            result = true;
+            msg = "";
+            MemoryStream ms = new MemoryStream();
+
+            try
+            {
+                List<UtilesHerramienta> utilesHerr = new List<UtilesHerramienta>();
+                utilesHerr = _repoUtilesHerramientas.UTHs(fecha, area, responsable);
+
+                if (utilesHerr.Count == 0)
+                {
+                    result = false;
+                }
+                else
+                {
+                    Responsable resp = new Responsable();
+                    resp = _repoResponsables.SeleccionarResponsablesPorID(responsable).Result;
+
+                    CentroCosto centroCosto = new CentroCosto();
+                    centroCosto = utilesHerr.Select(c => c.CentroCostoNavigation).Distinct().FirstOrDefault();
+
+                    string webRootPath = _webHostEnvironment.WebRootPath;
+
+                    string path = "";
+                    path = Path.Combine(webRootPath, "plantillas\\Plantilla Acta Resp. Material Individual UTH.docx");
+
+                    byte[] templateBytes = System.IO.File.ReadAllBytes(path);
+                    new MemoryStream(templateBytes).CopyTo(ms);
+                    using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
+                    {
+                        string diasDelMes = DateTime.DaysInMonth(fecha.Year, fecha.Month).ToString();
+
+                        SetBookmarkValue(doc, "RESPONSABLE", resp != null ? resp.Nombre + " " + resp.Apellidos : "<<S/D>>");
+                        SetBookmarkValue(doc, "CARGO", (resp == null || resp.CargoNavigation == null) ? "<<S/D>>" : resp.CargoNavigation.Nombre);
+                        SetBookmarkValue(doc, "AREA", resp != null ? resp.AreaResponsabilidadNavigation.Nombre : "<<S/D>>");
+                        SetBookmarkValue(doc, "CENTROCOSTO", centroCosto == null ? "<<S/D>>" : centroCosto.Numero.ToString());
+                        SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
+                        SetBookmarkValue(doc, "MES", GetNameMonth(fecha.Month, fecha.Year).Split('/')[0] ?? "<<S/D>");
+                        SetBookmarkValue(doc, "ANNO", fecha.Year.ToString() ?? "<<S/D>");
+                        SetBookmarkValue(doc, "FIRMATRABAJADOR", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
+                        SetBookmarkValue(doc, "FIRMARESPONSABLEAREA", responsableArea ?? "");
+                        SetBookmarkValueWithTable(doc, "TABLA", utilesHerr, fecha, false);
 
                         var mainPart = doc.MainDocumentPart;
 
@@ -732,6 +997,129 @@ namespace ActivosFijos.Repositorios
             return wordTable;
         }
 
+        private static Table AddRows(Table wordTable, List<UtilesHerramienta> datos)
+        {
+            foreach (UtilesHerramienta utiles in datos)
+            {
+
+                // Create a row.
+                TableRow tRow = new TableRow();
+
+                // Create a cell.
+                TableCell tCell = new TableCell();
+
+                var tCellProperties = new TableCellProperties();
+                TableCellVerticalAlignment tcVA = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
+                tCellProperties.Append(tcVA);
+
+                // Set Cell Color
+                Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
+                tCellProperties.Append(tCellColor);
+
+                //TableCellWidth tCellWidth = new TableCellWidth();
+                //tCellWidth.Type = TableWidthUnitValues.Dxa;
+                //tCellWidth.Width = "700";
+
+                //tCellProperties.Append(tCellWidth);
+
+                tCell.Append(tCellProperties);
+
+                ParagraphProperties paragProperties = new ParagraphProperties();
+                SpacingBetweenLines spacingBetweenLines1 = new SpacingBetweenLines() { After = "0" };
+                paragProperties.Append(spacingBetweenLines1);
+
+                Run run = new Run();
+
+                Text newText = new Text(utiles.Codigo.ToString());
+                run.AppendChild<Text>(newText);
+
+                run = ApplyFontProperties(run);
+
+                var parag = new Paragraph();
+                parag.Append(paragProperties);
+                parag.Append(run);
+
+                tCell.Append(parag);
+                tRow.Append(tCell);
+
+                // Create a cell.
+                TableCell tCellDescripcion = new TableCell();
+
+                var tCellPropertiesDescripcion = new TableCellProperties();
+
+                // Set Cell Color
+                Shading tCellColorDescripcion = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
+                tCellPropertiesDescripcion.Append(tCellColorDescripcion);
+
+                //TableCellWidth tCellWidthDescripcion = new TableCellWidth();
+                //tCellWidthDescripcion.Type = TableWidthUnitValues.Dxa;
+                //tCellWidthDescripcion.Width = "2400";
+
+                //tCellPropertiesDescripcion.Append(tCellWidthDescripcion);
+                tCellDescripcion.Append(tCellPropertiesDescripcion);
+
+                ParagraphProperties paragPropertiesDescripcion = new ParagraphProperties();
+                SpacingBetweenLines spacingBetweenLinesDescripcion = new SpacingBetweenLines() { After = "0" };
+                paragPropertiesDescripcion.Append(spacingBetweenLinesDescripcion);
+
+                Run runDescripcion = new Run();
+
+                Text newTextDescripcion = new Text(utiles.Descripcion);
+                runDescripcion.AppendChild<Text>(newTextDescripcion);
+
+                runDescripcion = ApplyFontProperties(runDescripcion);
+
+                Paragraph paragDescripcion = new Paragraph();
+                paragDescripcion.Append(paragPropertiesDescripcion);
+                paragDescripcion.Append(runDescripcion);
+
+                tCellDescripcion.Append(paragDescripcion);
+                tRow.Append(tCellDescripcion);
+
+                // Create a cell.
+                TableCell tCellResponsable = new TableCell();
+
+                var tCellPropertiesResponsable = new TableCellProperties();
+
+                // Set Cell Color
+                Shading tCellColorResponsable = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
+                tCellPropertiesResponsable.Append(tCellColorResponsable);
+
+                //TableCellWidth tCellWidthResponsable = new TableCellWidth();
+                //tCellWidthResponsable.Type = TableWidthUnitValues.Dxa;
+                //tCellWidthResponsable.Width = "1900";
+
+                //tCellPropertiesResponsable.Append(tCellWidthResponsable);
+                tCellResponsable.Append(tCellPropertiesResponsable);
+
+                ParagraphProperties paragPropertiesResponsable = new ParagraphProperties();
+                SpacingBetweenLines spacingBetweenLinesResponsable = new SpacingBetweenLines() { After = "0" };
+                paragPropertiesResponsable.Append(spacingBetweenLinesResponsable);
+
+                Run runResponsable = new Run();
+
+                Text newTextResponsable = new Text(utiles.ResponsableNavigation.Nombre + " " + utiles.ResponsableNavigation.Apellidos);
+                runResponsable.AppendChild<Text>(newTextResponsable);
+
+                runResponsable = ApplyFontProperties(runResponsable);
+
+                Paragraph paragResponsable = new Paragraph();
+                paragResponsable.Append(paragPropertiesResponsable);
+                paragResponsable.Append(runResponsable);
+
+                // Specify the table cell content.
+                tCellResponsable.Append(paragResponsable);
+
+                // Append the table cell to the table row.
+                tRow.Append(tCellResponsable);
+
+                // Append the table row to the table.
+                wordTable.Append(tRow);
+            }
+
+            return wordTable;
+        }
+
         private static Run ApplyFontProperties(Run run, bool siBold = false)
         {
 
@@ -801,6 +1189,72 @@ namespace ActivosFijos.Repositorios
         }
 
         private void SetBookmarkValueWithTable(WordprocessingDocument doc, string BookmarkName, List<ActFijo> datos, DateTime fecha, bool siActaGeneral = true, bool DeleteAfterSetValue = true)
+        {
+            var mainPart = doc.MainDocumentPart;
+            var res = from bm in mainPart.Document.Body.Descendants<BookmarkStart>()
+                      where bm.Name == BookmarkName
+                      select bm;
+            var bookmark = res.SingleOrDefault();
+            if (bookmark != null)
+            {
+                var parent = bookmark.Parent;   // bookmark's parent element
+
+                List<AreaDeResponsabilidad> areasResp = new List<AreaDeResponsabilidad>();
+                areasResp = datos.Select(c => c.AreaResponsabilidadNavigation).Distinct().OrderBy(c => c.Nombre).ToList();
+
+                bool siPrimeraTabla = true;
+
+                foreach (AreaDeResponsabilidad item in areasResp)
+                {
+                    TableProperties tblProp = new TableProperties(
+                        new TableBorders(
+                            new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
+                            new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
+                            new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
+                            new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
+                            new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
+                            new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 }),
+                        new TableWidth() { Width = "5000", Type = TableWidthUnitValues.Pct },
+                        new TableJustification() { Val = TableRowAlignmentValues.Left });
+
+                    // Now we create a new layout and make it "fixed".
+                    TableLayout tl = new TableLayout() { Type = TableLayoutValues.Fixed };
+                    tblProp.TableLayout = tl;
+
+                    TableStyle tableStyle = new TableStyle { Val = "LightShadingAccent1" };
+                    tblProp.TableStyle = tableStyle;
+
+                    Table table = new Table();
+
+                    table.AppendChild(tblProp);
+
+                    if (siActaGeneral)
+                    {
+                        if (siPrimeraTabla)
+                        {
+                            table = AddTitleRow(table, fecha);
+                            siPrimeraTabla = false;
+                        }
+                    }
+
+                    table = AddSubTitleRow(table, item.Nombre.ToUpper());
+                    table = AddHeaderRow(table);
+
+                    table = AddRows(table, datos.Where(c => c.AreaResponsabilidad.Equals(item.IdArea)).ToList());
+
+                    Paragraph tableParagraph = new Paragraph();
+                    parent.InsertBeforeSelf(tableParagraph);
+                    tableParagraph.InsertAfterSelf(table);
+                }
+
+                if (DeleteAfterSetValue)
+                {
+                    bookmark.Remove();
+                }
+            }
+        }
+
+        private void SetBookmarkValueWithTable(WordprocessingDocument doc, string BookmarkName, List<UtilesHerramienta> datos, DateTime fecha, bool siActaGeneral = true, bool DeleteAfterSetValue = true)
         {
             var mainPart = doc.MainDocumentPart;
             var res = from bm in mainPart.Document.Body.Descendants<BookmarkStart>()

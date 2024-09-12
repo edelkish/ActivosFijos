@@ -84,55 +84,55 @@ namespace ActivosFijos.Repositorios
                     .ToListAsync();
             }
         }
-        public List<ActFijo> ActivosFijos(DateTime fecha, Guid area, Guid responsable)
+        public List<UtilesHerramienta> UTHs(DateTime fecha, Guid area, Guid responsable)
         {
             if (area == Guid.Empty && responsable == Guid.Empty)
             {
-                return _context.ActFijos
+                return _context.UtilesHerramientas
                     .Include(a => a.AreaResponsabilidadNavigation)
                     .Include(a => a.CentroCostoNavigation)
                     .Include(a => a.ResponsableNavigation)
-                    .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month)
+                    .Where(act => act.FechaListadoUth.Year == fecha.Year && act.FechaListadoUth.Month == fecha.Month)
                     .OrderBy(act => act.AreaResponsabilidadNavigation.Nombre)
                         .ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos)
-                        .ThenBy(act => act.NoInventario)
+                        .ThenBy(act => act.Codigo)
                     .ToList();
             }
             else if (area == Guid.Empty && responsable != Guid.Empty)
             {
-                return _context.ActFijos
+                return _context.UtilesHerramientas
                     .Include(a => a.AreaResponsabilidadNavigation)
                     .Include(a => a.CentroCostoNavigation)
                     .Include(a => a.ResponsableNavigation)
-                    .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month && act.Responsable.Equals(responsable))
+                    .Where(act => act.FechaListadoUth.Year == fecha.Year && act.FechaListadoUth.Month == fecha.Month && act.Responsable.Equals(responsable))
                     .OrderBy(act => act.AreaResponsabilidadNavigation.Nombre)
                         .ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos)
-                        .ThenBy(act => act.NoInventario)
+                        .ThenBy(act => act.Codigo)
                     .ToList();
             }
             else if (area != Guid.Empty && responsable == Guid.Empty)
             {
-                return _context.ActFijos
+                return _context.UtilesHerramientas
                     .Include(a => a.AreaResponsabilidadNavigation)
                     .Include(a => a.CentroCostoNavigation)
                     .Include(a => a.ResponsableNavigation)
-                    .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month && act.AreaResponsabilidad.Equals(area))
+                    .Where(act => act.FechaListadoUth.Year == fecha.Year && act.FechaListadoUth.Month == fecha.Month && act.AreaResponsabilidad.Equals(area))
                     .OrderBy(act => act.AreaResponsabilidadNavigation.Nombre)
                         .ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos)
-                        .ThenBy(act => act.NoInventario)
+                        .ThenBy(act => act.Codigo)
                     .ToList();
             }
             else
             {
-                return _context.ActFijos
+                return _context.UtilesHerramientas
                     .Include(a => a.AreaResponsabilidadNavigation)
                     .Include(a => a.CentroCostoNavigation)
                     .Include(a => a.ResponsableNavigation)
-                    .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month 
+                    .Where(act => act.FechaListadoUth.Year == fecha.Year && act.FechaListadoUth.Month == fecha.Month 
                         && act.Responsable.Equals(responsable) && act.AreaResponsabilidad.Equals(area))
                     .OrderBy(act => act.AreaResponsabilidadNavigation.Nombre)
                         .ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos)
-                        .ThenBy(act => act.NoInventario)
+                        .ThenBy(act => act.Codigo)
                     .ToList();
             }
         }

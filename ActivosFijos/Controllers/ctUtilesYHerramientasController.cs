@@ -182,7 +182,7 @@ namespace ActivosFijos.Controllers
         [HttpPost]
         public async Task<IActionResult> ListadoDeAreasPorFecha(DateTime fecha, bool siMovimientos = false)
         {
-            List<AreaDeResponsabilidad> areas = siMovimientos ? await _repoAreas.ObtenerListadoAreasSiMovimientoUTH(await _repoUTH.ListadoUTHConMovimientos(fecha)) : await _repoAreas.ListadoAreasDeResponsabilidadUTH(fecha, siMovimientos);
+            List<AreaDeResponsabilidad> areas = siMovimientos ? await _repoAreas.ObtenerListadoAreasSiMovimiento(await _repoUTH.ListadoUTHConMovimientos(fecha)) : await _repoAreas.ListadoAreasDeResponsabilidadUTH(fecha, siMovimientos);
             List<SelectListItem> areasSelect = new List<SelectListItem>();
             areasSelect = areas.Select(c => new SelectListItem() { Text = c.Nombre, Value = c.IdArea.ToString() }).ToList();
             areasSelect.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
@@ -826,19 +826,16 @@ namespace ActivosFijos.Controllers
 
                 List<Responsable> responsables = new List<Responsable>();
                 List<AreaDeResponsabilidad> areasResponsabilidad = new List<AreaDeResponsabilidad>();
-                List<ActivosFijosConMovimientos> existenciaDeMovimientos = new List<ActivosFijosConMovimientos>();
-                //existenciaDeMovimientos = await _repoUTH.ListadoActivosFijosConMovimientos(model.Fecha);
+                List<UTHConMovimientosParcial> existenciaDeMovimientos = new List<UTHConMovimientosParcial>();
+                existenciaDeMovimientos = await _repoUTH.ListadoUTHConMovimientos(model.Fecha);
                 areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos);
 
                 if (model.Area == Guid.Empty)
                 {
                     if (model.Responsable == Guid.Empty)
                     {
-                        List<Responsable> responsablesActuales = new List<Responsable>();
-                        List<Responsable> responsablesAnteriores = new List<Responsable>();
-                        responsablesActuales = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos, true);
-                        responsablesAnteriores = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos, false);
-                        responsables = responsablesActuales.Union(responsablesAnteriores).ToList();
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos, true);
+                        
                         if (responsables.Count > 0)
                         {
                             MemoryStream ms = new MemoryStream();
@@ -854,7 +851,7 @@ namespace ActivosFijos.Controllers
                                     respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
                                     string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -881,7 +878,7 @@ namespace ActivosFijos.Controllers
                                         responsableArea = "<<S/D>>";
                                     }
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -894,7 +891,7 @@ namespace ActivosFijos.Controllers
                                     }
                                 }
 
-                                objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                 tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                 var entryEP = zip.CreateEntry(tituloDoc);
@@ -917,12 +914,8 @@ namespace ActivosFijos.Controllers
                     }
                     else
                     {
-                        List<Responsable> responsablesActuales = new List<Responsable>();
-                        List<Responsable> responsablesAnteriores = new List<Responsable>();
-                        responsablesActuales = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable)).ToList(), true);
-                        responsablesAnteriores = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable)).ToList(), false);
-                        responsables = responsablesActuales.Union(responsablesAnteriores).ToList();
-                        areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable)).ToList());
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.Responsable.Equals(model.Responsable)).ToList(), true);
+                        areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos.Where(ex => ex.Responsable.Equals(model.Responsable)).ToList());
                         if (responsables.Count > 0)
                         {
                             MemoryStream ms = new MemoryStream();
@@ -1013,7 +1006,7 @@ namespace ActivosFijos.Controllers
                         {
                             clGlobal.siNo = false;
                             clGlobal.objMensaje = $"No existen movimientos en la fecha seleccionada.";
-                            return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
+                            return RedirectToAction(nameof(DetallesDeMovimientosUTHs), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
                         }
                     }
                 }
@@ -1021,12 +1014,8 @@ namespace ActivosFijos.Controllers
                 {
                     if (model.Responsable == Guid.Empty)
                     {
-                        List<Responsable> responsablesActuales = new List<Responsable>();
-                        List<Responsable> responsablesAnteriores = new List<Responsable>();
-                        responsablesActuales = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idAreaAnterior.Equals(model.Area) || ex.idAreaActual.Equals(model.Area)).ToList(), true);
-                        responsablesAnteriores = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idAreaAnterior.Equals(model.Area) || ex.idAreaActual.Equals(model.Area)).ToList(), false);
-                        responsables = responsablesActuales.Union(responsablesAnteriores).ToList();
-                        areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos.Where(ex => ex.idAreaActual.Equals(model.Area) || ex.idAreaAnterior.Equals(model.Area)).ToList());
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos.Where(ex => ex.Area.Equals(model.Area)).ToList(), true);
+                        areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos.Where(ex => ex.Area.Equals(model.Area)).ToList());
                         if (responsables.Count > 0)
                         {
                             MemoryStream ms = new MemoryStream();
@@ -1105,18 +1094,10 @@ namespace ActivosFijos.Controllers
                     }
                     else
                     {
-                        List<Responsable> responsablesActuales = new List<Responsable>();
-                        List<Responsable> responsablesAnteriores = new List<Responsable>();
-                        responsablesActuales = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos
-                            .Where(ex => (ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable))
-                            && (ex.idAreaActual.Equals(model.Area) || ex.idAreaAnterior.Equals(model.Area))).ToList(), true);
-                        responsablesAnteriores = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos
-                            .Where(ex => (ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable))
-                            && (ex.idAreaActual.Equals(model.Area) || ex.idAreaAnterior.Equals(model.Area))).ToList(), false);
-                        responsables = responsablesActuales.Union(responsablesAnteriores).ToList();
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos
+                            .Where(ex => (ex.Responsable.Equals(model.Responsable))  && (ex.Area.Equals(model.Area))).ToList(), true);
                         areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos
-                            .Where(ex => (ex.idResponsableActual.Equals(model.Responsable) || ex.idResponsableAnterior.Equals(model.Responsable))
-                            && (ex.idAreaActual.Equals(model.Area) || ex.idAreaAnterior.Equals(model.Area))).ToList());
+                            .Where(ex => (ex.Responsable.Equals(model.Responsable)) && (ex.Area.Equals(model.Area))).ToList());
                         if (responsables.Count > 0)
                         {
                             MemoryStream ms = new MemoryStream();
@@ -1132,7 +1113,7 @@ namespace ActivosFijos.Controllers
                                     respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
                                     string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -1159,7 +1140,7 @@ namespace ActivosFijos.Controllers
                                         responsableArea = "<<S/D>>";
                                     }
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -1172,7 +1153,7 @@ namespace ActivosFijos.Controllers
                                     }
                                 }
 
-                                objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                 tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                 var entryEP = zip.CreateEntry(tituloDoc);
@@ -1190,14 +1171,14 @@ namespace ActivosFijos.Controllers
                         {
                             clGlobal.siNo = false;
                             clGlobal.objMensaje = $"No existen movimientos en la fecha seleccionada.";
-                            return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
+                            return RedirectToAction(nameof(DetallesDeMovimientosUTHs), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(DetallesDeMovimientosUTHs), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
             }
         }
 

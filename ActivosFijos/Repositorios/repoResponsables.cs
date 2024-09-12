@@ -83,7 +83,7 @@ namespace ActivosFijos.Repositorios
                             && act.FechaListadoUth.Month == fecha.Month)
                         .ToListAsync();
 
-                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad)))).ToList();
+                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo, "|", c.Responsable, "|", c.CentroCosto, "|", c.AreaResponsabilidad)))).ToList();
 
                     responsables = uthList.Select(c => c.ResponsableNavigation).Distinct().ToList();
                 }
@@ -182,7 +182,7 @@ namespace ActivosFijos.Repositorios
                             .ToListAsync();
 
                     }
-                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad)))).ToList();
+                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo, "|", c.Responsable, "|", c.CentroCosto, "|", c.AreaResponsabilidad)))).ToList();
 
                     responsables = uthList.Select(c => c.ResponsableNavigation).Distinct().ToList();
                 }
@@ -431,7 +431,7 @@ namespace ActivosFijos.Repositorios
                     Responsable responsable = new Responsable();
                     responsable = area == Guid.Empty ? _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable)).FirstOrDefault() : _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable) && item.Area.Equals(area)).FirstOrDefault();
                     if (responsable != null && !guidsResponsables.Any(c => c.IdResponsable.Equals(item.Responsable)))
-                        guidsResponsables.Add(responsable);                    
+                        guidsResponsables.Add(responsable);
                 }
 
                 return guidsResponsables;
@@ -474,7 +474,7 @@ namespace ActivosFijos.Repositorios
                 uth = await _context.UtilesHerramientas.Include(c => c.ResponsableNavigation)
                     .Include(c => c.AreaResponsabilidadNavigation)
                     .Include(c => c.CentroCostoNavigation)
-                    .Where(c => c.FechaListadoUth.Year.Equals(fecha.Year) && c.FechaListadoUth.Month.Equals(fecha.Month) && string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad).Equals(item.Discriminante))
+                    .Where(c => c.FechaListadoUth.Year.Equals(fecha.Year) && c.FechaListadoUth.Month.Equals(fecha.Month) && string.Concat(c.Codigo, "|", c.Responsable, "|", c.CentroCosto, "|", c.AreaResponsabilidad).Equals(item.Discriminante))
                     .FirstOrDefaultAsync();
 
                 if (uth != null)
@@ -523,6 +523,33 @@ namespace ActivosFijos.Repositorios
                             responsable.AreaResponsabilidad = areaResp.IdArea;
                             guidsResponsables.Add(responsable);
                         }
+                    }
+                }
+
+                return guidsResponsables;
+            }
+            catch (Exception ex)
+            {
+                return new List<Responsable>();
+            }
+
+        }
+        public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimiento(List<UTHConMovimientosParcial> existenciaDeMovimientos, bool siActuales = true)
+        {
+            try
+            {
+                List<Responsable> guidsResponsables = new List<Responsable>();
+                foreach (var item in existenciaDeMovimientos)
+                {
+                    Responsable responsable = new Responsable();
+                    responsable = _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable)).FirstOrDefault();
+                    if (responsable != null && !guidsResponsables.Any(c => c.IdResponsable.Equals(item.Responsable)))
+                    {
+                        AreaDeResponsabilidad areaResp = new AreaDeResponsabilidad();
+                        areaResp = _context.AreaDeResponsabilidads.Where(ar => ar.IdArea.Equals(item.Area)).FirstOrDefault();
+                        responsable.AreaResponsabilidadNavigation = areaResp;
+                        responsable.AreaResponsabilidad = areaResp.IdArea;
+                        guidsResponsables.Add(responsable);
                     }
                 }
 

@@ -266,7 +266,7 @@ namespace ActivosFijos.Repositorios
                 return new List<AreaDeResponsabilidad>();
             }
         }
-        public async Task<List<AreaDeResponsabilidad>> ObtenerListadoAreasSiMovimientoUTH(List<UTHConMovimientosParcial> existenciaDeMovimientos)
+        public async Task<List<AreaDeResponsabilidad>> ObtenerListadoAreasSiMovimiento(List<UTHConMovimientosParcial> existenciaDeMovimientos)
         {
             try
             {
