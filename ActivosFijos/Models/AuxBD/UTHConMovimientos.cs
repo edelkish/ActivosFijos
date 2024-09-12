@@ -2,16 +2,28 @@
 {
     public class UTHConMovimientos
     {
-        public long NoInventario { get; set; }
-        public int Cantidad { get; set; }
+        public string Discriminante { get; set; } = string.Empty;
+        public string Codigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public Guid idAreaAnterior { get; set; }
-        public string AreaAnterior { get; set; } = string.Empty;
-        public Guid idAreaActual { get; set; }
-        public string AreaActual { get; set; } = string.Empty;
-        public Guid idResponsableAnterior { get; set; }
-        public string ResponsableAnterior { get; set; } = string.Empty;
-        public Guid idResponsableActual { get; set; }
-        public string ResponsableActual { get; set; } = string.Empty;
+        public Guid idResponsable { get; set; }
+        public string Responsable { get; set; } = string.Empty;
+        public Guid idCentroCosto { get; set; }
+        public string CentroCosto { get; set; } = string.Empty;
+        public Guid idArea { get; set; }
+        public string Area { get; set; } = string.Empty;
+        public int CantidadAnterior { get; set; }
+        public int Cantidad { get; set; }
+    }
+
+    public class UTHConMovimientosParcial
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public Guid Responsable { get; set; }
+        public Guid CentroCosto { get; set; }
+        public Guid Area { get; set; }
+        public string Discriminante { get; set; } = string.Empty;
+        public int CantidadAnterior { get; set; }
+        public int Cantidad { get; set; }
     }
 }

@@ -35,6 +35,7 @@ namespace ActivosFijos.Models.EntidadesBD
         public DateTime FechaSubmayor { get; set; }
         [Column("clasificador")]
         public Guid? Clasificador { get; set; }
+        public Guid? Cubiculo { get; set; }
 
         [ForeignKey(nameof(AreaResponsabilidad))]
         [InverseProperty(nameof(AreaDeResponsabilidad.ActFijos))]

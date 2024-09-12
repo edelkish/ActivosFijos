@@ -349,42 +349,45 @@ namespace ActivosFijos.Repositorios
                                                                                     SET @fechaAnterior = DATEADD(MONTH, -1, @fecha);
 
                                                                                     INSERT @tablaDeMovimientos
-                                                                                    SELECT Tabla.NoInventario AS [NoInventario],
-                                                                                           COUNT(*) AS [Cantidad],
-                                                                                           Tabla.Descripcion,
+                                                                                    SELECT DISTINCT
+                                                                                           MOV.NoInventario,
+                                                                                           0,
+                                                                                           MOV.Descripcion,
                                                                                            NULL,
                                                                                            NULL,
                                                                                            NULL,
                                                                                            NULL
                                                                                     FROM
                                                                                     (
-                                                                                        SELECT noInventario,
-                                                                                               descripcion,
-                                                                                               responsable,
-                                                                                               areaResponsabilidad
-                                                                                        FROM dbo.ActFijo
-                                                                                        WHERE YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                              AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
-                                                                                        UNION
-                                                                                        SELECT noInventario,
-                                                                                               descripcion,
-                                                                                               responsable,
-                                                                                               areaResponsabilidad
-                                                                                        FROM dbo.ActFijo
-                                                                                        WHERE YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                              AND MONTH(fechaSubmayor) = MONTH(@fecha)
-                                                                                    ) AS Tabla
-                                                                                    WHERE Tabla.responsable NOT IN
-                                                                                          (
-                                                                                              SELECT idResponsable FROM dbo.Responsable WHERE nombre = '<<S/R>>'
-                                                                                          ) --sin responsable
-                                                                                          AND Tabla.areaResponsabilidad NOT IN
-                                                                                              (
-                                                                                                  SELECT idArea FROM dbo.AreaDeResponsabilidad WHERE Nombre = '<<S/A>>'
-                                                                                              ) --sin area
-                                                                                    GROUP BY NoInventario,
-                                                                                             Tabla.Descripcion
-                                                                                    HAVING COUNT(*) > 1;
+                                                                                        SELECT AFT.NoInventario,
+                                                                                               AFT.Descripcion,
+                                                                                               AFT.responsable,
+                                                                                               AFT.areaResponsabilidad,
+                                                                                               COUNT(*) AS [Cantidad]
+                                                                                        FROM
+                                                                                        (
+                                                                                            SELECT noInventario,
+                                                                                                   descripcion,
+                                                                                                   responsable,
+                                                                                                   areaResponsabilidad
+                                                                                            FROM dbo.ActFijo
+                                                                                            WHERE YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
+                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
+                                                                                            UNION ALL
+                                                                                            SELECT noInventario,
+                                                                                                   descripcion,
+                                                                                                   responsable,
+                                                                                                   areaResponsabilidad
+                                                                                            FROM dbo.ActFijo
+                                                                                            WHERE YEAR(fechaSubmayor) = YEAR(@fecha)
+                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fecha)
+                                                                                        ) AS AFT
+                                                                                        GROUP BY AFT.NoInventario,
+                                                                                                 AFT.Descripcion,
+                                                                                                 AFT.responsable,
+                                                                                                 AFT.areaResponsabilidad
+                                                                                        HAVING COUNT(*) = 1
+                                                                                    ) MOV;
 
                                                                                     UPDATE @tablaDeMovimientos
                                                                                     SET AreaAnterior =
@@ -453,7 +456,8 @@ namespace ActivosFijos.Repositorios
                                                                                                FROM dbo.Responsable
                                                                                                WHERE idResponsable = ResponsableActual
                                                                                            ) AS [ResponsableActual]
-                                                                                    FROM @tablaDeMovimientos;").ToListAsync();
+                                                                                    FROM @tablaDeMovimientos
+                                                                                    ORDER BY NoInventario ASC;").ToListAsync();
 
                 return query;
             }

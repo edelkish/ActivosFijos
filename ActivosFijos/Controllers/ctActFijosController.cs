@@ -928,12 +928,15 @@ namespace ActivosFijos.Controllers
                                         tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                         objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, model.ResponsableArea);
-                                        var entry = zip.CreateEntry(tituloDoc);
-
-                                        using (var fileStream = new MemoryStream(objFile))
-                                        using (var entryStream = entry.Open())
+                                        if (objFile != null)
                                         {
-                                            fileStream.CopyTo(entryStream);
+                                            var entry = zip.CreateEntry(tituloDoc);
+
+                                            using (var fileStream = new MemoryStream(objFile))
+                                            using (var entryStream = entry.Open())
+                                            {
+                                                fileStream.CopyTo(entryStream);
+                                            }
                                         }
                                     }
 

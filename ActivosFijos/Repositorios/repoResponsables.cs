@@ -83,7 +83,7 @@ namespace ActivosFijos.Repositorios
                             && act.FechaListadoUth.Month == fecha.Month)
                         .ToListAsync();
 
-                    uthList = uthList.Where(c => existMovs.Any(ex => ex.IdUTH.Equals(c.IdUth))).ToList();
+                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad)))).ToList();
 
                     responsables = uthList.Select(c => c.ResponsableNavigation).Distinct().ToList();
                 }
@@ -136,6 +136,55 @@ namespace ActivosFijos.Repositorios
                     actFijosList = actFijosList.Where(c => existMovs.Any(ex => ex.NoInventario.Equals(c.NoInventario))).ToList();
 
                     responsables = actFijosList.Select(c => c.ResponsableNavigation).Distinct().ToList();
+                }
+
+                return responsables;
+            }
+            catch (Exception ex)
+            {
+                return new List<Responsable>();
+            }
+        }
+        public async Task<List<Responsable>> ObtenerListadoResponsablesPorFechaYAreaUTH(DateTime fecha, Guid area, bool siMovimiento = false)
+        {
+            try
+            {
+                List<Responsable> responsables = new List<Responsable>();
+
+                if (!siMovimiento)
+                    responsables = await _context.Responsables
+                        .Include(c => c.CargoNavigation)
+                        .Include(c => c.AreaResponsabilidadNavigation)
+                        .Where(c => c.UtilesHerramienta.Any(ac => ac.FechaListadoUth.Year.Equals(fecha.Year) && ac.FechaListadoUth.Month.Equals(fecha.Month) && ac.AreaResponsabilidad.Equals(area))).OrderBy(c => c.Nombre)
+                        .ToListAsync();
+                else
+                {
+                    List<ExistenciaMovimientoUTH> existMovs = new List<ExistenciaMovimientoUTH>();
+                    existMovs = await _repoUTH.DeterminarSiExisteMovimientoDeUTH(fecha);
+
+                    DateTime fechaMov = new DateTime();
+                    fechaMov = fecha.AddMonths(-1);
+
+                    List<UtilesHerramienta> uthList = new List<UtilesHerramienta>();
+
+                    if (area.Equals(Guid.Empty))
+                    {
+                        uthList = await _context.UtilesHerramientas.Include(act => act.ResponsableNavigation)
+                            .Where(act => act.ResponsableNavigation != null && act.FechaListadoUth.Year == fechaMov.Year
+                                && act.FechaListadoUth.Month == fechaMov.Month)
+                            .ToListAsync();
+                    }
+                    else
+                    {
+                        uthList = await _context.UtilesHerramientas.Include(act => act.ResponsableNavigation)
+                            .Where(act => act.ResponsableNavigation != null && act.FechaListadoUth.Year == fechaMov.Year
+                                && act.FechaListadoUth.Month == fechaMov.Month && act.AreaResponsabilidad.Equals(area))
+                            .ToListAsync();
+
+                    }
+                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad)))).ToList();
+
+                    responsables = uthList.Select(c => c.ResponsableNavigation).Distinct().ToList();
                 }
 
                 return responsables;
@@ -326,6 +375,27 @@ namespace ActivosFijos.Repositorios
             }
 
         }
+        public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimiento(List<UTHConMovimientosParcial> existenciaDeMovimientos)
+        {
+            try
+            {
+                List<Responsable> guidsResponsables = new List<Responsable>();
+                foreach (var item in existenciaDeMovimientos)
+                {
+                    Responsable responsable = new Responsable();
+                    responsable = _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable)).FirstOrDefault();
+                    if (responsable != null && !guidsResponsables.Any(c => c.IdResponsable.Equals(item.Responsable)))
+                        guidsResponsables.Add(responsable);
+                }
+
+                return guidsResponsables;
+            }
+            catch (Exception ex)
+            {
+                return new List<Responsable>();
+            }
+
+        }
         public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimiento(List<ActivosFijosConMovimientos> existenciaDeMovimientos, Guid area)
         {
             try
@@ -341,6 +411,27 @@ namespace ActivosFijos.Repositorios
                     responsable = area == Guid.Empty ? _context.Responsables.Where(re => re.IdResponsable.Equals(item.idResponsableActual)).FirstOrDefault() : _context.Responsables.Where(re => re.IdResponsable.Equals(item.idResponsableActual) && item.idAreaActual.Equals(area)).FirstOrDefault();
                     if (responsable != null && !guidsResponsables.Any(c => c.IdResponsable.Equals(item.idResponsableActual)))
                         guidsResponsables.Add(responsable);
+                }
+
+                return guidsResponsables;
+            }
+            catch (Exception ex)
+            {
+                return new List<Responsable>();
+            }
+
+        }
+        public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimiento(List<UTHConMovimientosParcial> existenciaDeMovimientos, Guid area)
+        {
+            try
+            {
+                List<Responsable> guidsResponsables = new List<Responsable>();
+                foreach (var item in existenciaDeMovimientos)
+                {
+                    Responsable responsable = new Responsable();
+                    responsable = area == Guid.Empty ? _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable)).FirstOrDefault() : _context.Responsables.Where(re => re.IdResponsable.Equals(item.Responsable) && item.Area.Equals(area)).FirstOrDefault();
+                    if (responsable != null && !guidsResponsables.Any(c => c.IdResponsable.Equals(item.Responsable)))
+                        guidsResponsables.Add(responsable);                    
                 }
 
                 return guidsResponsables;
@@ -374,7 +465,7 @@ namespace ActivosFijos.Repositorios
 
             return responsables;
         }
-        public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimientoUTH(List<ExistenciaMovimientoUTH> existenciaMovimientos, DateTime fecha)
+        public async Task<List<Responsable>> ObtenerListadoResponsablesSiMovimiento(List<ExistenciaMovimientoUTH> existenciaMovimientos, DateTime fecha)
         {
             List<UtilesHerramienta> listaUTH = new List<UtilesHerramienta>();
             foreach (var item in existenciaMovimientos)
@@ -383,7 +474,7 @@ namespace ActivosFijos.Repositorios
                 uth = await _context.UtilesHerramientas.Include(c => c.ResponsableNavigation)
                     .Include(c => c.AreaResponsabilidadNavigation)
                     .Include(c => c.CentroCostoNavigation)
-                    .Where(c => c.FechaListadoUth.Year.Equals(fecha.Year) && c.FechaListadoUth.Month.Equals(fecha.Month) && c.IdUth.Equals(item.IdUTH))
+                    .Where(c => c.FechaListadoUth.Year.Equals(fecha.Year) && c.FechaListadoUth.Month.Equals(fecha.Month) && string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad).Equals(item.Discriminante))
                     .FirstOrDefaultAsync();
 
                 if (uth != null)

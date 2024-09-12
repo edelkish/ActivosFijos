@@ -164,7 +164,7 @@ namespace ActivosFijos.Models.Contexts
                 entity.HasMany(d => d.IdPermisos)
                     .WithMany(p => p.IdUsuarios)
                     .UsingEntity<Dictionary<string, object>>(
-                        "PermisosUsuario",
+                        "PermisosUsuarios",
                         l => l.HasOne<Permiso>().WithMany().HasForeignKey("IdPermiso").OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_PermisosUsuarios_Permisos"),
                         r => r.HasOne<Usuario>().WithMany().HasForeignKey("IdUsuario").OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_PermisosUsuarios_Usuarios"),
                         j =>

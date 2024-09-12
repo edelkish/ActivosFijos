@@ -31,11 +31,11 @@
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctClasificador", "Clasificadores")">
                             <a asp-action="Clasificadores" asp-controller="ctClasificador" class="nav-link @Html.IsSelected("ctClasificador", "Clasificadores")"> Clasificadores </a>
                         </li>
-                        <li aria-haspopup="true" class=" @Html.IsSelected("", "")">
-                            <a asp-action="" asp-controller="" class="nav-link @Html.IsSelected("", "")"> Cub&iacute;culos </a>
+                        <li aria-haspopup="true" >
+                            <a asp-action="" asp-controller="" class="nav-link "> Cub&iacute;culos </a>
                         </li>
-                        <li aria-haspopup="true" class=" @Html.IsSelected("", "")">
-                            <a asp-action="Clasificadores" asp-controller="ctClasificador" class="nav-link @Html.IsSelected("", "")"> Locales </a>
+                        <li aria-haspopup="true" >
+                            <a asp-action="Clasificadores" asp-controller="ctClasificador" class="nav-link "> Locales </a>
                         </li>
 
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctResponsables", "Responsables")">
@@ -80,7 +80,7 @@
                             </ul>
                         </li>
 
-                        <li aria-haspopup="true" class="dropdown-submenu @Html.IsSelectedAcc(new List<string> { "ActivosFijos", "MovimientosDelAFT", "MovimientosDelAFTPorResponsable" })">
+                        <li aria-haspopup="true" class="dropdown-submenu @Html.IsSelectedAcc(new List<string> { "MovimientosDelAFT", "MovimientosDelAFTPorResponsable" })">
                             <a href="javascript:;" class="nav-link nav-toggle ">
                                 Historial de Movimientos
                                 <span class="arrow"></span>
@@ -115,10 +115,10 @@
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctImportacionDeDatos", "ImportarUtilesHerramientas")">
                             <a asp-action="ImportarUtilesHerramientas" asp-controller="ctImportacionDeDatos" class="nav-link @Html.IsSelected("ctImportacionDeDatos", "ImportarUtilesHerramientas")"> Importar Listado </a>
                         </li>
-                        <li aria-haspopup="true" class=" @Html.IsSelected("", "")">
-                            <a asp-action="UTHImportados" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("", "")"> Revisar Listados Importados </a>
+                        <li aria-haspopup="true" class=" ">
+                            <a asp-action="UTHImportados" asp-controller="ctUtilesYHerramientas" class="nav-link "> Revisar Listados Importados </a>
                         </li>
-                        <li aria-haspopup="true" class="dropdown-submenu @Html.IsSelectedAcc(new List<string> { "ActivosFijos", "DetallesDeMovimientos" })">
+                        <li aria-haspopup="true" class="dropdown-submenu ">
                             <a href="javascript:;" class="nav-link nav-toggle ">
                                 Generar Actas
                                 <span class="arrow"></span>
@@ -127,8 +127,8 @@
                                 <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "UTH")">
                                     <a asp-action="UTH" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "UTH")"> Mensuales por &Aacute;reas y Responsables </a>
                                 </li>
-                                <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "DetallesDeMovimientos")">
-                                    <a asp-action="DetallesDeMovimientos" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "DetallesDeMovimientos")"> Movimientos Mensuales </a>
+                                <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "DetallesDeMovimientosUTHs")">
+                                    <a asp-action="DetallesDeMovimientosUTHs" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "DetallesDeMovimientosUTHs")"> Movimientos Mensuales </a>
                                 </li>
                             </ul>
                         </li>                        

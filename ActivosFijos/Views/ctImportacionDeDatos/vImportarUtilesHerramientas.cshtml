@@ -372,15 +372,11 @@
                     if ($(this).hasClass('selected')) {
                         $(this).removeClass('selected');
                         idFilaSeleccionada = null;
-                        //document.getElementById('editar').setAttribute('disabled', true);
-                        //document.getElementById('eliminar').setAttribute('disabled', true);
                     }
                     else {
                         e.$('tr.selected').removeClass('selected');
                         $(this).addClass('selected');
                         idFilaSeleccionada = $(this).data('info');
-                        //document.getElementById('editar').removeAttribute('disabled');
-                        //document.getElementById('eliminar').removeAttribute('disabled');
                     }
                 });
             }

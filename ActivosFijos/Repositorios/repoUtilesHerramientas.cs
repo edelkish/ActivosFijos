@@ -295,28 +295,36 @@ namespace ActivosFijos.Repositorios
                 List<ExistenciaMovimientoUTH> query = new List<ExistenciaMovimientoUTH>();
                 query = await _contextAux.ExistenciaMovimientosUTH.FromSqlRaw($@"DECLARE @fecha DATETIME = CONVERT(DATETIME, '{fechaMov}')
 
-                                                                                SELECT Tabla.idUTH AS [idUTH],
-                                                                                       COUNT(*) AS [Cantidad]
+                                                                                SELECT Tabla.codigo AS [Codigo],
+                                                                                        CONCAT(Tabla.codigo, '|', Tabla.responsable, '|', Tabla.centroCosto, '|', Tabla.areaResponsabilidad) AS [Discriminante],
+                                                                                        COUNT(*) AS [Cantidad]
                                                                                 FROM
                                                                                 (
-                                                                                    SELECT idUTH, codigo,
-                                                                                           descripcion,
-                                                                                           responsable,
-                                                                                           areaResponsabilidad
+                                                                                    SELECT codigo,
+                                                                                            descripcion,
+                                                                                            responsable,
+                                                                                            centroCosto,
+                                                                                            areaResponsabilidad
                                                                                     FROM dbo.UtilesHerramientas
                                                                                     WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
-                                                                                          AND MONTH(fechaListadoUTH) = MONTH(DATEADD(MONTH, -1, @fecha))
-                                                                                    UNION
-                                                                                    SELECT idUTH, codigo,
-                                                                                           descripcion,
-                                                                                           responsable,
-                                                                                           areaResponsabilidad
+                                                                                            AND MONTH(fechaListadoUTH) = MONTH(DATEADD(MONTH, -1, @fecha))
+                                                                                    UNION ALL
+                                                                                    SELECT codigo,
+                                                                                            descripcion,
+                                                                                            responsable,
+                                                                                            centroCosto,
+                                                                                            areaResponsabilidad
                                                                                     FROM dbo.UtilesHerramientas
                                                                                     WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
-                                                                                          AND MONTH(fechaListadoUTH) = MONTH(@fecha)
+                                                                                            AND MONTH(fechaListadoUTH) = MONTH(@fecha)
                                                                                 ) AS Tabla
-                                                                                GROUP BY Tabla.idUTH
-                                                                                HAVING COUNT(*) > 1;").ToListAsync();
+                                                                                GROUP BY Tabla.codigo,
+                                                                                            Tabla.descripcion,
+                                                                                            Tabla.responsable,
+                                                                                            Tabla.centroCosto,
+                                                                                            Tabla.areaResponsabilidad,
+                                                                                            CONCAT(Tabla.codigo, '|', Tabla.responsable, '|', Tabla.centroCosto, '|', Tabla.areaResponsabilidad)
+                                                                                HAVING COUNT(*) = 1;").ToListAsync();
                 
                 return query;
             }
@@ -325,142 +333,138 @@ namespace ActivosFijos.Repositorios
                 return new List<ExistenciaMovimientoUTH>();
             }
         }
-        public async Task<List<ActivosFijosConMovimientos>> ListadoActivosFijosConMovimientos(DateTime fecha)
+        public async Task<List<UTHConMovimientosParcial>> ListadoUTHConMovimientos(DateTime fecha)
         {
             try
             {
                 string fechaMov = fecha.ToString("yyyy-MM-dd");
-                List<ActivosFijosConMovimientos> query = new List<ActivosFijosConMovimientos>();
-                query = await _contextAux.ActivosFijosConMovimientos.FromSqlRaw($@"DECLARE @fechaAnterior DATETIME,
+                List<UTHConMovimientosParcial> query = new List<UTHConMovimientosParcial>();
+                query = await _contextAux.UTHConMovimientosParcial.FromSqlRaw($@"DECLARE @fechaAnterior DATETIME,
                                                                                             @fechaActual DATETIME = CONVERT(DATETIME, '{fechaMov}');
-
-                                                                                    DECLARE @tablaDeMovimientos TABLE
-                                                                                    (
-                                                                                        NoInventario BIGINT,
-                                                                                        Cantidad INT,
-                                                                                        Descripcion VARCHAR(2000),
-                                                                                        AreaAnterior UNIQUEIDENTIFIER,
-                                                                                        AreaActual UNIQUEIDENTIFIER,
-                                                                                        ResponsableAnterior UNIQUEIDENTIFIER,
-                                                                                        ResponsableActual UNIQUEIDENTIFIER
-                                                                                    );
 
                                                                                     DECLARE @fecha DATETIME = CONVERT(DATETIME, @fechaActual);
 
                                                                                     SET @fechaAnterior = DATEADD(MONTH, -1, @fecha);
 
+                                                                                    DECLARE @tablaDeMovimientos TABLE
+                                                                                    (
+                                                                                        Codigo VARCHAR(100),
+                                                                                        Descripcion VARCHAR(2000),
+                                                                                        Responsable UNIQUEIDENTIFIER,
+                                                                                        CentroCosto UNIQUEIDENTIFIER,
+                                                                                        Area UNIQUEIDENTIFIER,
+                                                                                        Discriminante VARCHAR(500)
+                                                                                    );
+
                                                                                     INSERT @tablaDeMovimientos
-                                                                                    SELECT Tabla.NoInventario AS [NoInventario],
-                                                                                           COUNT(*) AS [Cantidad],
-                                                                                           Tabla.Descripcion,
-                                                                                           NULL,
-                                                                                           NULL,
-                                                                                           NULL,
-                                                                                           NULL
+                                                                                    SELECT UTH.Codigo,
+                                                                                           UTH.Descripcion,
+                                                                                           UTH.Responsable,
+                                                                                           UTH.CentroCosto,
+                                                                                           UTH.Area,
+                                                                                           UTH.Discriminante
                                                                                     FROM
                                                                                     (
-                                                                                        SELECT noInventario,
+                                                                                        SELECT codigo,
                                                                                                descripcion,
                                                                                                responsable,
-                                                                                               areaResponsabilidad
-                                                                                        FROM dbo.ActFijo
-                                                                                        WHERE YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                              AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
+                                                                                               centroCosto,
+                                                                                               areaResponsabilidad AS [Area],
+                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante]
+                                                                                        FROM dbo.UtilesHerramientas
+                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fechaAnterior)
+                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fechaAnterior)
+                                                                                        GROUP BY codigo,
+                                                                                                 descripcion,
+                                                                                                 responsable,
+                                                                                                 centroCosto,
+                                                                                                 areaResponsabilidad,
+                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
+                                                                                        UNION ALL
+                                                                                        SELECT codigo,
+                                                                                               descripcion,
+                                                                                               responsable,
+                                                                                               centroCosto,
+                                                                                               areaResponsabilidad AS [Area],
+                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
+                                                                                        FROM dbo.UtilesHerramientas
+                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
+                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fecha)
+                                                                                        GROUP BY codigo,
+                                                                                                 descripcion,
+                                                                                                 responsable,
+                                                                                                 centroCosto,
+                                                                                                 areaResponsabilidad,
+                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
+                                                                                    ) UTH
+                                                                                    GROUP BY UTH.Codigo,
+                                                                                             UTH.Descripcion,
+                                                                                             UTH.Responsable,
+                                                                                             UTH.CentroCosto,
+                                                                                             UTH.Area,
+                                                                                             UTH.Discriminante
+                                                                                    HAVING COUNT(*) = 1;
+
+                                                                                    SELECT MOV.codigo,
+                                                                                           MOV.descripcion,
+                                                                                           MOV.responsable,
+                                                                                           MOV.centroCosto,
+                                                                                           MOV.areaResponsabilidad as [area],
+                                                                                           MOV.Discriminante,
+                                                                                           MOV.CantidadAnterior,
+                                                                                           MOV.Cantidad
+                                                                                    FROM
+                                                                                    (
+                                                                                        SELECT codigo,
+                                                                                               descripcion,
+                                                                                               responsable,
+                                                                                               centroCosto,
+                                                                                               areaResponsabilidad,
+                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
+                                                                                               0 AS [CantidadAnterior],
+                                                                                               COUNT(*) AS [Cantidad]
+                                                                                        FROM dbo.UtilesHerramientas
+                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
+                                                                                              AND (MONTH(fechaListadoUTH) = MONTH(@fecha))
+                                                                                              AND codigo IN
+                                                                                                  (
+                                                                                                      SELECT DISTINCT Codigo FROM @tablaDeMovimientos
+                                                                                                  )
+                                                                                        GROUP BY codigo,
+                                                                                                 descripcion,
+                                                                                                 responsable,
+                                                                                                 centroCosto,
+                                                                                                 areaResponsabilidad,
+                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
                                                                                         UNION
-                                                                                        SELECT noInventario,
+                                                                                        SELECT codigo,
                                                                                                descripcion,
                                                                                                responsable,
-                                                                                               areaResponsabilidad
-                                                                                        FROM dbo.ActFijo
-                                                                                        WHERE YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                              AND MONTH(fechaSubmayor) = MONTH(@fecha)
-                                                                                    ) AS Tabla
-                                                                                    WHERE Tabla.responsable NOT IN
-                                                                                          (
-                                                                                              SELECT idResponsable FROM dbo.Responsable WHERE nombre = '<<S/R>>'
-                                                                                          ) --sin responsable
-                                                                                          AND Tabla.areaResponsabilidad NOT IN
-                                                                                              (
-                                                                                                  SELECT idArea FROM dbo.AreaDeResponsabilidad WHERE Nombre = '<<S/A>>'
-                                                                                              ) --sin area
-                                                                                    GROUP BY NoInventario,
-                                                                                             Tabla.Descripcion
-                                                                                    HAVING COUNT(*) > 1;
-
-                                                                                    UPDATE @tablaDeMovimientos
-                                                                                    SET AreaAnterior =
-                                                                                        (
-                                                                                            SELECT areaResponsabilidad
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
-                                                                                        ),
-                                                                                        AreaActual =
-                                                                                        (
-                                                                                            SELECT areaResponsabilidad
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fecha)
-                                                                                        ),
-                                                                                        ResponsableAnterior =
-                                                                                        (
-                                                                                            SELECT responsable
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
-                                                                                        ),
-                                                                                        ResponsableActual =
-                                                                                        (
-                                                                                            SELECT responsable
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fecha)
-                                                                                        );
-
-                                                                                    SELECT NoInventario,
-                                                                                           Cantidad,
-                                                                                           Descripcion,
-                                                                                           AreaAnterior AS [idAreaAnterior],
-                                                                                           (
-                                                                                               SELECT Nombre FROM dbo.AreaDeResponsabilidad WHERE idArea = AreaAnterior
-                                                                                           ) AS [AreaAnterior],
-                                                                                           AreaActual AS [idAreaActual],
-                                                                                           (
-                                                                                               SELECT Nombre FROM dbo.AreaDeResponsabilidad WHERE idArea = AreaActual
-                                                                                           ) AS [AreaActual],
-                                                                                           ResponsableAnterior AS [idResponsableAnterior],
-                                                                                           (
-                                                                                               SELECT CASE nombre
-                                                                                                          WHEN '<<S/R>>' THEN
-                                                                                                              nombre
-                                                                                                          ELSE
-                                                                                                              nombre + ' ' + apellidos
-                                                                                                      END
-                                                                                               FROM dbo.Responsable
-                                                                                               WHERE idResponsable = ResponsableAnterior
-                                                                                           ) AS [ResponsableAnterior],
-                                                                                           ResponsableActual AS [idResponsableActual],
-                                                                                           (
-                                                                                               SELECT CASE nombre
-                                                                                                          WHEN '<<S/R>>' THEN
-                                                                                                              nombre
-                                                                                                          ELSE
-                                                                                                              nombre + ' ' + apellidos
-                                                                                                      END
-                                                                                               FROM dbo.Responsable
-                                                                                               WHERE idResponsable = ResponsableActual
-                                                                                           ) AS [ResponsableActual]
-                                                                                    FROM @tablaDeMovimientos;").ToListAsync();
+                                                                                               centroCosto,
+                                                                                               areaResponsabilidad,
+                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
+                                                                                               COUNT(*) AS [CantidadAnterior],
+                                                                                               0 AS [Cantidad]
+                                                                                        FROM dbo.UtilesHerramientas
+                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fechaAnterior)
+                                                                                              AND (MONTH(fechaListadoUTH) = MONTH(@fechaAnterior))
+                                                                                              AND codigo IN
+                                                                                                  (
+                                                                                                      SELECT DISTINCT Codigo FROM @tablaDeMovimientos
+                                                                                                  )
+                                                                                        GROUP BY codigo,
+                                                                                                 descripcion,
+                                                                                                 responsable,
+                                                                                                 centroCosto,
+                                                                                                 areaResponsabilidad,
+                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
+                                                                                    ) MOV;").ToListAsync();
 
                 return query;
             }
             catch (Exception ex)
             {
-                return new List<ActivosFijosConMovimientos>();
+                return new List<UTHConMovimientosParcial>();
             }
         }
         public async Task<List<ActivosFijosMovimientos>> ListadoActivosFijosMovimientos(long noInventario)

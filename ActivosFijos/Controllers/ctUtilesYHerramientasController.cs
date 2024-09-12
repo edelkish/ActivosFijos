@@ -149,7 +149,7 @@ namespace ActivosFijos.Controllers
         [HttpPost]
         public async Task<IActionResult> ListadoDeResponsablesPorFecha(DateTime fecha, bool siMovimiento = false)
         {
-            List<Responsable> responsables = siMovimiento ? await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(await _repoUTH.ListadoActivosFijosConMovimientos(fecha)) : await _repoResponsables.ObtenerListadoResponsables(fecha, siMovimiento);
+            List<Responsable> responsables = siMovimiento ? await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(await _repoUTH.ListadoUTHConMovimientos(fecha)) : await _repoResponsables.ObtenerListadoResponsables(fecha, siMovimiento);
             List<SelectListItem> responsablesSelect = new List<SelectListItem>();
             responsablesSelect = responsables.Select(c => new SelectListItem() { Text = c.Nombre != "<<S/R>>" ? c.Nombre + " " + c.Apellidos : c.Nombre, Value = c.IdResponsable.ToString() }).OrderBy(c => c.Text).ToList();
             responsablesSelect.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
@@ -158,9 +158,9 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ListadoDeResponsablesPorFechaYArea(DateTime fecha, string area, bool siMovimiento = false)
+        public async Task<IActionResult> ListadoDeResponsablesUTHPorFechaYArea(DateTime fecha, string area, bool siMovimiento = false)
         {
-            List<Responsable> responsables = siMovimiento ? await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(await _repoUTH.ListadoActivosFijosConMovimientos(fecha), Guid.Parse(area)) : await _repoResponsables.ObtenerListadoResponsablesPorFechaYArea(fecha, Guid.Parse(area), siMovimiento);
+            List<Responsable> responsables = siMovimiento ? await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(await _repoUTH.ListadoUTHConMovimientos(fecha), Guid.Parse(area)) : await _repoResponsables.ObtenerListadoResponsablesPorFechaYAreaUTH(fecha, Guid.Parse(area), siMovimiento);
             List<SelectListItem> responsablesSelect = new List<SelectListItem>();
             responsablesSelect = responsables.Select(c => new SelectListItem() { Text = c.Nombre != "<<S/R>>" ? c.Nombre + " " + c.Apellidos : c.Nombre, Value = c.IdResponsable.ToString() }).OrderBy(c => c.Text).ToList();
             responsablesSelect.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
@@ -169,20 +169,20 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ListadoDeResponsablesAFTPorFecha(DateTime fecha)
+        public async Task<IActionResult> ListadoDeResponsablesUTHPorFecha(DateTime fecha)
         {
-            List<Responsable> responsables = await _repoResponsables.ObtenerListadoResponsables(fecha);
+            List<Responsable> responsables = await _repoResponsables.ObtenerListadoResponsablesUTH(fecha);
             List<SelectListItem> responsablesSelect = new List<SelectListItem>();
             responsablesSelect = responsables.Select(c => new SelectListItem() { Text = c.Nombre != "<<S/R>>" ? c.Nombre + " " + c.Apellidos : c.Nombre, Value = c.IdResponsable.ToString() }).ToList();
             responsablesSelect.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
 
-            return PartialView("_vpResponsablesAFT", new mdSubmayorErrores() { Responsables = responsablesSelect });
+            return PartialView("_vpResponsablesUTH", new mdSubmayorErrores() { Responsables = responsablesSelect });
         }
 
         [HttpPost]
         public async Task<IActionResult> ListadoDeAreasPorFecha(DateTime fecha, bool siMovimientos = false)
         {
-            List<AreaDeResponsabilidad> areas = siMovimientos ? await _repoAreas.ObtenerListadoAreasSiMovimiento(await _repoUTH.ListadoActivosFijosConMovimientos(fecha)) : await _repoAreas.ListadoAreasDeResponsabilidad(fecha, siMovimientos);
+            List<AreaDeResponsabilidad> areas = siMovimientos ? await _repoAreas.ObtenerListadoAreasSiMovimientoUTH(await _repoUTH.ListadoUTHConMovimientos(fecha)) : await _repoAreas.ListadoAreasDeResponsabilidadUTH(fecha, siMovimientos);
             List<SelectListItem> areasSelect = new List<SelectListItem>();
             areasSelect = areas.Select(c => new SelectListItem() { Text = c.Nombre, Value = c.IdArea.ToString() }).ToList();
             areasSelect.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
@@ -202,37 +202,116 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ListadoDeActivosFijos(DateTime fecha, string area, string responsable, bool siMovimientos = false)
+        public async Task<IActionResult> ListadoDeUTHs(DateTime fecha, string area, string responsable, bool siMovimientos = false)
         {
-            List<UtilesHerramienta> actFijosList = await _repoUTH.ListadoUTH(fecha, Guid.Parse(area), Guid.Parse(responsable));
-            //List<ExistenciaMovimiento> existMovs = new List<ExistenciaMovimiento>();
-            //existMovs = await _repoActivosFijos.DeterminarSiExisteMovimientoDeActivosFijos(fecha);
+            List<UtilesHerramienta> uthList = await _repoUTH.ListadoUTH(fecha, Guid.Parse(area), Guid.Parse(responsable));
+            List<ExistenciaMovimiento> existMovs = new List<ExistenciaMovimiento>();
+            //existMovs = await _repoUTH.DeterminarSiExisteMovimientoDeUTH(fecha);
 
             //if (siMovimientos)
             //actFijosList = actFijosList.Where(c => existMovs.Any(ex => ex.NoInventario.Equals(c.NoInventario))).ToList();
 
             //ViewData["ExistenciaDeMovimiento"] = existMovs;
 
-            return PartialView("_vpTablaActivosFijos", actFijosList.OrderBy(act => act.AreaResponsabilidadNavigation.Nombre).ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos).ThenBy(act => act.Descripcion));
+            return PartialView("_vpTablaActivosFijos", uthList.OrderBy(act => act.AreaResponsabilidadNavigation.Nombre).ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos).ThenBy(act => act.Descripcion));
         }
 
         [HttpPost]
-        public async Task<IActionResult> ListadoDeActivosFijosConMovimientos(DateTime fecha, string area, string responsable)
+        public async Task<IActionResult> ListadoDeUTHsConMovimientos(DateTime fecha, string area, string responsable)
         {
-            List<ActivosFijosConMovimientos> actFijosList = await _repoUTH.ListadoActivosFijosConMovimientos(fecha);
+            List<UTHConMovimientosParcial> uthList = await _repoUTH.ListadoUTHConMovimientos(fecha);
+            List<UTHConMovimientos> uthMovlist = new List<UTHConMovimientos>();
+
             if (!Guid.Parse(area).Equals(Guid.Empty))
             {
-                actFijosList = actFijosList.Where(c => c.idAreaActual.Equals(Guid.Parse(area)) || c.idAreaAnterior.Equals(Guid.Parse(area))).ToList();
+                uthList = uthList.Where(c => c.Area.Equals(Guid.Parse(area))).ToList();
             }
 
             if (!Guid.Parse(responsable).Equals(Guid.Empty))
             {
-                actFijosList = actFijosList.Where(c => c.idResponsableActual.Equals(Guid.Parse(responsable)) || c.idResponsableAnterior.Equals(Guid.Parse(responsable))).ToList();
+                uthList = uthList.Where(c => c.Responsable.Equals(Guid.Parse(responsable))).ToList();
+            }
+
+            foreach (var uth in uthList)
+            {
+                if (uthMovlist.Count() == 0)
+                {
+                    Responsable resp = new Responsable();
+                    resp = await _repoResponsables.SeleccionarResponsablesPorID(uth.Responsable);
+
+                    CentroCosto centC = new CentroCosto();
+                    centC = await _repoCentroDeCostos.EncontrarCentroCostoPorID(uth.CentroCosto);
+
+                    AreaDeResponsabilidad areaResp = new AreaDeResponsabilidad();
+                    areaResp = await _repoAreas.EncontrarAreaPorID(uth.Area);
+
+                    UTHConMovimientos uthMov = new UTHConMovimientos()
+                    {
+                        Codigo = uth.Codigo,
+                        Discriminante = uth.Discriminante,
+                        Descripcion = uth.Descripcion,
+                        Responsable = resp != null ? string.Concat(resp.Nombre, " ", resp.Apellidos) : "<<S/R>>",
+                        idResponsable = uth.Responsable,
+                        CentroCosto = centC != null ? centC.Nombre : "<<S/CC>>",
+                        idCentroCosto = uth.CentroCosto,
+                        Area = areaResp != null ? areaResp.Nombre : "<<S/A>>",
+                        idArea = uth.Area,
+                        Cantidad = uth.Cantidad,
+                        CantidadAnterior = uth.CantidadAnterior
+                    };
+                    
+                    uthMovlist.Add(uthMov);
+                } else if (uthMovlist.Count() > 0)
+                {
+                    UTHConMovimientos uthMov = new UTHConMovimientos();
+                    if (uthMovlist.Exists(c => c.Discriminante.Equals(uth.Discriminante)))
+                    {
+                        uthMov = uthMovlist.Find(c => c.Discriminante.Equals(uth.Discriminante));
+                        uthMovlist.Remove(uthMov);
+
+                        if (uth.Cantidad > 0)
+                            uthMov.Cantidad = uth.Cantidad;
+
+                        if (uth.CantidadAnterior > 0)
+                        {
+                            uthMov.CantidadAnterior = uth.CantidadAnterior;
+                        }
+
+                        uthMovlist.Add(uthMov);
+                    } else
+                    {
+                        Responsable resp = new Responsable();
+                        resp = await _repoResponsables.SeleccionarResponsablesPorID(uth.Responsable);
+
+                        CentroCosto centC = new CentroCosto();
+                        centC = await _repoCentroDeCostos.EncontrarCentroCostoPorID(uth.CentroCosto);
+
+                        AreaDeResponsabilidad areaResp = new AreaDeResponsabilidad();
+                        areaResp = await _repoAreas.EncontrarAreaPorID(uth.Area);
+
+                        uthMov = new UTHConMovimientos()
+                        {
+                            Codigo = uth.Codigo,
+                            Discriminante = uth.Discriminante,
+                            Descripcion = uth.Descripcion,
+                            Responsable = resp != null ? string.Concat(resp.Nombre, " ", resp.Apellidos) : "<<S/R>>",
+                            idResponsable = uth.Responsable,
+                            CentroCosto = centC != null ? centC.Nombre : "<<S/CC>>",
+                            idCentroCosto = uth.CentroCosto,
+                            Area = areaResp != null ? areaResp.Nombre : "<<S/A>>",
+                            idArea = uth.Area,
+                            Cantidad = uth.Cantidad,
+                            CantidadAnterior = uth.CantidadAnterior
+                        };
+
+                        uthMovlist.Add(uthMov);
+                    }
+                }
             }
 
             ViewData["FechaSubmayor"] = fecha;
 
-            return PartialView("_vpTablaActivosFijosConMovimientos", actFijosList.OrderBy(act => act.AreaActual).ThenBy(act => act.ResponsableActual).ThenBy(act => act.NoInventario));
+            return PartialView("_vpTablaUTHConMovimientos", uthMovlist.OrderBy(act => act.Area).ThenBy(act => act.Responsable).ThenBy(act => act.Codigo));
         }
 
         [HttpPost]
@@ -315,13 +394,13 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public IActionResult CargarDatosResponsablesPorAreaDeResponsabilidad(string area)
+        public IActionResult CargarDatosUTHResponsablesPorAreaDeResponsabilidad(string area)
         {
             List<SelectListItem> lista = new List<SelectListItem>();
 
             lista = _repoResponsables.ObtenerListadoResponsables(Guid.Parse(area)).Result.Select(res => new SelectListItem() { Text = res.Nombre == "<<S/R>>" ? res.Nombre : res.Nombre + " " + res.Apellidos, Value = res.IdResponsable.ToString(), Selected = false }).ToList();
             lista.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString(), Selected = true });
-            return PartialView("_vpResponsables", new mdActas() { Responsables = lista });
+            return PartialView("_vpResponsablesUTH", new mdActas() { Responsables = lista });
         }
 
         [HttpPost]
@@ -341,7 +420,7 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CargarInfoResponsableDelArea(string area)
+        public async Task<IActionResult> CargarInfoUTHResponsableDelArea(string area)
         {
             Responsable responsable = new Responsable();
             if (Guid.Parse(area) == Guid.Empty)
@@ -392,7 +471,7 @@ namespace ActivosFijos.Controllers
                     {
                         List<ExistenciaMovimientoUTH> existenciaMovimientos = new List<ExistenciaMovimientoUTH>();
                         existenciaMovimientos = _repoUTH.DeterminarSiExisteMovimientoDeUTH(model.Fecha).Result;
-                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimientoUTH(existenciaMovimientos, model.Fecha);
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaMovimientos, model.Fecha);
                         areasResponsabilidad = responsables.Select(c => c.AreaResponsabilidadNavigation).Distinct().ToList();
                     }
                     else
@@ -748,7 +827,7 @@ namespace ActivosFijos.Controllers
                 List<Responsable> responsables = new List<Responsable>();
                 List<AreaDeResponsabilidad> areasResponsabilidad = new List<AreaDeResponsabilidad>();
                 List<ActivosFijosConMovimientos> existenciaDeMovimientos = new List<ActivosFijosConMovimientos>();
-                existenciaDeMovimientos = await _repoUTH.ListadoActivosFijosConMovimientos(model.Fecha);
+                //existenciaDeMovimientos = await _repoUTH.ListadoActivosFijosConMovimientos(model.Fecha);
                 areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos);
 
                 if (model.Area == Guid.Empty)
@@ -1122,7 +1201,7 @@ namespace ActivosFijos.Controllers
             }
         }
 
-        public async Task<IActionResult> DetallesDeMovimientos(Guid? area, Guid? responsable, DateTime? fecha)
+        public async Task<IActionResult> DetallesDeMovimientosUTHs(Guid? area, Guid? responsable, DateTime? fecha)
         {
             List<SelectListItem> areas = new List<SelectListItem>();
             List<SelectListItem> responsables = new List<SelectListItem>();
@@ -1157,11 +1236,11 @@ namespace ActivosFijos.Controllers
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
-            return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
+            return View("vDetallesDeMovimientosUTH", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
         }
 
         [HttpPost]
-        public async Task<IActionResult> MostrarDetallesMovimientos(DateTime fecha, string area, string responsable)
+        public async Task<IActionResult> MostrarDetallesMovimientosUTHs(DateTime fecha, string area, string responsable)
         {
             var forms = HttpContext.Request.Form;
             DateTime fechaMov = new DateTime();

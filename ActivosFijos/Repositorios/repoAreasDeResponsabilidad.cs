@@ -89,7 +89,7 @@ namespace ActivosFijos.Repositorios
                             && act.FechaListadoUth.Month == fechaMov.Month)
                         .ToListAsync();
 
-                    uthList = uthList.Where(c => existMovs.Any(ex => ex.IdUTH.Equals(c.IdUth))).ToList();
+                    uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo,"|",c.Responsable,"|",c.CentroCosto,"|",c.AreaResponsabilidad)))).ToList();
 
                     areas = uthList
                         .Select(c => c.AreaResponsabilidadNavigation)
@@ -256,6 +256,26 @@ namespace ActivosFijos.Repositorios
 
                     area = _context.AreaDeResponsabilidads.Where(re => re.IdArea.Equals(item.idAreaActual)).FirstOrDefault();
                     if (area != null && !guidsAreas.Any(c => c.IdArea.Equals(item.idAreaActual)))
+                        guidsAreas.Add(area);
+                }
+
+                return guidsAreas;
+            }
+            catch (Exception ex)
+            {
+                return new List<AreaDeResponsabilidad>();
+            }
+        }
+        public async Task<List<AreaDeResponsabilidad>> ObtenerListadoAreasSiMovimientoUTH(List<UTHConMovimientosParcial> existenciaDeMovimientos)
+        {
+            try
+            {
+                List<AreaDeResponsabilidad> guidsAreas = new List<AreaDeResponsabilidad>();
+                foreach (var item in existenciaDeMovimientos)
+                {
+                    AreaDeResponsabilidad area = new AreaDeResponsabilidad();
+                    area = _context.AreaDeResponsabilidads.Where(re => re.IdArea.Equals(item.Area)).FirstOrDefault();
+                    if (area != null && !guidsAreas.Any(c => c.IdArea.Equals(item.Area)))
                         guidsAreas.Add(area);
                 }
 

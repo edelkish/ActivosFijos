@@ -277,7 +277,7 @@ namespace ActivosFijos.Controllers
             catch (Exception ex)
             {
                 ViewData["respuesta"] = new clResponse<DataTable>() { SiSatisfactorio = false, Mensaje = ex.Message };
-                return PartialView("_vpTablaSubmayor", new DataTable());
+                return PartialView("_vpTablaUtilesHerramientas", new DataTable());
             }
         }
 

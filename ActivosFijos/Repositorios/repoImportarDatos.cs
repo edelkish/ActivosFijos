@@ -144,6 +144,9 @@ namespace ActivosFijos.Repositorios
                                     dt.Rows.Add(tempRow);
                                 }
                             }
+                        } else
+                        {
+                            DataRow tempRow_ = tempRow;
                         }
                     }
 
@@ -593,18 +596,34 @@ namespace ActivosFijos.Repositorios
                             ActFijo act = new ActFijo();
                             act = _context.ActFijos.SingleOrDefault(act => act.NoInventario.Equals(long.Parse(row["NoInventario"].ToString().Trim())) && act.FechaSubmayor.Year == fechaSubmayor.Year && act.FechaSubmayor.Month == fechaSubmayor.Month);
 
+                            AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()), StringComparison.InvariantCultureIgnoreCase));
+                            if (areaResp == null)
+                            {
+                                areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
+                            }
+
+                            Responsable resp = new Responsable();
+                            resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (resp == null)
+                            {
+                                resp = responsables.Single(c => c.Nombre.Equals("<<S/R>>"));
+                            }
+
+                            CentroCosto centC = new CentroCosto();
+                            centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (centC == null)
+                            {
+                                centC = centros.Single(c => c.Nombre.Equals("<<S/CC>>"));
+                            }
+
                             if (act == null)
                             {
-                                AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()), StringComparison.InvariantCultureIgnoreCase));
-                                if (areaResp == null)
-                                {
-                                    areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
-                                }
-                                                                
                                 act = new ActFijo()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
-                                    CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto,
+                                    CentroCosto = centC.IdCentroCosto,
                                     NoInventario = long.Parse(row["NoInventario"].ToString().Trim()),
                                     Descripcion = row["Descripcion"].ToString().Trim(),
                                     DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim()),
@@ -612,7 +631,7 @@ namespace ActivosFijos.Repositorios
                                     ValorContable = decimal.Parse(row["VContable"].ToString().Trim()),
                                     ValorResidual = decimal.Parse(row["VResidual"].ToString().Trim()),
                                     FechaSubmayor = fechaSubmayor,
-                                    Responsable = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos.ToLower().Trim()).Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdResponsable
+                                    Responsable = resp.IdResponsable
                                 };
 
                                 mdActFijo mdActFijo = new mdActFijo();
@@ -623,14 +642,14 @@ namespace ActivosFijos.Repositorios
                             }
                             else
                             {
-                                act.AreaResponsabilidad = areas.SingleOrDefault(ar => new string(ar.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdArea;
-                                act.CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto;
+                                act.AreaResponsabilidad = areaResp.IdArea;
+                                act.CentroCosto = centC.IdCentroCosto;
                                 act.Descripcion = row["Descripcion"].ToString().Trim();
                                 act.DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim());
                                 act.ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim());
                                 act.ValorContable = decimal.Parse(row["VContable"].ToString().Trim());
                                 act.ValorResidual = decimal.Parse(row["VResidual"].ToString().Trim());
-                                act.Responsable = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos.ToLower().Trim()).Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdResponsable;
+                                act.Responsable = resp.IdResponsable;
 
                                 mdActFijo mdActFijo = new mdActFijo();
                                 mdActFijo.SiNuevo = false;
@@ -652,12 +671,28 @@ namespace ActivosFijos.Repositorios
                                 areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
                             }
 
+                            Responsable resp = new Responsable();
+                            resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (resp == null)
+                            {
+                                resp = responsables.Single(c => c.Nombre.Equals("<<S/R>>"));
+                            }
+
+                            CentroCosto centC = new CentroCosto();
+                            centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (centC == null)
+                            {
+                                centC = centros.Single(c => c.Nombre.Equals("<<S/CC>>"));
+                            }
+
                             if (row["Responsable"].ToString().Trim().Equals(String.Empty))
                             {
                                 act = new ActFijo()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
-                                    CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto,
+                                    CentroCosto = centC.IdCentroCosto,
                                     NoInventario = long.Parse(row["NoInventario"].ToString().Trim()),
                                     Descripcion = row["Descripcion"].ToString().Trim(),
                                     DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim()),
@@ -665,17 +700,11 @@ namespace ActivosFijos.Repositorios
                                     ValorContable = decimal.Parse(row["VContable"].ToString().Trim()),
                                     ValorResidual = decimal.Parse(row["VResidual"].ToString().Trim()),
                                     FechaSubmayor = fechaSubmayor,
-                                    Responsable = responsables.SingleOrDefault(res => res.Nombre.ToLower().Trim().Equals("<<S/R>>".ToLower().Trim())).IdResponsable
+                                    Responsable = resp.IdResponsable
                                 };
                             }
                             else
                             {
-                                Responsable resp = new Responsable();
-                                resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
-
-                                CentroCosto centC = new CentroCosto();
-                                centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
-
                                 act = new ActFijo()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
@@ -1076,18 +1105,34 @@ namespace ActivosFijos.Repositorios
                                 && act.FechaListadoUth.Year == fechaSubmayor.Year
                                 && act.FechaListadoUth.Month == fechaSubmayor.Month);
 
+                            AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()), StringComparison.InvariantCultureIgnoreCase));
+                            if (areaResp == null)
+                            {
+                                areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
+                            }
+
+                            Responsable resp = new Responsable();
+                            resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (resp == null)
+                            {
+                                resp = responsables.Single(c => c.Nombre.Equals("<<S/R>>"));
+                            }
+
+                            CentroCosto centC = new CentroCosto();
+                            centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (centC == null)
+                            {
+                                centC = centros.Single(c => c.Nombre.Equals("<<S/CC>>"));
+                            }
+
                             if (utilH == null)
                             {
-                                AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()), StringComparison.InvariantCultureIgnoreCase));
-                                if (areaResp == null)
-                                {
-                                    areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
-                                }
-
                                 utilH = new UtilesHerramienta()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
-                                    CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto,
+                                    CentroCosto = centC.IdCentroCosto,
                                     No = long.Parse(row["No"].ToString().Trim()),
                                     IdUth = Guid.NewGuid(),
                                     Descripcion = row["Descripcion"].ToString().Trim(),
@@ -1095,7 +1140,7 @@ namespace ActivosFijos.Repositorios
                                     ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim()),
                                     ValorContable = decimal.Parse(row["V"].ToString().Trim()),
                                     FechaListadoUth = fechaSubmayor,
-                                    Responsable = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdResponsable
+                                    Responsable = resp.IdResponsable
                                 };
 
                                 mdUtilesHerramientas mdUTH = new mdUtilesHerramientas();
@@ -1106,12 +1151,12 @@ namespace ActivosFijos.Repositorios
                             }
                             else
                             {
-                                utilH.AreaResponsabilidad = areas.SingleOrDefault(ar => new string(ar.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdArea;
-                                utilH.CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto;
+                                utilH.AreaResponsabilidad = areaResp.IdArea;
+                                utilH.CentroCosto = centC.IdCentroCosto;
                                 utilH.Descripcion = row["Descripcion"].ToString().Trim();
                                 utilH.ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim());
                                 utilH.ValorContable = decimal.Parse(row["V"].ToString().Trim());
-                                utilH.Responsable = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos.ToLower().Trim()).Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdResponsable;
+                                utilH.Responsable = resp.IdResponsable;
 
                                 mdUtilesHerramientas mdUTH = new mdUtilesHerramientas();
                                 mdUTH.SiNuevo = false;
@@ -1133,12 +1178,28 @@ namespace ActivosFijos.Repositorios
                                 areaResp = areas.Single(c => c.Nombre == "<<S/A>>");
                             }
 
+                            Responsable resp = new Responsable();
+                            resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (resp == null)
+                            {
+                                resp = responsables.Single(c => c.Nombre.Equals("<<S/R>>"));
+                            }
+
+                            CentroCosto centC = new CentroCosto();
+                            centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
+
+                            if (centC == null)
+                            {
+                                centC = centros.Single(c => c.Nombre.Equals("<<S/CC>>"));
+                            }
+
                             if (row["Responsable"].ToString().Trim().Equals(String.Empty))
                             {
                                 utilH = new UtilesHerramienta()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
-                                    CentroCosto = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()))).IdCentroCosto,
+                                    CentroCosto = centC.IdCentroCosto,
                                     No = long.Parse(row["No"].ToString().Trim()),
                                     IdUth = Guid.NewGuid(),
                                     Descripcion = row["Descripcion"].ToString().Trim(),
@@ -1146,17 +1207,11 @@ namespace ActivosFijos.Repositorios
                                     ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim()),
                                     ValorContable = decimal.Parse(row["V"].ToString().Trim()),
                                     FechaListadoUth = fechaSubmayor,
-                                    Responsable = responsables.SingleOrDefault(res => res.Nombre.ToLower().Trim().Equals("<<S/R>>".ToLower().Trim())).IdResponsable
+                                    Responsable = resp.IdResponsable
                                 };
                             }
                             else
-                            {
-                                Responsable resp = new Responsable();
-                                resp = responsables.SingleOrDefault(res => new string((res.Nombre.ToLower().Trim() + " " + res.Apellidos).ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["Responsable"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
-
-                                CentroCosto centC = new CentroCosto();
-                                centC = centros.SingleOrDefault(ct => new string(ct.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["CentroCosto"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
-
+                            {                                
                                 utilH = new UtilesHerramienta()
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,

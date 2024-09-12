@@ -134,18 +134,18 @@ namespace ActivosFijos.Controllers
             ViewData["respuesta"] = new clResponse<Cargo>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-            return View("vEditarCargo", cargos);
+            return View("vEditarCargo", local);
         }
         // POST: CCargos/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ModificarCargo(Guid IdCargo, [Bind("Nombre,Descripcion,IdCargo")] Cargo cargos)
+        public async Task<IActionResult> ModificarCargo(Guid IdLocal, [Bind("Nombre,Descripcion,IdCargo")] Locale cargos)
         {
             if (cargos != null)
             {
-                if (IdCargo != cargos.IdCargo)
+                if (IdLocal != cargos.IdLocal)
                 {
                     ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Cargo a editar." };
                     ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
@@ -157,7 +157,7 @@ namespace ActivosFijos.Controllers
                     foreach (var item in iDictionaryIntegrantes)
                         ModelState.AddModelError(item.Key, item.Value);
                 }
-                else if (cargoRepositorio.SiExisteNombreDelCargoAModificar(cargos.Nombre, cargos.IdCargo))
+                else if (localRepositorio.SiExisteNombreDelLocalAModificar(cargos.Nombre, cargos.IdLocal))
                 {
                     ModelState.AddModelError("Nombre", "El Nombre a insertar como modificación ya existe.");
                 }
@@ -166,12 +166,12 @@ namespace ActivosFijos.Controllers
                     try
                     {
                         var mensaje = string.Empty;
-                        var resultadoCargo = await cargoRepositorio.ModificarCargo(cargos).ConfigureAwait(false);
+                        var resultadoCargo = await localRepositorio.ModificarLocal(cargos).ConfigureAwait(false);
                         if (resultadoCargo.SiSatisfactorio)
                         {
                             clGlobal.siNo = resultadoCargo.SiSatisfactorio;
                             clGlobal.objMensaje = resultadoCargo.Mensaje;
-                            return RedirectToAction(nameof(EditarCargo), new { id = cargos.IdCargo });
+                            return RedirectToAction(nameof(EditarLocal), new { id = cargos.IdLocal });
                         }
                         else
                         {
@@ -182,7 +182,7 @@ namespace ActivosFijos.Controllers
                     }
                     catch (DbUpdateConcurrencyException ex)
                     {
-                        if (!cargoRepositorio.CargosExists(cargos.IdCargo))
+                        if (!localRepositorio.LocalExists(cargos.IdLocal))
                         {
                             ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = "El Cargo a editar no existe." };
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
@@ -208,7 +208,7 @@ namespace ActivosFijos.Controllers
             {
                 return NotFound();
             }
-            var cargos = await cargoRepositorio.SeleccionarCargosPorID(id).ConfigureAwait(false);
+            var cargos = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
             if (cargos == null)
             {
                 return NotFound();
@@ -220,8 +220,8 @@ namespace ActivosFijos.Controllers
         {
             try
             {
-                var cargos = await cargoRepositorio.SeleccionarCargosPorID(id).ConfigureAwait(false);
-                var resultadoCargo = await cargoRepositorio.EliminarCargo(cargos).ConfigureAwait(false);
+                var cargos = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
+                var resultadoCargo = await localRepositorio.EliminarLocal(cargos).ConfigureAwait(false);
                 var result = new
                 {
                     siNo = resultadoCargo.SiSatisfactorio,

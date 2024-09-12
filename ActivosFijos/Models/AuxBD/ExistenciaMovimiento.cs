@@ -8,7 +8,8 @@
 
     public class ExistenciaMovimientoUTH
     {
-        public Guid IdUTH { get; set; }
+        public string Codigo { get; set; } = string.Empty;
+        public string Discriminante { get; set; } = string.Empty;
         public int Cantidad { get; set; }
     }
 }
