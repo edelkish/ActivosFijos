@@ -211,13 +211,13 @@ namespace ActivosFijos.Controllers
         public async Task<IActionResult> ListadoDeActivosFijos(DateTime fecha, string area, string responsable, bool siMovimientos = false)
         {
             List<ActFijo> actFijosList = await _repoActivosFijos.ListadoActivosFijos(fecha, Guid.Parse(area), Guid.Parse(responsable));
-            //List<ExistenciaMovimiento> existMovs = new List<ExistenciaMovimiento>();
-            //existMovs = await _repoActivosFijos.DeterminarSiExisteMovimientoDeActivosFijos(fecha);
+            List<ExistenciaMovimiento> existMovs = new List<ExistenciaMovimiento>();
+            existMovs = await _repoActivosFijos.DeterminarSiExisteMovimientoDeActivosFijos(fecha);
 
-            //if (siMovimientos)
-            //actFijosList = actFijosList.Where(c => existMovs.Any(ex => ex.NoInventario.Equals(c.NoInventario))).ToList();
+            if (siMovimientos)
+                actFijosList = actFijosList.Where(c => existMovs.Any(ex => ex.NoInventario.Equals(c.NoInventario))).ToList();
 
-            //ViewData["ExistenciaDeMovimiento"] = existMovs;
+            ViewData["ExistenciaDeMovimiento"] = existMovs;
 
             return PartialView("_vpTablaActivosFijos", actFijosList.OrderBy(act => act.AreaResponsabilidadNavigation.Nombre).ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos).ThenBy(act => act.NoInventario));
         }

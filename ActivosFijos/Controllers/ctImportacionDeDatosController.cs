@@ -271,7 +271,7 @@ namespace ActivosFijos.Controllers
                     clGlobal.siNo = resultadoImportarDatos.SiSatisfactorio;
                     clGlobal.objMensaje = resultadoImportarDatos.Mensaje;
 
-                    return RedirectToAction(nameof(ImportarSubmayorActivosFijos));
+                    return RedirectToAction(nameof(ImportarUtilesHerramientas));
                 }
             }
             catch (Exception ex)

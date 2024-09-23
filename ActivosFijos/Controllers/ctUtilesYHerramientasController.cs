@@ -84,11 +84,17 @@ namespace ActivosFijos.Controllers
             Responsable director = new Responsable();
             director = await _repoResponsables.ObtenerInfoDirector();
 
+            string directorNombre = string.Empty;
+            if (director == null)
+                directorNombre = "<<S/D>>";
+            else 
+                directorNombre = director.Nombre + " " + director.Apellidos;
+
             string responsArea = "<<S/D>>";
 
             if (area == null || area == Guid.Empty)
             {
-                responsArea = director.Nombre + " " + director.Apellidos;
+                responsArea = directorNombre;
             }
             else
             {
@@ -205,15 +211,15 @@ namespace ActivosFijos.Controllers
         public async Task<IActionResult> ListadoDeUTHs(DateTime fecha, string area, string responsable, bool siMovimientos = false)
         {
             List<UtilesHerramienta> uthList = await _repoUTH.ListadoUTH(fecha, Guid.Parse(area), Guid.Parse(responsable));
-            List<ExistenciaMovimiento> existMovs = new List<ExistenciaMovimiento>();
-            //existMovs = await _repoUTH.DeterminarSiExisteMovimientoDeUTH(fecha);
+            List<ExistenciaMovimientoUTH> existMovs = new List<ExistenciaMovimientoUTH>();
+            existMovs = await _repoUTH.DeterminarSiExisteMovimientoDeUTH(fecha);
 
-            //if (siMovimientos)
-            //actFijosList = actFijosList.Where(c => existMovs.Any(ex => ex.NoInventario.Equals(c.NoInventario))).ToList();
+            if (siMovimientos)
+                uthList = uthList.Where(c => existMovs.Any(ex => ex.Discriminante.Equals(string.Concat(c.Codigo, "|", c.Responsable, "|", c.CentroCosto, "|", c.AreaResponsabilidad)))).ToList();
 
-            //ViewData["ExistenciaDeMovimiento"] = existMovs;
+            ViewData["ExistenciaDeMovimiento"] = existMovs;
 
-            return PartialView("_vpTablaActivosFijos", uthList.OrderBy(act => act.AreaResponsabilidadNavigation.Nombre).ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos).ThenBy(act => act.Descripcion));
+            return PartialView("_vpTablaUTH", uthList.OrderBy(act => act.AreaResponsabilidadNavigation.Nombre).ThenBy(act => act.ResponsableNavigation.Nombre + " " + act.ResponsableNavigation.Apellidos).ThenBy(act => act.Codigo));
         }
 
         [HttpPost]
@@ -259,9 +265,10 @@ namespace ActivosFijos.Controllers
                         Cantidad = uth.Cantidad,
                         CantidadAnterior = uth.CantidadAnterior
                     };
-                    
+
                     uthMovlist.Add(uthMov);
-                } else if (uthMovlist.Count() > 0)
+                }
+                else if (uthMovlist.Count() > 0)
                 {
                     UTHConMovimientos uthMov = new UTHConMovimientos();
                     if (uthMovlist.Exists(c => c.Discriminante.Equals(uth.Discriminante)))
@@ -278,7 +285,8 @@ namespace ActivosFijos.Controllers
                         }
 
                         uthMovlist.Add(uthMov);
-                    } else
+                    }
+                    else
                     {
                         Responsable resp = new Responsable();
                         resp = await _repoResponsables.SeleccionarResponsablesPorID(uth.Responsable);
@@ -438,7 +446,7 @@ namespace ActivosFijos.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GenerarActa(mdActas model)
+        public async Task<IActionResult> GenerarActaUtilesHerramientas(mdActas model)
         {
             bool result;
             string msg;
@@ -453,7 +461,7 @@ namespace ActivosFijos.Controllers
             {
                 clGlobal.siNo = false;
                 clGlobal.objMensaje = $"No se pueden generar actas cuando el responsable seleccionado es {_repoResponsables.SeleccionarResponsablesPorID(model.Responsable).Result.Nombre}.";
-                return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
+                return RedirectToAction(nameof(UTH), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
             }
             else
             {
@@ -469,9 +477,7 @@ namespace ActivosFijos.Controllers
 
                     if (model.VisualizarMovimiento)
                     {
-                        List<ExistenciaMovimientoUTH> existenciaMovimientos = new List<ExistenciaMovimientoUTH>();
-                        existenciaMovimientos = _repoUTH.DeterminarSiExisteMovimientoDeUTH(model.Fecha).Result;
-                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaMovimientos, model.Fecha);
+                        responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existMovs, model.Fecha);
                         areasResponsabilidad = responsables.Select(c => c.AreaResponsabilidadNavigation).Distinct().ToList();
                     }
                     else
@@ -494,7 +500,7 @@ namespace ActivosFijos.Controllers
 
                                     clGlobal.siNo = false;
                                     clGlobal.objMensaje = $"No existen movimientos para el responsable {nombreResp} en la fecha seleccionada.";
-                                    return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
+                                    return RedirectToAction(nameof(UTH), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
                                 }
                             }
 
@@ -513,7 +519,7 @@ namespace ActivosFijos.Controllers
                                         respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
                                         string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                        objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
+                                        objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                         var entry = zip.CreateEntry(tituloDoc);
 
                                         using (var fileStream = new MemoryStream(objFile))
@@ -537,7 +543,7 @@ namespace ActivosFijos.Controllers
                                             responsableArea = "<<S/D>>";
                                         }
 
-                                        objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
+                                        objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
                                         var entry = zip.CreateEntry(tituloDoc);
 
                                         using (var fileStream = new MemoryStream(objFile))
@@ -547,7 +553,7 @@ namespace ActivosFijos.Controllers
                                         }
                                     }
 
-                                    objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                     tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                     var entryEP = zip.CreateEntry(tituloDoc);
@@ -585,7 +591,7 @@ namespace ActivosFijos.Controllers
                                     respArea = _repoResponsables.SeleccionarResponsableEPDelArea(responsable.AreaResponsabilidad ?? Guid.Empty).Result;
                                     string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, responsableArea);
                                     var entry = zip.CreateEntry(tituloDoc);
 
                                     using (var fileStream = new MemoryStream(objFile))
@@ -599,7 +605,7 @@ namespace ActivosFijos.Controllers
                             }
                             else
                             {
-                                objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                 tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                 return File(objFile, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", tituloDoc);
@@ -625,7 +631,7 @@ namespace ActivosFijos.Controllers
                                             string nombreResponsable = item.Nombre + " " + item.Apellidos;
                                             tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
-                                            objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, model.ResponsableArea);
+                                            objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, model.ResponsableArea);
                                             var entry = zip.CreateEntry(tituloDoc);
 
                                             using (var fileStream = new MemoryStream(objFile))
@@ -650,7 +656,7 @@ namespace ActivosFijos.Controllers
                                             responsableArea = "<<S/D>>";
                                         }
 
-                                        objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, areasResp.IdArea, model.Fecha, responsableArea);
+                                        objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, areasResp.IdArea, model.Fecha, responsableArea);
                                         var entryEP = zip.CreateEntry(tituloDoc);
 
                                         using (var fileStream = new MemoryStream(objFile))
@@ -659,7 +665,7 @@ namespace ActivosFijos.Controllers
                                             fileStream.CopyTo(entryStream);
                                         }
 
-                                        objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                        objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                         tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                         var entryGen = zip.CreateEntry(tituloDoc);
@@ -677,7 +683,7 @@ namespace ActivosFijos.Controllers
                                 {
                                     clGlobal.siNo = false;
                                     clGlobal.objMensaje = $"No existen movimientos para el área {nombreArea} en la fecha seleccionada.";
-                                    return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
+                                    return RedirectToAction(nameof(UTH), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
                                 }
                             }
                             else
@@ -690,19 +696,22 @@ namespace ActivosFijos.Controllers
                                         string nombreResponsable = item.Nombre + " " + item.Apellidos;
                                         tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
-                                        objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, model.ResponsableArea);
-                                        var entry = zip.CreateEntry(tituloDoc);
-
-                                        using (var fileStream = new MemoryStream(objFile))
-                                        using (var entryStream = entry.Open())
+                                        objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, model.ResponsableArea);
+                                        if (objFile != null)
                                         {
-                                            fileStream.CopyTo(entryStream);
+                                            var entry = zip.CreateEntry(tituloDoc);
+
+                                            using (var fileStream = new MemoryStream(objFile))
+                                            using (var entryStream = entry.Open())
+                                            {
+                                                fileStream.CopyTo(entryStream);
+                                            }
                                         }
                                     }
 
                                     tituloDoc = nombreArea + " (" + nombreMes.Replace('/', '-') + ").docx";
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, model.Area, model.Fecha, model.ResponsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, model.Area, model.Fecha, model.ResponsableArea);
                                     var entryEP = zip.CreateEntry(tituloDoc);
 
                                     using (var fileStream = new MemoryStream(objFile))
@@ -726,7 +735,7 @@ namespace ActivosFijos.Controllers
 
                                     clGlobal.siNo = false;
                                     clGlobal.objMensaje = $"No existen movimientos en el área {nombreArea} para el responsable {esp.Nombre + " " + esp.Apellidos} en la fecha seleccionada.";
-                                    return RedirectToAction(nameof(ActivosFijos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
+                                    return RedirectToAction(nameof(UTH), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
                                 }
 
                                 Responsable director = new Responsable();
@@ -740,7 +749,7 @@ namespace ActivosFijos.Controllers
                                 MemoryStream ms = new MemoryStream();
                                 using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
                                 {
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     var entry = zip.CreateEntry(tituloDoc);
@@ -753,7 +762,7 @@ namespace ActivosFijos.Controllers
 
                                     tituloDoc = nombreArea + " (" + nombreMes.Replace('/', '-') + ").docx";
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, model.Area, model.Fecha, model.ResponsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, model.Area, model.Fecha, model.ResponsableArea);
                                     var entryEP = zip.CreateEntry(tituloDoc);
 
                                     using (var fileStream = new MemoryStream(objFile))
@@ -762,7 +771,7 @@ namespace ActivosFijos.Controllers
                                         fileStream.CopyTo(entryStream);
                                     }
 
-                                    objFile = _repoServcioActas.ExportarADocx(out result, out msg, Guid.Empty, Guid.Empty, model.Fecha, director.Nombre + " " + director.Apellidos);
+                                    objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, Guid.Empty, Guid.Empty, model.Fecha, director.Nombre + " " + director.Apellidos);
                                     tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                     entryEP = zip.CreateEntry(tituloDoc);
@@ -786,7 +795,7 @@ namespace ActivosFijos.Controllers
                                 MemoryStream ms = new MemoryStream();
                                 using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
                                 {
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     var entry = zip.CreateEntry(tituloDoc);
@@ -806,7 +815,9 @@ namespace ActivosFijos.Controllers
                 }
                 catch (Exception ex)
                 {
-                    return RedirectToAction("Index");
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = $"Ocurrió el siguiente error: {ex.Message}";
+                    return RedirectToAction(nameof(UTH), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha, visualizarMovimiento = model.VisualizarMovimiento });
                 }
             }
         }
@@ -835,7 +846,7 @@ namespace ActivosFijos.Controllers
                     if (model.Responsable == Guid.Empty)
                     {
                         responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos, true);
-                        
+
                         if (responsables.Count > 0)
                         {
                             MemoryStream ms = new MemoryStream();
@@ -848,7 +859,7 @@ namespace ActivosFijos.Controllers
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     Responsable respArea = new Responsable();
-                                    respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
+                                    respArea = await _repoResponsables.SeleccionarResponsableEPDelArea(item.AreaResponsabilidad??Guid.Empty);
                                     string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
                                     objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
@@ -940,18 +951,18 @@ namespace ActivosFijos.Controllers
                                         nombreArea = item.AreaResponsabilidadNavigation.Nombre;
                                     }
 
-                                    
+
                                     string nombreResponsable = item.Nombre + " " + item.Apellidos;
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     areaActiva = item.AreaResponsabilidadNavigation.IdArea;
 
-                                    
-                                    respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
-                                    
+
+                                    respArea = await _repoResponsables.SeleccionarResponsableEPDelArea(item.AreaResponsabilidad ?? Guid.Empty);// item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
+
                                     string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -978,7 +989,7 @@ namespace ActivosFijos.Controllers
                                         responsableArea = "<<S/D>>";
                                     }
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
                                     var entry = zip.CreateEntry(tituloDoc);
 
                                     using (var fileStream = new MemoryStream(objFile))
@@ -988,7 +999,7 @@ namespace ActivosFijos.Controllers
                                     }
                                 }
 
-                                objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                 tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                 var entryEP = zip.CreateEntry(tituloDoc);
@@ -1028,10 +1039,10 @@ namespace ActivosFijos.Controllers
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     Responsable respArea = new Responsable();
-                                    respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
-                                    string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
+                                    respArea = await _repoResponsables.SeleccionarResponsableEPDelArea(item.AreaResponsabilidad ?? Guid.Empty); //item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
+									string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
-                                    objFile = _repoServcioActas.ExportarPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -1058,7 +1069,7 @@ namespace ActivosFijos.Controllers
                                         responsableArea = "<<S/D>>";
                                     }
 
-                                    objFile = _repoServcioActas.ExportarPorAreasDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
+                                    objFile = _repoServcioActas.ExportarPorAreasUTHDocx(out result, out msg, Guid.Empty, item.IdArea, model.Fecha, responsableArea);
                                     if (objFile != null)
                                     {
                                         var entry = zip.CreateEntry(tituloDoc);
@@ -1071,7 +1082,7 @@ namespace ActivosFijos.Controllers
                                     }
                                 }
 
-                                objFile = _repoServcioActas.ExportarADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
+                                objFile = _repoServcioActas.ExportarUTHADocx(out result, out msg, model.Responsable, model.Area, model.Fecha, model.ResponsableArea);
                                 tituloDoc = $"ACTA RESP. MAT. ATI GNRAL ({nombreMes.Replace('/', '-')}).docx";
 
                                 var entryEP = zip.CreateEntry(tituloDoc);
@@ -1095,7 +1106,7 @@ namespace ActivosFijos.Controllers
                     else
                     {
                         responsables = await _repoResponsables.ObtenerListadoResponsablesSiMovimiento(existenciaDeMovimientos
-                            .Where(ex => (ex.Responsable.Equals(model.Responsable))  && (ex.Area.Equals(model.Area))).ToList(), true);
+                            .Where(ex => (ex.Responsable.Equals(model.Responsable)) && (ex.Area.Equals(model.Area))).ToList(), true);
                         areasResponsabilidad = await _repoAreas.ObtenerListadoAreasSiMovimiento(existenciaDeMovimientos
                             .Where(ex => (ex.Responsable.Equals(model.Responsable)) && (ex.Area.Equals(model.Area))).ToList());
                         if (responsables.Count > 0)
@@ -1110,8 +1121,8 @@ namespace ActivosFijos.Controllers
                                     tituloDoc = nombreArea + " (" + nombreResponsable + ", " + nombreMes.Replace('/', '-') + ").docx";
 
                                     Responsable respArea = new Responsable();
-                                    respArea = item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
-                                    string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
+                                    respArea = await _repoResponsables.SeleccionarResponsableEPDelArea(item.AreaResponsabilidad ?? Guid.Empty); //item.AreaResponsabilidadNavigation.Responsables.Where(c => c.ResponsableDelArea).FirstOrDefault();
+									string responsableArea = respArea == null ? "<<S/D>>" : respArea.Nombre + " " + respArea.Apellidos;
 
                                     objFile = _repoServcioActas.ExportarUTHPorAreasIndividualDocx(out result, out msg, item.IdResponsable, model.Area, model.Fecha, responsableArea);
                                     if (objFile != null)

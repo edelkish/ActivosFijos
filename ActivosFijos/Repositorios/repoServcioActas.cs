@@ -340,7 +340,8 @@ namespace ActivosFijos.Repositorios
                         SetBookmarkValue(doc, "RESPONSABLE", resp != null ? resp.Nombre + " " + resp.Apellidos : "<<S/D>>");
                         SetBookmarkValue(doc, "CARGO", (resp == null || resp.CargoNavigation == null) ? "<<S/D>>" : resp.CargoNavigation.Nombre);
                         SetBookmarkValue(doc, "AREA", resp != null ? resp.AreaResponsabilidadNavigation.Nombre : respArea);
-                        SetBookmarkValue(doc, "CENTROCOSTO", centroCosto == null ? "<<S/D>>" : centroCosto.Numero.ToString());
+						SetBookmarkValue(doc, "RESPONSABLEAREA", responsableArea != null ? responsableArea : "<<S/D>>");
+						SetBookmarkValue(doc, "CENTROCOSTO", centroCosto == null ? "<<S/D>>" : centroCosto.Numero.ToString());
                         SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
                         SetBookmarkValue(doc, "MES", GetNameMonth(fecha.Month, fecha.Year).Split('/')[0] ?? "<<S/D>");
                         SetBookmarkValue(doc, "ANNO", fecha.Year.ToString() ?? "<<S/D>");
@@ -348,7 +349,7 @@ namespace ActivosFijos.Repositorios
                         resp = new Responsable();
                         resp = _repoResponsables.ObtenerInfoEncargadoEconomia().Result;
 
-                        SetBookmarkValue(doc, "FIRMADECONTABILIDAD", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
+                        SetBookmarkValue(doc, "FIRMACONTABILIDAD", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
 
                         SetBookmarkValue(doc, "FIRMARESPONSABLEAREA", responsableArea ?? "");
 
@@ -507,7 +508,8 @@ namespace ActivosFijos.Repositorios
                         SetBookmarkValue(doc, "CARGO", (resp == null || resp.CargoNavigation == null) ? "<<S/D>>" : resp.CargoNavigation.Nombre);
                         SetBookmarkValue(doc, "AREA", resp != null ? resp.AreaResponsabilidadNavigation.Nombre : "<<S/D>>");
                         SetBookmarkValue(doc, "CENTROCOSTO", centroCosto == null ? "<<S/D>>" : centroCosto.Numero.ToString());
-                        SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
+						SetBookmarkValue(doc, "RESPONSABLEAREA", responsableArea ?? "");
+						SetBookmarkValue(doc, "DIAS", diasDelMes ?? "<<S/D>");
                         SetBookmarkValue(doc, "MES", GetNameMonth(fecha.Month, fecha.Year).Split('/')[0] ?? "<<S/D>");
                         SetBookmarkValue(doc, "ANNO", fecha.Year.ToString() ?? "<<S/D>");
                         SetBookmarkValue(doc, "FIRMATRABAJADOR", resp == null ? "<<S/D>>" : resp.Nombre + " " + resp.Apellidos);
@@ -760,7 +762,7 @@ namespace ActivosFijos.Repositorios
 
                             TableCellWidth tCellWidth = new TableCellWidth();
                             tCellWidth.Type = TableWidthUnitValues.Dxa;
-                            tCellWidth.Width = "700";
+                            tCellWidth.Width = "600";
 
                             tCellProperties.Append(tCellWidth);
 
@@ -796,7 +798,148 @@ namespace ActivosFijos.Repositorios
 
                             TableCellWidth tCellWidth = new TableCellWidth();
                             tCellWidth.Type = TableWidthUnitValues.Dxa;
-                            tCellWidth.Width = "2800";
+                            tCellWidth.Width = "2000";
+
+                            tCellProperties.Append(tCellWidth);
+
+                            // Append properties to the cell
+                            tCell.Append(tCellProperties);
+
+                            ParagraphProperties paragProperties = new ParagraphProperties();
+                            Justification justification1 = new Justification() { Val = JustificationValues.Both };
+                            SpacingBetweenLines spacingBetweenLines1 = new SpacingBetweenLines() { After = "0" };
+
+                            paragProperties.Append(spacingBetweenLines1);
+                            paragProperties.Append(justification1);
+
+                            var parag = new Paragraph();
+                            parag.Append(paragProperties);
+
+                            var run = new Run(new Text("Descripción"));
+                            ApplyFontProperties(run, true);
+                            parag.Append(run);
+
+                            // Specify the table cell content.
+                            tCell.Append(parag);
+
+                            // Append the table cell to the table row.
+                            tRow.Append(tCell);
+
+                            break;
+                        }
+                    case 2:
+                        {
+                            // Set Cell Color
+                            Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = System.Drawing.ColorTranslator.ToHtml(c) };
+                            tCellProperties.Append(tCellColor);
+
+                            TableCellWidth tCellWidth = new TableCellWidth();
+                            tCellWidth.Type = TableWidthUnitValues.Dxa;
+                            tCellWidth.Width = "1400";
+
+                            tCellProperties.Append(tCellWidth);
+
+                            // Append properties to the cell
+                            tCell.Append(tCellProperties);
+
+                            ParagraphProperties paragProperties = new ParagraphProperties();
+                            Justification justification1 = new Justification() { Val = JustificationValues.Both };
+                            SpacingBetweenLines spacingBetweenLines1 = new SpacingBetweenLines() { After = "0" };
+                            paragProperties.Append(spacingBetweenLines1);
+                            paragProperties.Append(justification1);
+
+                            var parag = new Paragraph();
+                            parag.Append(paragProperties);
+
+                            var run = new Run(new Text("Responsable"));
+                            ApplyFontProperties(run, true);
+                            parag.Append(run);
+
+                            // Specify the table cell content.
+                            tCell.Append(parag);
+
+                            // Append the table cell to the table row.
+                            tRow.Append(tCell);
+
+                            break;
+                        }
+                    default:
+                        break;
+                }
+
+
+            }
+
+            // Append the table row to the table.
+            wordTable.Append(tRow);
+
+            return wordTable;
+        }
+
+        private static Table AddHeaderRowUTH(Table wordTable)
+        {
+            // Create a row.
+            TableRow tRow = new TableRow();
+
+            for (int i = 0; i < 3; i++)
+            {
+                // Create a cell.
+                TableCell tCell = new TableCell();
+
+                TableCellProperties tCellProperties = new TableCellProperties();
+                TableCellVerticalAlignment tcVA = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
+                tCellProperties.Append(tcVA);
+
+                System.Drawing.Color c = new System.Drawing.Color();
+                c = System.Drawing.Color.FromArgb(255, 255, 255);
+
+                switch (i)
+                {
+                    case 0:
+                        {
+                            // Set Cell Color
+                            Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = System.Drawing.ColorTranslator.ToHtml(c) };
+                            tCellProperties.Append(tCellColor);
+
+                            TableCellWidth tCellWidth = new TableCellWidth();
+                            tCellWidth.Type = TableWidthUnitValues.Dxa;
+                            tCellWidth.Width = "1200";
+
+                            tCellProperties.Append(tCellWidth);
+
+                            // Append properties to the cell
+                            tCell.Append(tCellProperties);
+
+                            ParagraphProperties paragProperties = new ParagraphProperties();
+                            Justification justification1 = new Justification() { Val = JustificationValues.Both };
+                            SpacingBetweenLines spacingBetweenLines1 = new SpacingBetweenLines() { After = "0" };
+                            paragProperties.Append(spacingBetweenLines1);
+                            paragProperties.Append(justification1);
+
+                            var parag = new Paragraph();
+                            parag.Append(paragProperties);
+
+                            var run = new Run(new Text("No. Inv."));
+                            ApplyFontProperties(run, true);
+                            parag.Append(run);
+
+                            // Specify the table cell content.
+                            tCell.Append(parag);
+
+                            // Append the table cell to the table row.
+                            tRow.Append(tCell);
+
+                            break;
+                        }
+                    case 1:
+                        {
+                            // Set Cell Color
+                            Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = System.Drawing.ColorTranslator.ToHtml(c) };
+                            tCellProperties.Append(tCellColor);
+
+                            TableCellWidth tCellWidth = new TableCellWidth();
+                            tCellWidth.Type = TableWidthUnitValues.Dxa;
+                            tCellWidth.Width = "2300";
 
                             tCellProperties.Append(tCellWidth);
 
@@ -892,10 +1035,10 @@ namespace ActivosFijos.Repositorios
                 // Set Cell Color
                 Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
                 tCellProperties.Append(tCellColor);
-
+                
                 //TableCellWidth tCellWidth = new TableCellWidth();
                 //tCellWidth.Type = TableWidthUnitValues.Dxa;
-                //tCellWidth.Width = "700";
+                //tCellWidth.Width = "600";
 
                 //tCellProperties.Append(tCellWidth);
 
@@ -964,7 +1107,7 @@ namespace ActivosFijos.Repositorios
 
                 //TableCellWidth tCellWidthResponsable = new TableCellWidth();
                 //tCellWidthResponsable.Type = TableWidthUnitValues.Dxa;
-                //tCellWidthResponsable.Width = "1900";
+                //tCellWidthResponsable.Width = "1000";
 
                 //tCellPropertiesResponsable.Append(tCellWidthResponsable);
                 tCellResponsable.Append(tCellPropertiesResponsable);
@@ -1016,11 +1159,11 @@ namespace ActivosFijos.Repositorios
                 Shading tCellColor = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
                 tCellProperties.Append(tCellColor);
 
-                //TableCellWidth tCellWidth = new TableCellWidth();
-                //tCellWidth.Type = TableWidthUnitValues.Dxa;
-                //tCellWidth.Width = "700";
+                TableCellWidth tCellWidth = new TableCellWidth();
+                tCellWidth.Type = TableWidthUnitValues.Dxa;
+                tCellWidth.Width = "1000";
 
-                //tCellProperties.Append(tCellWidth);
+                tCellProperties.Append(tCellWidth);
 
                 tCell.Append(tCellProperties);
 
@@ -1085,11 +1228,11 @@ namespace ActivosFijos.Repositorios
                 Shading tCellColorResponsable = new Shading() { Val = ShadingPatternValues.Clear, Color = "auto" };
                 tCellPropertiesResponsable.Append(tCellColorResponsable);
 
-                //TableCellWidth tCellWidthResponsable = new TableCellWidth();
-                //tCellWidthResponsable.Type = TableWidthUnitValues.Dxa;
-                //tCellWidthResponsable.Width = "1900";
+                TableCellWidth tCellWidthResponsable = new TableCellWidth();
+                tCellWidthResponsable.Type = TableWidthUnitValues.Dxa;
+                tCellWidthResponsable.Width = "900";
 
-                //tCellPropertiesResponsable.Append(tCellWidthResponsable);
+                tCellPropertiesResponsable.Append(tCellWidthResponsable);
                 tCellResponsable.Append(tCellPropertiesResponsable);
 
                 ParagraphProperties paragPropertiesResponsable = new ParagraphProperties();
@@ -1214,7 +1357,7 @@ namespace ActivosFijos.Repositorios
                             new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
                             new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 },
                             new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 1 }),
-                        new TableWidth() { Width = "5000", Type = TableWidthUnitValues.Pct },
+                        new TableWidth() { Width = "4000", Type = TableWidthUnitValues.Pct },
                         new TableJustification() { Val = TableRowAlignmentValues.Left });
 
                     // Now we create a new layout and make it "fixed".
@@ -1304,7 +1447,7 @@ namespace ActivosFijos.Repositorios
                     }
 
                     table = AddSubTitleRow(table, item.Nombre.ToUpper());
-                    table = AddHeaderRow(table);
+                    table = AddHeaderRowUTH(table);
 
                     table = AddRows(table, datos.Where(c => c.AreaResponsabilidad.Equals(item.IdArea)).ToList());
 
