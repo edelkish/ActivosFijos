@@ -227,16 +227,19 @@ namespace ActivosFijos.Controllers
         {
             List<UTHConMovimientosParcial> uthList = await _repoUTH.ListadoUTHConMovimientos(fecha);
             List<UTHConMovimientos> uthMovlist = new List<UTHConMovimientos>();
+            var query = uthList.AsQueryable();
 
             if (!Guid.Parse(area).Equals(Guid.Empty))
             {
-                uthList = uthList.Where(c => c.Area.Equals(Guid.Parse(area))).ToList();
+                query = query.Where(c => c.Area.Equals(Guid.Parse(area)));
             }
 
             if (!Guid.Parse(responsable).Equals(Guid.Empty))
             {
-                uthList = uthList.Where(c => c.Responsable.Equals(Guid.Parse(responsable))).ToList();
+                query = query.Where(c => c.Responsable.Equals(Guid.Parse(responsable)));
             }
+
+            uthList = query.ToList();
 
             foreach (var uth in uthList)
             {
@@ -1228,7 +1231,7 @@ namespace ActivosFijos.Controllers
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
-            return View("vDetallesDeMovimientosUTH", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
+            return View("vDetallesDeMovimientosUTH", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today.AddMonths(-1) : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
         }
 
         [HttpPost]

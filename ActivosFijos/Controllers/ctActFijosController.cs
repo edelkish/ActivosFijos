@@ -1478,7 +1478,7 @@ namespace ActivosFijos.Controllers
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
-            return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
+            return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today.AddMonths(-1) : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
         }
 
         [HttpPost]

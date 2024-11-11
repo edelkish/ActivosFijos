@@ -237,6 +237,7 @@
         $('#datetimepickerImportar').datetimepicker({
             format: 'MM/YYYY',
             locale: 'es',
+            maxDate: moment().subtract(1, 'months'),
             viewMode: 'months'
         }).on('dp.change', function (event) {
             var valueFecha = moment(new Date(event.date._d)).format("MM/YYYY");
