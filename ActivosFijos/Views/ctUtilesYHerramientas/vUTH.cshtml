@@ -323,7 +323,7 @@
                         var areaResponsabilidad = $('#Area').val();
 
                         $.ajax({
-                            url: baseUrl + 'ctUtilesYHerramientas/CargarDatosResponsablesPorAreaDeResponsabilidad',
+                            url: baseUrl + 'ctUtilesYHerramientas/CargarDatosUTHResponsablesPorAreaDeResponsabilidad',
                             method: 'POST',
                             async: false,
                             data: { area: areaResponsabilidad },
@@ -342,7 +342,7 @@
                         });
 
                         $.ajax({
-                            url: baseUrl + 'ctUtilesYHerramientas/CargarInfoResponsableDelArea',
+                            url: baseUrl + 'ctUtilesYHerramientas/CargarInfoUTHResponsableDelArea',
                             method: 'POST',
                             async: false,
                             data: { area: areaResponsabilidad },

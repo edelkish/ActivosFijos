@@ -1,5 +1,7 @@
 ﻿@using ActivosFijos.Clases
 
+@model ActivosFijos.Models.Auxiliar.mdSubmayorErrores
+
 @{
     ViewData["Title"] = "Listado de Utiles y Herramientas Importados";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -12,8 +14,6 @@
 
     string fch = Model.Fecha.ToString("yyyy-MM-dd");
 }
-
-@model ActivosFijos.Models.Auxiliar.mdSubmayorErrores
 
 @section PluginsCSS{
     <environment names="Development,Staging,Production">

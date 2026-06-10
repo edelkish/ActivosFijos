@@ -19,6 +19,9 @@ public partial class Locale
     [Unicode(false)]
     public string? Descripcion { get; set; }
 
-    [InverseProperty("LocalNavigation")]
-    public virtual ICollection<Cubiculo> Cubiculos { get; set; } = new List<Cubiculo>();
+    public Guid? Cubiculo { get; set; }
+
+    [ForeignKey("Cubiculo")]
+    [InverseProperty("Locales")]
+    public virtual Cubiculo? CubiculoNavigation { get; set; }
 }

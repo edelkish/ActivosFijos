@@ -56,6 +56,17 @@ namespace ActivosFijos.Repositorios
 
             return dictionaryErrors;
         }
+        public IDictionary<string, string> ConEspacio(string valor, string campo)
+        {
+            var dictionaryErrors = new Dictionary<string, string>();
+
+            if (valor.IndexOf(" ", StringComparison.Ordinal) > -1)
+            {
+                utiles.AgregarClaveValorIDictionary(dictionaryErrors, campo, $"El campo {campo} no puede tener espacios en blanco.");
+            }
+
+            return dictionaryErrors;
+        }
         public IDictionary<string, string> ContrasennaEnBlanco(string valor, string campo)
         {
             var dictionaryErrors = new Dictionary<string, string>();

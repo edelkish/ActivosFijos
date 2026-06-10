@@ -13,22 +13,19 @@ public partial class Cubiculo
 
     [StringLength(150)]
     [Unicode(false)]
-    public string Nombre { get; set; } = string.Empty;
+    public string? Nombre { get; set; } = string.Empty;
 
     [StringLength(150)]
     [Unicode(false)]
-    public string Apodo { get; set; } = string.Empty;
+    public string? Apodo { get; set; } = string.Empty;
 
     [StringLength(500)]
     [Unicode(false)]
     public string? Descripcion { get; set; }
 
-    public Guid? Local { get; set; }
-
     [InverseProperty("CubiculoNavigation")]
     public virtual ICollection<ActFijo> ActFijos { get; set; } = new List<ActFijo>();
 
-    [ForeignKey("Local")]
-    [InverseProperty("Cubiculos")]
-    public virtual Locale? LocalNavigation { get; set; }
+    [InverseProperty("CubiculoNavigation")]
+    public virtual ICollection<Locale> Locales { get; set; } = new List<Locale>();
 }

@@ -1,0 +1,30 @@
+﻿@model IEnumerable<ActivosFijos.Models.EntidadesBD.Locale>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaCargos">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify">
+                Nombre
+            </th>
+            <th scope="col" style="text-align:justify">
+                Descripci&oacute;n
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {            
+            <tr data-info="@item.IdLocal">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.CubiculoNavigation != null ? item.CubiculoNavigation.Nombre : "<<S/D>>")
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

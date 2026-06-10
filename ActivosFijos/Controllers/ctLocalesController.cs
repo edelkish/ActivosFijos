@@ -12,11 +12,13 @@ namespace ActivosFijos.Controllers
     [Authorize(AuthenticationSchemes = "Activos Fijos-" + CookieAuthenticationDefaults.AuthenticationScheme, Roles = "admin_web, gest_nom")]
     public class ctLocalesController : Controller
     {
+        private readonly repoCubiculos cubiculoRepositorio;
         private readonly repoLocales localRepositorio;
         private readonly repoValidaciones validacionesRepositorio;
         private readonly aftContext _context;
-        public ctLocalesController(repoLocales localRepositorio, repoValidaciones validacionesRepositorio, aftContext context)
+        public ctLocalesController(repoCubiculos cubiculoRepositorio, repoLocales localRepositorio, repoValidaciones validacionesRepositorio, aftContext context)
         {
+            this.cubiculoRepositorio = cubiculoRepositorio;
             this.localRepositorio = localRepositorio;
             this.validacionesRepositorio = validacionesRepositorio;
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -27,13 +29,13 @@ namespace ActivosFijos.Controllers
             return View("vLocales");
         }
         [HttpPost]
-        public async Task<IActionResult> ListadoDeCargos()
+        public async Task<IActionResult> ListadoDeLocales()
         {
             List<Locale> localesList = await localRepositorio.ObtenerListadoLocales().ConfigureAwait(false);
             
             return PartialView("_vpTablaLocales", localesList);
         }
-        // GET: CCargos/Details/5
+
         public async Task<IActionResult> DetallesLocal(Guid? id)
         {
             if (id == null)
@@ -47,7 +49,7 @@ namespace ActivosFijos.Controllers
             }
             return View(local);
         }
-        // GET: CCargos/Create
+
         public IActionResult CrearLocal()
         {
             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
@@ -56,9 +58,7 @@ namespace ActivosFijos.Controllers
             clGlobal.objMensaje = string.Empty;
             return View("vCrearLocal");
         }
-        // POST: CCargos/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuardarCargo([Bind("Nombre,Descripcion,IdLocal")] Locale local)
@@ -114,7 +114,7 @@ namespace ActivosFijos.Controllers
             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
             return View("vCrearLocal", local);
         }
-        // GET: CCargos/Edit/5
+
         public async Task<IActionResult> EditarLocal(Guid? id)
         {
             if ((id == null) || (id == Guid.Empty))
@@ -136,96 +136,100 @@ namespace ActivosFijos.Controllers
             clGlobal.objMensaje = string.Empty;
             return View("vEditarCargo", local);
         }
-        // POST: CCargos/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ModificarCargo(Guid IdLocal, [Bind("Nombre,Descripcion,IdCargo")] Locale cargos)
+        public async Task<IActionResult> ModificarLocal(Guid IdLocal, [Bind("IdLocal,Nombre,Descripcion,Cubiculo")] Locale local)
         {
-            if (cargos != null)
+            if (local != null)
             {
-                if (IdLocal != cargos.IdLocal)
+                if (IdLocal != local.IdLocal)
                 {
-                    ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Cargo a editar." };
-                    ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-                    return View("vEditarCargo", cargos);
+                    ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
+                    ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                    return View("vEditarLocal", local);
                 }
-                var iDictionaryIntegrantes = validacionesRepositorio.EspaciosEnBlanco(cargos.Nombre, "Nombre");
-                if (iDictionaryIntegrantes.Count > 0)
+                var iDictionaryError = validacionesRepositorio.EspaciosEnBlanco(local.Nombre, "Nombre");
+                if (iDictionaryError.Count > 0)
                 {
-                    foreach (var item in iDictionaryIntegrantes)
+                    foreach (var item in iDictionaryError)
                         ModelState.AddModelError(item.Key, item.Value);
                 }
-                else if (localRepositorio.SiExisteNombreDelLocalAModificar(cargos.Nombre, cargos.IdLocal))
+                else if (localRepositorio.SiExisteNombreDelLocalAModificar(local.Nombre, local.IdLocal))
                 {
                     ModelState.AddModelError("Nombre", "El Nombre a insertar como modificación ya existe.");
                 }
+
+                if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo??Guid.Empty))
+                {
+                    ModelState.AddModelError("Cubiculo", "El Cubículo seleccionado para el local a insertar como modificación no existe.");
+                }
+
                 if (ModelState.IsValid)
                 {
                     try
                     {
                         var mensaje = string.Empty;
-                        var resultadoCargo = await localRepositorio.ModificarLocal(cargos).ConfigureAwait(false);
+                        var resultadoCargo = await localRepositorio.ModificarLocal(local).ConfigureAwait(false);
                         if (resultadoCargo.SiSatisfactorio)
                         {
                             clGlobal.siNo = resultadoCargo.SiSatisfactorio;
                             clGlobal.objMensaje = resultadoCargo.Mensaje;
-                            return RedirectToAction(nameof(EditarLocal), new { id = cargos.IdLocal });
+                            return RedirectToAction(nameof(EditarLocal), new { id = local.IdLocal });
                         }
                         else
                         {
                             ViewData["respuesta"] = resultadoCargo;
-                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-                            return View("vEditarCargo", cargos);
+                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            return View("vEditarLocal", local);
                         }
                     }
                     catch (DbUpdateConcurrencyException ex)
                     {
-                        if (!localRepositorio.LocalExists(cargos.IdLocal))
+                        if (!localRepositorio.LocalExists(local.IdLocal))
                         {
-                            ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = "El Cargo a editar no existe." };
-                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-                            return View("vEditarCargo", cargos);
+                            ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "El Local a editar no existe." };
+                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            return View("vEditarLocal", local);
                         }
                         else
                         {
-                            ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = ex.Message };
-                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-                            return View("vEditarCargo", cargos);
+                            ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = ex.Message };
+                            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            return View("vEditarLocal", local);
                         }
                     }
                 }
             }
-            ViewData["respuesta"] = new clResponse<Cargo> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Cargo a editar." };
-            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-            return View("vEditarCargo", cargos);
+            ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
+            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+            return View("vEditarLocal", local);
         }
         // GET: CCargos/Delete/5
-        public async Task<IActionResult> EliminarCargo(Guid? id)
+        public async Task<IActionResult> EliminarLocal(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
-            var cargos = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
-            if (cargos == null)
+            var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
+            if (local == null)
             {
                 return NotFound();
             }
-            return View(cargos);
+            return View(local);
         }
-        [HttpPost, ActionName("EliminarCargo")]
-        public async Task<JsonResult> ConfirmarEliminarCargo(Guid id)
+        [HttpPost, ActionName("EliminarLocal")]
+        public async Task<JsonResult> ConfirmarEliminarLocal(Guid id)
         {
             try
             {
-                var cargos = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
-                var resultadoCargo = await localRepositorio.EliminarLocal(cargos).ConfigureAwait(false);
+                var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
+                var resultadoLocal = await localRepositorio.EliminarLocal(local).ConfigureAwait(false);
                 var result = new
                 {
-                    siNo = resultadoCargo.SiSatisfactorio,
-                    objMensaje = resultadoCargo.Mensaje
+                    siNo = resultadoLocal.SiSatisfactorio,
+                    objMensaje = resultadoLocal.Mensaje
                 };
                 return Json(result);
             }
@@ -244,8 +248,8 @@ namespace ActivosFijos.Controllers
             List<clBreadCumb> prueba = new List<clBreadCumb>();
             clBreadCumb objBreadsCumbs = new clBreadCumb()
             {
-                nombre = "Cargos",
-                ruta = new List<string>() { "Cargos", "ctCargo" }
+                nombre = "Locales",
+                ruta = new List<string>() { "Locales", "ctLocal" }
             };
             prueba.Add(objBreadsCumbs);
             objBreadsCumbs = new clBreadCumb()
