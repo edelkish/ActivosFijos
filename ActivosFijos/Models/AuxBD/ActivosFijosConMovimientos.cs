@@ -3,6 +3,7 @@
     public class ActivosFijosConMovimientos
     {
         public long NoInventario { get; set; }
+        public int SubNumero { get; set; }
         public int Cantidad { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public Guid? idAreaAnterior { get; set; }

@@ -12,6 +12,9 @@ namespace ActivosFijos.Models.EntidadesBD
         [Key]
         [Column("noInventario")]
         public long NoInventario { get; set; }
+        [Key]
+        [Column("subNumero")]
+        public int SubNumero { get; set; }
         [Column("descripcion")]
         [StringLength(2000)]
         [Unicode(false)]

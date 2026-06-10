@@ -20,7 +20,10 @@ namespace ActivosFijos.Repositorios
         }
         public async Task<List<mdMovimientosAFT>> ListadoActivosFijos()
         {
-            List<mdMovimientosAFT> actFijos = await _context.ActFijos.Select(c => new mdMovimientosAFT(){ noInventario = c.NoInventario, descripcion = c.Descripcion}).Distinct().ToListAsync();
+            List<mdMovimientosAFT> actFijos = await _context.ActFijos
+                .GroupBy(c => new { c.NoInventario, c.Descripcion })
+                .Select(g => new mdMovimientosAFT{ noInventario = g.Key.NoInventario, subNumero = g.Max(x => x.SubNumero), descripcion = g.Key.Descripcion})
+                .ToListAsync();
             return actFijos;
         }
         public async Task<List<UtilesHerramienta>> ListadoUTH(DateTime fecha)

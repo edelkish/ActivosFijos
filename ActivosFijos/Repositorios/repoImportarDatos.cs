@@ -134,7 +134,9 @@ namespace ActivosFijos.Repositorios
                         }
                         else if ((tempRow[6] != null) && (tempRow[7] != null) && (tempRow[8] != null) && (tempRow[9] != null))
                         {
-                            if ((long.TryParse(tempRow[0].ToString(), out _)) && (long.TryParse(tempRow[2].ToString(), out _)) &&
+                            string noInvStr = tempRow[2]?.ToString() ?? "";
+                            string noInvBase = noInvStr.Split('-')[0].Trim();
+                            if ((long.TryParse(tempRow[0].ToString(), out _)) && (long.TryParse(noInvBase, out _)) &&
                                 (double.TryParse(tempRow[6].ToString(), out _)) && (double.TryParse(tempRow[7].ToString(), out _)) &&
                                 (double.TryParse(tempRow[8].ToString(), out _)) && (double.TryParse(tempRow[9].ToString(), out _)))
                             {
@@ -594,8 +596,12 @@ namespace ActivosFijos.Repositorios
                     {
                         foreach (DataRow row in dt.Rows)
                         {
+                            string[] noInvParts = row["NoInventario"].ToString().Trim().Split('-');
+                            long noInventario = long.Parse(noInvParts[0].Trim());
+                            int subNumero = noInvParts.Length > 1 ? int.Parse(noInvParts[1].Trim()) : 0;
+
                             ActFijo act = new ActFijo();
-                            act = _context.ActFijos.SingleOrDefault(act => act.NoInventario.Equals(long.Parse(row["NoInventario"].ToString().Trim())) && act.FechaSubmayor.Year == fechaSubmayor.Year && act.FechaSubmayor.Month == fechaSubmayor.Month);
+                            act = _context.ActFijos.SingleOrDefault(act => act.NoInventario.Equals(noInventario) && act.SubNumero == subNumero && act.FechaSubmayor.Year == fechaSubmayor.Year && act.FechaSubmayor.Month == fechaSubmayor.Month);
 
                             AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()), StringComparison.InvariantCultureIgnoreCase));
                             if (areaResp == null)
@@ -625,7 +631,8 @@ namespace ActivosFijos.Repositorios
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
                                     CentroCosto = centC.IdCentroCosto,
-                                    NoInventario = long.Parse(row["NoInventario"].ToString().Trim()),
+                                    NoInventario = noInventario,
+                                    SubNumero = subNumero,
                                     Descripcion = row["Descripcion"].ToString().Trim(),
                                     DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim()),
                                     ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim()),
@@ -664,6 +671,10 @@ namespace ActivosFijos.Repositorios
                     {
                         foreach (DataRow row in dt.Rows)
                         {
+                            string[] noInvParts = row["NoInventario"].ToString().Trim().Split('-');
+                            long noInventario = long.Parse(noInvParts[0].Trim());
+                            int subNumero = noInvParts.Length > 1 ? int.Parse(noInvParts[1].Trim()) : 0;
+
                             ActFijo act = new ActFijo();
 
                             AreaDeResponsabilidad areaResp = areas.SingleOrDefault(e => new string(e.Nombre.ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray()).Equals(new string(row["AreaResponsabilidad"].ToString().ToLower().Trim().Normalize(NormalizationForm.FormD).Where(c => c < 128).ToArray())));
@@ -694,7 +705,8 @@ namespace ActivosFijos.Repositorios
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
                                     CentroCosto = centC.IdCentroCosto,
-                                    NoInventario = long.Parse(row["NoInventario"].ToString().Trim()),
+                                    NoInventario = noInventario,
+                                    SubNumero = subNumero,
                                     Descripcion = row["Descripcion"].ToString().Trim(),
                                     DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim()),
                                     ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim()),
@@ -710,7 +722,8 @@ namespace ActivosFijos.Repositorios
                                 {
                                     AreaResponsabilidad = areaResp.IdArea,
                                     CentroCosto = centC.IdCentroCosto,
-                                    NoInventario = long.Parse(row["NoInventario"].ToString().Trim()),
+                                    NoInventario = noInventario,
+                                    SubNumero = subNumero,
                                     Descripcion = row["Descripcion"].ToString().Trim(),
                                     DepreciacionAcum = decimal.Parse(row["DAcumulada"].ToString().Trim()),
                                     ValorAdquisicion = decimal.Parse(row["VAdquisicion"].ToString().Trim()),

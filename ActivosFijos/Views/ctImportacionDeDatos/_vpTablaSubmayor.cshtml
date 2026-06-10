@@ -98,7 +98,8 @@
                                         {
                                             try
                                             {
-                                                if (Int64.TryParse(row[2].ToString(), out _))
+                                                var invNum = row[2].ToString().Split('-')[0].Trim();
+                                                if (Int64.TryParse(invNum, out _))
                                                 {
                                                     var cellValue6 = row[6] != null ? double.Parse(row[6].ToString()) : 0;
                                                     var cellValue7 = row[7] != null ? double.Parse(row[7].ToString()) : 0;

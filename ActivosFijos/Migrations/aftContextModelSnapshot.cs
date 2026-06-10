@@ -18,7 +18,7 @@ namespace ActivosFijos.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("Latin1_General_CI_AI")
-                .HasAnnotation("ProductVersion", "8.0.5")
+                .HasAnnotation("ProductVersion", "8.0.17")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -28,6 +28,10 @@ namespace ActivosFijos.Migrations
                     b.Property<long>("NoInventario")
                         .HasColumnType("bigint")
                         .HasColumnName("noInventario");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int")
+                        .HasColumnName("subNumero");
 
                     b.Property<DateTime>("FechaSubmayor")
                         .HasColumnType("datetime")
@@ -74,7 +78,7 @@ namespace ActivosFijos.Migrations
                         .HasColumnType("money")
                         .HasColumnName("valorResidual");
 
-                    b.HasKey("NoInventario", "FechaSubmayor");
+                    b.HasKey("NoInventario", "SubNumero", "FechaSubmayor");
 
                     b.HasIndex("AreaResponsabilidad");
 

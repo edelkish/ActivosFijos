@@ -20,7 +20,10 @@ namespace ActivosFijos.Repositorios
         }
         public async Task<List<mdMovimientosAFT>> ListadoActivosFijos()
         {
-            List<mdMovimientosAFT> actFijos = await _context.ActFijos.Select(c => new mdMovimientosAFT(){ noInventario = c.NoInventario, descripcion = c.Descripcion}).Distinct().ToListAsync();
+            List<mdMovimientosAFT> actFijos = await _context.ActFijos
+                .GroupBy(c => new { c.NoInventario, c.Descripcion })
+                .Select(g => new mdMovimientosAFT{ noInventario = g.Key.NoInventario, subNumero = g.Max(x => x.SubNumero), descripcion = g.Key.Descripcion})
+                .ToListAsync();
             return actFijos;
         }
         public async Task<List<ActFijo>> ListadoActivosFijos(DateTime fecha)
@@ -336,6 +339,7 @@ namespace ActivosFijos.Repositorios
                                                                                     DECLARE @tablaDeMovimientos TABLE
                                                                                     (
                                                                                         NoInventario BIGINT,
+                                                                                        SubNumero INT,
                                                                                         Cantidad INT,
                                                                                         Descripcion VARCHAR(2000),
                                                                                         AreaAnterior UNIQUEIDENTIFIER,
@@ -351,6 +355,7 @@ namespace ActivosFijos.Repositorios
                                                                                     INSERT @tablaDeMovimientos
                                                                                     SELECT DISTINCT
                                                                                            MOV.NoInventario,
+                                                                                           MOV.SubNumero,
                                                                                            0,
                                                                                            MOV.Descripcion,
                                                                                            NULL,
@@ -360,6 +365,7 @@ namespace ActivosFijos.Repositorios
                                                                                     FROM
                                                                                     (
                                                                                         SELECT AFT.NoInventario,
+                                                                                               AFT.SubNumero,
                                                                                                AFT.Descripcion,
                                                                                                AFT.responsable,
                                                                                                AFT.areaResponsabilidad,
@@ -367,6 +373,7 @@ namespace ActivosFijos.Repositorios
                                                                                         FROM
                                                                                         (
                                                                                             SELECT noInventario,
+                                                                                                   subNumero,
                                                                                                    descripcion,
                                                                                                    responsable,
                                                                                                    areaResponsabilidad
@@ -375,6 +382,7 @@ namespace ActivosFijos.Repositorios
                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
                                                                                             UNION ALL
                                                                                             SELECT noInventario,
+                                                                                                   subNumero,
                                                                                                    descripcion,
                                                                                                    responsable,
                                                                                                    areaResponsabilidad
@@ -383,6 +391,7 @@ namespace ActivosFijos.Repositorios
                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fecha)
                                                                                         ) AS AFT
                                                                                         GROUP BY AFT.NoInventario,
+                                                                                                 AFT.SubNumero,
                                                                                                  AFT.Descripcion,
                                                                                                  AFT.responsable,
                                                                                                  AFT.areaResponsabilidad
@@ -394,36 +403,40 @@ namespace ActivosFijos.Repositorios
                                                                                         (
                                                                                             SELECT areaResponsabilidad
                                                                                             FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
-                                                                                        ),
-                                                                                        AreaActual =
-                                                                                        (
-                                                                                            SELECT areaResponsabilidad
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fecha)
-                                                                                        ),
-                                                                                        ResponsableAnterior =
-                                                                                        (
-                                                                                            SELECT responsable
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
-                                                                                        ),
-                                                                                        ResponsableActual =
-                                                                                        (
-                                                                                            SELECT responsable
-                                                                                            FROM dbo.ActFijo
-                                                                                            WHERE noInventario = [@tablaDeMovimientos].NoInventario
-                                                                                                  AND YEAR(fechaSubmayor) = YEAR(@fecha)
-                                                                                                  AND MONTH(fechaSubmayor) = MONTH(@fecha)
+                                                                                             WHERE noInventario = [@tablaDeMovimientos].NoInventario
+                                                                                                   AND subNumero = [@tablaDeMovimientos].SubNumero
+                                                                                                   AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
+                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
+                                                                                         ),
+                                                                                         AreaActual =
+                                                                                         (
+                                                                                             SELECT areaResponsabilidad
+                                                                                             FROM dbo.ActFijo
+                                                                                             WHERE noInventario = [@tablaDeMovimientos].NoInventario
+                                                                                                   AND subNumero = [@tablaDeMovimientos].SubNumero
+                                                                                                   AND YEAR(fechaSubmayor) = YEAR(@fecha)
+                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fecha)
+                                                                                         ),
+                                                                                         ResponsableAnterior =
+                                                                                         (
+                                                                                             SELECT responsable
+                                                                                             FROM dbo.ActFijo
+                                                                                             WHERE noInventario = [@tablaDeMovimientos].NoInventario
+                                                                                                   AND subNumero = [@tablaDeMovimientos].SubNumero
+                                                                                                   AND YEAR(fechaSubmayor) = YEAR(@fechaAnterior)
+                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
+                                                                                         ),
+                                                                                         ResponsableActual =
+                                                                                         (
+                                                                                             SELECT responsable
+                                                                                             FROM dbo.ActFijo
+                                                                                             WHERE noInventario = [@tablaDeMovimientos].NoInventario
+                                                                                                   AND subNumero = [@tablaDeMovimientos].SubNumero
+                                                                                                   AND YEAR(fechaSubmayor) = YEAR(@fecha)
                                                                                         );
 
                                                                                     SELECT NoInventario,
+                                                                                           SubNumero,
                                                                                            Cantidad,
                                                                                            Descripcion,
                                                                                            AreaAnterior AS [idAreaAnterior],

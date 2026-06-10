@@ -51,7 +51,7 @@
             
             <tr data-info="@item.NoInventario" data-fecha="@item.FechaSubmayor.ToString("yyyy-MM-dd")" style="@styleTexto">
                 <td style="text-align:justify">
-                    @Html.DisplayFor(modelItem => item.NoInventario)
+                    @(item.SubNumero != 0 ? item.NoInventario + "-" + item.SubNumero : item.NoInventario.ToString())
                 </td style="text-align:justify">
                 <td>
                     @Html.DisplayFor(modelItem => item.Descripcion)

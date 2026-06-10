@@ -45,7 +45,7 @@ namespace ActivosFijos.Models.Contexts
 
             modelBuilder.Entity<ActFijo>(entity =>
             {
-                entity.HasKey(e => new { e.NoInventario, e.FechaSubmayor });
+                entity.HasKey(e => new { e.NoInventario, e.SubNumero, e.FechaSubmayor });
                 //entity.Property(e => e.NoInventario).ValueGeneratedNever();
 
                 entity.HasOne(d => d.AreaResponsabilidadNavigation)
@@ -115,13 +115,14 @@ namespace ActivosFijos.Models.Contexts
             modelBuilder.Entity<Cubiculo>(entity =>
             {
                 entity.Property(e => e.IdCubiculo).ValueGeneratedNever();
-
-                entity.HasOne(d => d.LocalNavigation).WithMany(p => p.Cubiculos).HasConstraintName("FK_Cubiculos_Locales");
+                
             });
 
             modelBuilder.Entity<Locale>(entity =>
             {
                 entity.Property(e => e.IdLocal).ValueGeneratedNever();
+
+                entity.HasOne(d => d.CubiculoNavigation).WithMany(p => p.Locales).HasConstraintName("FK_Locales_Cubiculos");
             });
 
             modelBuilder.Entity<Permiso>(entity =>

@@ -98,7 +98,7 @@
                                     {
                                         <tr data-info="@item.noInventario">
                                             <td style="text-align:justify">
-                                                @Html.DisplayFor(modelItem => item.noInventario)
+                                                @(item.subNumero != 0 ? item.noInventario + "-" + item.subNumero : item.noInventario.ToString())
                                             </td>
                                             <td style="text-align:justify">
                                                 @Html.DisplayFor(modelItem => item.descripcion)
