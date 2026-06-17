@@ -887,5 +887,15 @@ namespace ActivosFijos.Repositorios
                 FechaSubmayor = obj.FechaSubmayor
             };
         }
+
+        public async Task<List<MuestreoMensualDiezPorCiento>> EjecutarMuestreoDiezPorCiento()
+        {
+            await _context.Database.ExecuteSqlRawAsync("EXEC sp_MuestreoMensualDiezPorCiento_ActFijos");
+
+            return await _context.MuestreoMensualDiezPorCientos
+                .Include(m => m.ActFijoNavigation)
+                .Include(m => m.CentroCostoNavigation)
+                .ToListAsync();
+        }
     }
 }

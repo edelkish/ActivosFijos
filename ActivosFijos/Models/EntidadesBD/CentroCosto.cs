@@ -30,5 +30,8 @@ namespace ActivosFijos.Models.EntidadesBD
 
         [InverseProperty(nameof(EntidadesBD.UtilesHerramienta.CentroCostoNavigation))]
         public virtual ICollection<UtilesHerramienta> UtilesHerramienta { get; set; }
+
+        [InverseProperty(nameof(MuestreoMensualDiezPorCiento.CentroCostoNavigation))]
+        public virtual ICollection<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = new List<MuestreoMensualDiezPorCiento>();
     }
 }

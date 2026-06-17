@@ -56,5 +56,8 @@ namespace ActivosFijos.Models.EntidadesBD
         [ForeignKey("Cubiculo")]
         [InverseProperty("ActFijos")]
         public virtual Cubiculo? CubiculoNavigation { get; set; }
+
+        [InverseProperty(nameof(MuestreoMensualDiezPorCiento.ActFijoNavigation))]
+        public virtual ICollection<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = new List<MuestreoMensualDiezPorCiento>();
     }
 }

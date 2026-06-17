@@ -30,6 +30,7 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<TrasladosAft> TrasladosAfts { get; set; } = null!;
         public virtual DbSet<Usuario> Usuarios { get; set; } = null!;
         public virtual DbSet<UtilesHerramienta> UtilesHerramientas { get; set; } = null!;
+        public virtual DbSet<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -198,6 +199,26 @@ namespace ActivosFijos.Models.Contexts
                     .WithMany(p => p.UtilesHerramienta)
                     .HasForeignKey(d => d.Responsable)
                     .HasConstraintName("FK_UtilesHerramientas_Responsable");
+            });
+
+            modelBuilder.Entity<MuestreoMensualDiezPorCiento>(entity =>
+            {
+                entity.HasKey(e => new { e.Anno, e.Mes, e.NoInventario, e.SubNumero, e.FechaSubmayor })
+                    .HasName("PK_MuestreoMensualDiezPorciento");
+
+                entity.Property(e => e.FechaMuestreo).HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.SiExiste).HasDefaultValueSql("((0))");
+
+                entity.HasOne(d => d.ActFijoNavigation)
+                    .WithMany(p => p.MuestreoMensualDiezPorCientos)
+                    .HasForeignKey(d => new { d.NoInventario, d.SubNumero, d.FechaSubmayor })
+                    .HasConstraintName("FK_MuestreoMensualDiezPorCiento_ActFijo");
+
+                entity.HasOne(d => d.CentroCostoNavigation)
+                    .WithMany(p => p.MuestreoMensualDiezPorCientos)
+                    .HasForeignKey(d => d.CentroCosto)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .HasConstraintName("FK_MuestreoMensualDiezPorCiento_CentroCosto");
             });
 
             OnModelCreatingPartial(modelBuilder);
