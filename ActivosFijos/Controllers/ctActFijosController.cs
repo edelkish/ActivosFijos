@@ -2419,7 +2419,7 @@ namespace ActivosFijos.Controllers
                     ws.PrinterSettings.RightMargin = 0.64 * cm;
                     ws.PrinterSettings.HeaderMargin = 0.76 * cm;
                     ws.PrinterSettings.FooterMargin = 0.76 * cm;
-                    double pageH = 792 - (1.91 * cm * 72) * 2 - 50;
+                    double pageH = 792 - (1.91 * cm * 72) * 2 - 99;
                     double page1 = pageH - 99;
                     double pageN = pageH;
                     double contentH = items.Count * 10 + 81;
