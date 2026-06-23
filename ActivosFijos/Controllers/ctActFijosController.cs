@@ -2385,7 +2385,12 @@ namespace ActivosFijos.Controllers
                         ws.Cells[row, 11, row, 13].Merge = true;
                         ws.Cells[row, 11].Value = 0;
                         ws.Cells[row, 14].Value = 1;
+                        ws.Cells[row, 16, row, 17].Merge = true;
                         ws.Cells[row, 20, row, 21].Merge = true;
+                        if (item.SiExiste)
+                            ws.Cells[row, 16].Value = "X";
+                        else
+                            ws.Cells[row, 20].Value = "X";
 
                         ws.Cells[row, 25, row, 30].Merge = true;
                     }
