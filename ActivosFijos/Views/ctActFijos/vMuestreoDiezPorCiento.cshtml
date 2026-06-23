@@ -86,6 +86,13 @@
                                     </div>
                                 </div>
                             </form>
+                            @if (yaExisteMuestreo)
+                            {
+                                <form asp-action="ExportarActaMuestreo" asp-controller="ctActFijos" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn green-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Acta</button>
+                                </form>
+                            }
                             <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
                             <hr />
 

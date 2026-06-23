@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,6 +81,8 @@ builder.Services.AddScoped<repoLocales>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+
+ExcelPackage.License.SetNonCommercialOrganization("Activos Fijos");
 
 //using (var scope = app.Services.CreateScope())
 //{

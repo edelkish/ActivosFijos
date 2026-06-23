@@ -196,7 +196,6 @@ namespace ActivosFijos.Controllers
             List<string> excelData = new List<string>();
             //read the Excel file as byte array
             byte[] bin = System.IO.File.ReadAllBytes(pathCombine);
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             //create a new Excel package in a memorystream
             using (MemoryStream stream = new MemoryStream(bin))
             using (ExcelPackage excelPackage = new ExcelPackage(stream))
