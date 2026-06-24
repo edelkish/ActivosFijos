@@ -26,6 +26,7 @@ namespace ActivosFijos.Models.EntidadesBD
         [Column(TypeName = "datetime")]
         public DateTime FechaMuestreo { get; set; }
         public bool SiExiste { get; set; }
+        public string? Observaciones { get; set; }
         public Guid? CentroCosto { get; set; }
 
         [ForeignKey(nameof(NoInventario) + "," + nameof(SubNumero) + "," + nameof(FechaSubmayor))]

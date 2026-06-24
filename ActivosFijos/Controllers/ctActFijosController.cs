@@ -2415,6 +2415,8 @@ namespace ActivosFijos.Controllers
                     ws.Cells[totalRow, 19].Value = 0;
                     ws.Cells[totalRow, 28].Value = items.Count;
 
+                    ws.Cells[9, 1, totalRow, 31].Style.Font.Size = 11;
+
                     int footerStart = 11 + items.Count;
 
                     double cm = 1 / 2.54;
@@ -2460,6 +2462,42 @@ namespace ActivosFijos.Controllers
 
                 string fileName = $"Muestreo10_{anio}_{mes:D2}.xlsx";
                 return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmarMuestreo([FromBody] List<Models.Auxiliar.mdMuestreoConfirmacion> items)
+        {
+            if (items == null || items.Count == 0)
+                return Json(new { success = false, mensaje = "No se recibieron datos para confirmar." });
+
+            foreach (var item in items)
+            {
+                if (!item.SiExiste && string.IsNullOrWhiteSpace(item.Observaciones))
+                    return Json(new { success = false, mensaje = $"El activo {item.NoInventario}{(item.SubNumero > 0 ? "-" + item.SubNumero : "")} no existe pero no se especificaron observaciones." });
+            }
+
+            try
+            {
+                foreach (var item in items)
+                {
+                    var registro = await _context.MuestreoMensualDiezPorCientos
+                        .FindAsync(item.Anno, item.Mes, item.NoInventario, item.SubNumero, item.FechaSubmayor);
+
+                    if (registro != null)
+                    {
+                        registro.SiExiste = item.SiExiste;
+                        registro.Observaciones = item.Observaciones;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, mensaje = "Muestreo confirmado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, mensaje = "Error al confirmar el muestreo: " + ex.Message });
             }
         }
 

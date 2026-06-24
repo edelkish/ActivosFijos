@@ -208,6 +208,7 @@ namespace ActivosFijos.Models.Contexts
 
                 entity.Property(e => e.FechaMuestreo).HasDefaultValueSql("(getdate())");
                 entity.Property(e => e.SiExiste).HasDefaultValueSql("((0))");
+                entity.Property(e => e.Observaciones).HasColumnType("nvarchar(max)");
 
                 entity.HasOne(d => d.ActFijoNavigation)
                     .WithMany(p => p.MuestreoMensualDiezPorCientos)

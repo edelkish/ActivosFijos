@@ -92,6 +92,7 @@
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Acta</button>
                                 </form>
+                                <button type="button" class="btn green btn-outline sbold uppercase" id="btnConfirmarMuestreo" style="margin-left:10px"><i class="fa fa-check"></i> Confirmar Muestreo</button>
                             }
                             <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
                             <hr />
@@ -292,35 +293,109 @@
             });
         });
 
-        $(document).on('change', '.chk-si-existe', function () {
-            var chk = $(this);
-            var siExiste = chk.is(':checked');
-
-            $.ajax({
-                url: '@Url.Action("ActualizarSiExiste", "ctActFijos")',
-                type: 'POST',
-                data: {
-                    anno: chk.data('anno'),
-                    mes: chk.data('mes'),
-                    noInventario: chk.data('no-inventario'),
-                    subNumero: chk.data('sub-numero'),
+        function recolectarItems() {
+            var items = [];
+            $('#tablaMuestreo tbody tr').each(function () {
+                var chk = $(this).find('.chk-si-existe');
+                items.push({
+                    anno: parseInt(chk.data('anno')),
+                    mes: parseInt(chk.data('mes')),
+                    noInventario: parseInt(chk.data('no-inventario')),
+                    subNumero: parseInt(chk.data('sub-numero')),
                     fechaSubmayor: chk.data('fecha-submayor'),
-                    siExiste: siExiste
-                },
+                    siExiste: chk.is(':checked'),
+                    observaciones: null
+                });
+            });
+            return items;
+        }
+
+        function enviarConfirmacion(items) {
+            $.ajax({
+                url: '@Url.Action("ConfirmarMuestreo", "ctActFijos")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(items),
                 headers: {
                     'XSRF-TOKEN': $('#RequestVerificationToken').val()
                 },
                 success: function (response) {
                     if (response.success) {
-                        MiApp.Mensajes.mostrarNotificacion("success", "Registro actualizado correctamente.");
+                        MiApp.Mensajes.mostrarNotificacion("success", response.mensaje);
                     } else {
-                        MiApp.Mensajes.mostrarNotificacion("error", "Error al actualizar el campo ¿Existe?");
-                        chk.prop('checked', !siExiste);
+                        MiApp.Mensajes.mostrarNotificacion("error", response.mensaje);
                     }
                 },
                 error: function () {
-                    MiApp.Mensajes.mostrarNotificacion("error", "Error de conexión al actualizar ¿Existe?");
-                    chk.prop('checked', !siExiste);
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error de conexión al confirmar el muestreo.");
+                }
+            });
+        }
+
+        $('#btnConfirmarMuestreo').on('click', function () {
+            var items = recolectarItems();
+            var noExistentes = items.filter(function (i) { return !i.siExiste; });
+
+            if (noExistentes.length === 0) {
+                enviarConfirmacion(items);
+                return;
+            }
+
+            var modalContent = '<div class="table-responsive"><table class="table table-bordered table-striped">' +
+                '<thead><tr><th>No. Inventario</th><th>Descripción</th><th>Observaciones <span style="color:red">*</span></th></tr></thead><tbody>';
+
+            for (var i = 0; i < noExistentes.length; i++) {
+                var item = noExistentes[i];
+                var noInv = item.subNumero > 0 ? item.noInventario + '-' + item.subNumero : item.noInventario.toString();
+                var row = $('#tablaMuestreo tbody tr').eq(items.indexOf(item));
+                var desc = row.find('td').eq(1).text();
+                modalContent += '<tr>' +
+                    '<td>' + noInv + '</td>' +
+                    '<td>' + desc + '</td>' +
+                    '<td><textarea class="form-control obs-textarea" data-index="' + items.indexOf(item) + '" rows="2" required></textarea></td>' +
+                    '</tr>';
+            }
+            modalContent += '</tbody></table></div>';
+
+            $.confirm({
+                title: 'Motivos de activos no muestreados',
+                content: modalContent,
+                type: 'orange',
+                columnClass: 'col-md-8 col-md-offset-2',
+                buttons: {
+                    guardar: {
+                        text: 'Guardar',
+                        btnClass: 'btn-green',
+                        action: function () {
+                            var valido = true;
+                            $('.obs-textarea').each(function () {
+                                if ($(this).val().trim() === '') {
+                                    valido = false;
+                                    $(this).css('border-color', 'red');
+                                } else {
+                                    $(this).css('border-color', '');
+                                }
+                            });
+                            if (!valido) {
+                                MiApp.Mensajes.mostrarNotificacion("error", "Debe especificar las observaciones para cada activo no existente.");
+                                return false;
+                            }
+                            $('.obs-textarea').each(function () {
+                                var idx = parseInt($(this).data('index'));
+                                items[idx].observaciones = $(this).val().trim();
+                            });
+                            enviarConfirmacion(items);
+                        }
+                    },
+                    cancelar: {
+                        text: 'Cancelar',
+                        btnClass: 'btn-default'
+                    }
+                },
+                onContentReady: function () {
+                    this.$content.find('textarea').on('input', function () {
+                        $(this).css('border-color', '');
+                    });
                 }
             });
         });

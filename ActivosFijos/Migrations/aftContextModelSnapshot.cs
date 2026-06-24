@@ -212,7 +212,6 @@ namespace ActivosFijos.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Apodo")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .IsUnicode(false)
                         .HasColumnType("varchar(150)");
@@ -222,18 +221,12 @@ namespace ActivosFijos.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(500)");
 
-                    b.Property<Guid?>("Local")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Nombre")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .IsUnicode(false)
                         .HasColumnType("varchar(150)");
 
                     b.HasKey("IdCubiculo");
-
-                    b.HasIndex("Local");
 
                     b.ToTable("Cubiculos");
                 });
@@ -241,6 +234,9 @@ namespace ActivosFijos.Migrations
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
                 {
                     b.Property<Guid>("IdLocal")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("Cubiculo")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Descripcion")
@@ -256,7 +252,58 @@ namespace ActivosFijos.Migrations
 
                     b.HasKey("IdLocal");
 
+                    b.HasIndex("Cubiculo");
+
                     b.ToTable("Locales");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MuestreoMensualDiezPorCiento", b =>
+                {
+                    b.Property<int>("Anno")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("int");
+
+                    b.Property<long>("NoInventario")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaSubmayor")
+                        .HasColumnType("datetime")
+                        .HasColumnName("fechaSubmayor");
+
+                    b.Property<Guid?>("CentroCosto")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(2000)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<DateTime>("FechaMuestreo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("SiExiste")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValueSql("((0))");
+
+                    b.HasKey("Anno", "Mes", "NoInventario", "SubNumero", "FechaSubmayor")
+                        .HasName("PK_MuestreoMensualDiezPorciento");
+
+                    b.HasIndex("CentroCosto");
+
+                    b.HasIndex("NoInventario", "SubNumero", "FechaSubmayor");
+
+                    b.ToTable("MuestreoMensualDiezPorCiento");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Permiso", b =>
@@ -526,14 +573,34 @@ namespace ActivosFijos.Migrations
                     b.Navigation("ResponsableNavigation");
                 });
 
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cubiculo", b =>
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
                 {
-                    b.HasOne("ActivosFijos.Models.EntidadesBD.Locale", "LocalNavigation")
-                        .WithMany("Cubiculos")
-                        .HasForeignKey("Local")
-                        .HasConstraintName("FK_Cubiculos_Locales");
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.Cubiculo", "CubiculoNavigation")
+                        .WithMany("Locales")
+                        .HasForeignKey("Cubiculo")
+                        .HasConstraintName("FK_Locales_Cubiculos");
 
-                    b.Navigation("LocalNavigation");
+                    b.Navigation("CubiculoNavigation");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MuestreoMensualDiezPorCiento", b =>
+                {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.CentroCosto", "CentroCostoNavigation")
+                        .WithMany("MuestreoMensualDiezPorCientos")
+                        .HasForeignKey("CentroCosto")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_MuestreoMensualDiezPorCiento_CentroCosto");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.ActFijo", "ActFijoNavigation")
+                        .WithMany("MuestreoMensualDiezPorCientos")
+                        .HasForeignKey("NoInventario", "SubNumero", "FechaSubmayor")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_MuestreoMensualDiezPorCiento_ActFijo");
+
+                    b.Navigation("ActFijoNavigation");
+
+                    b.Navigation("CentroCostoNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
@@ -606,6 +673,11 @@ namespace ActivosFijos.Migrations
                         .HasConstraintName("FK_PermisosUsuarios_Usuarios");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.ActFijo", b =>
+                {
+                    b.Navigation("MuestreoMensualDiezPorCientos");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.AreaDeResponsabilidad", b =>
                 {
                     b.Navigation("ActFijos");
@@ -624,6 +696,8 @@ namespace ActivosFijos.Migrations
                 {
                     b.Navigation("ActFijos");
 
+                    b.Navigation("MuestreoMensualDiezPorCientos");
+
                     b.Navigation("UtilesHerramienta");
                 });
 
@@ -635,11 +709,8 @@ namespace ActivosFijos.Migrations
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cubiculo", b =>
                 {
                     b.Navigation("ActFijos");
-                });
 
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
-                {
-                    b.Navigation("Cubiculos");
+                    b.Navigation("Locales");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
