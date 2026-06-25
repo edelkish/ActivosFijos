@@ -2253,6 +2253,67 @@ namespace ActivosFijos.Controllers
             return View("vMuestreoDiezPorCiento", muestra);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ConsultaMuestreoDiezPorCiento(DateTime? fecha)
+        {
+            int mes = fecha?.Month ?? 0;
+            int anio = fecha?.Year ?? 0;
+
+            ViewData["mesMuestreo"] = mes;
+            ViewData["anioMuestreo"] = anio;
+            ViewData["breadsC"] = LlenarBreadsCumbs("Consulta Muestreo 10%");
+
+            if (fecha == null)
+            {
+                ViewData["yaExisteMuestreo"] = false;
+                return View("vConsultaMuestreoDiezPorCiento", new List<MuestreoMensualDiezPorCiento>());
+            }
+
+            var muestra = await _context.MuestreoMensualDiezPorCientos
+                .Include(m => m.ActFijoNavigation).ThenInclude(a => a.AreaResponsabilidadNavigation)
+                .Include(m => m.ActFijoNavigation).ThenInclude(a => a.ResponsableNavigation)
+                .Include(m => m.CentroCostoNavigation)
+                .Where(m => m.Anno == anio && m.Mes == mes)
+                .ToListAsync();
+
+            var activosDelMes = await _context.ActFijos
+                .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
+                .Select(a => new { a.NoInventario, a.SubNumero, a.AreaResponsabilidad })
+                .Distinct()
+                .ToListAsync();
+
+            int totalActivosDistintos = activosDelMes.Count;
+            int limiteMuestra = (int)Math.Max(1, Math.Round(totalActivosDistintos * 0.10));
+            int totalAreas = activosDelMes.Where(a => a.AreaResponsabilidad != null).Select(a => a.AreaResponsabilidad).Distinct().Count();
+            int areasCubiertas = muestra.Any() ? muestra.Select(m => m.ActFijoNavigation?.AreaResponsabilidad).Distinct().Count() : 0;
+
+            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = new();
+            if (muestra.Any())
+            {
+                resumenAreas = muestra
+                    .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
+                    .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
+                    .Select(g => new Models.Auxiliar.mdMuestreoResumenArea
+                    {
+                        AreaResponsabilidad = g.Key,
+                        AreaNombre = g.First().ActFijoNavigation.AreaResponsabilidadNavigation?.Nombre ?? "",
+                        Cantidad = g.Count(),
+                        Inventarios = string.Join(", ", g.Select(m => m.NoInventario))
+                    })
+                    .OrderByDescending(r => r.Cantidad)
+                    .ToList();
+            }
+
+            ViewData["totalActivosDistintos"] = totalActivosDistintos;
+            ViewData["limiteMuestra"] = limiteMuestra;
+            ViewData["totalAreas"] = totalAreas;
+            ViewData["areasCubiertas"] = areasCubiertas;
+            ViewData["resumenAreas"] = resumenAreas;
+            ViewData["yaExisteMuestreo"] = muestra.Count > 0;
+
+            return View("vConsultaMuestreoDiezPorCiento", muestra);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EjecutarMuestreo()
@@ -2348,6 +2409,7 @@ namespace ActivosFijos.Controllers
                     ws.Cells["AA4"].Value = new DateTime(anio, mes, 1);
                     ws.Cells["AA5"].Value = ++areaIndex;
                     ws.Cells["AB6"].Value = 1;
+                    ws.Column(4).Width = 20;
 
                     if (items.Count > 1)
                         ws.InsertRow(10, items.Count - 1, 9);
@@ -2393,6 +2455,8 @@ namespace ActivosFijos.Controllers
                             ws.Cells[row, 20].Value = "X";
 
                         ws.Cells[row, 25, row, 30].Merge = true;
+
+                        ws.Row(row).CustomHeight = false;
                     }
 
                     ws.Cells[9, 1, 9 + items.Count - 1, 31].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
@@ -2415,7 +2479,8 @@ namespace ActivosFijos.Controllers
                     ws.Cells[totalRow, 19].Value = 0;
                     ws.Cells[totalRow, 28].Value = items.Count;
 
-                    ws.Cells[9, 1, totalRow, 31].Style.Font.Size = 11;
+                    ws.Cells[9, 1, totalRow, 31].Style.Font.Size = 8;
+                    ws.Cells[9, 4, totalRow, 7].Style.WrapText = true;
 
                     int footerStart = 11 + items.Count;
 
