@@ -31,6 +31,7 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<Usuario> Usuarios { get; set; } = null!;
         public virtual DbSet<UtilesHerramienta> UtilesHerramientas { get; set; } = null!;
         public virtual DbSet<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = null!;
+        public virtual DbSet<PlanMuestreoAnual> PlanMuestreoAnuals { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -220,6 +221,14 @@ namespace ActivosFijos.Models.Contexts
                     .HasForeignKey(d => d.CentroCosto)
                     .OnDelete(DeleteBehavior.SetNull)
                     .HasConstraintName("FK_MuestreoMensualDiezPorCiento_CentroCosto");
+            });
+
+            modelBuilder.Entity<PlanMuestreoAnual>(entity =>
+            {
+                entity.HasKey(e => new { e.Anno, e.CentroCosto, e.AreaResponsabilidad })
+                    .HasName("PK_PlanMuestreoAnual");
+
+                entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
             });
 
             OnModelCreatingPartial(modelBuilder);

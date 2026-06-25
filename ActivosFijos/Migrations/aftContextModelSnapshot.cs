@@ -328,6 +328,67 @@ namespace ActivosFijos.Migrations
                     b.ToTable("Permisos");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.PlanMuestreoAnual", b =>
+                {
+                    b.Property<int>("Anno")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CentroCosto")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AreaResponsabilidad")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Abr")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Ago")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Dic")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Ene")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Feb")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("Jul")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Jun")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mar")
+                        .HasColumnType("int");
+
+                    b.Property<int>("May")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Nov")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Oct")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sep")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalActivos")
+                        .HasColumnType("int");
+
+                    b.HasKey("Anno", "CentroCosto", "AreaResponsabilidad")
+                        .HasName("PK_PlanMuestreoAnual");
+
+                    b.ToTable("PlanMuestreoAnual");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
                 {
                     b.Property<Guid>("IdResponsable")

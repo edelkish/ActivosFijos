@@ -1,0 +1,411 @@
+@using ActivosFijos.Models.Auxiliar
+@model mdPlanMuestreoAnual
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@functions {
+    public string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+@{
+    ViewData["Title"] = "Planificación Muestreo Anual";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Planificación anual de muestreos basada en el submayor de diciembre del año anterior";
+
+    bool estaGuardado = Model.EstaGuardado;
+    int anio = Model.Anio;
+    string anioStr = anio > 0 ? anio.ToString() : "";
+    bool mostrarModal = !estaGuardado && Model.Areas != null && Model.Areas.Any() && !Model.Items.Any();
+    bool mostrarTabla = Model.Items.Any();
+    var totales = Model.Totales;
+    int sumaMesesRegulares = totales != null ? totales.Ene + totales.Feb + totales.Mar + totales.Abr + totales.May + totales.Jul + totales.Ago + totales.Sep + totales.Oct + totales.Nov : 0;
+    int sumaJunDic = totales != null ? totales.Jun + totales.Dic : 0;
+}
+
+@section PluginsCSS{
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+    </environment>
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <div class="page-title">
+            <h1>
+                Activos Fijos | Planificación Muestreo Anual
+            </h1>
+        </div>
+    </div>
+</div>
+<div class="page-content">
+    <div class="container-fluid">
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Activos Fijos</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Planificación Muestreo Anual</span>
+            </li>
+        </ul>
+        <div class="page-content-inner util-btn-margin-bottom-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Planificación de Muestreos del Año
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"></a>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <form method="get" asp-action="PlanMuestreoAnual" asp-controller="ctActFijos">
+                                <div class="form-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="control-label">A&ntilde;o:</label>
+                                                <div class='input-group date' id='datetimepickerPlan'>
+                                                    <input type='text' class="form-control" name="anio" id="Anio" value="@anioStr" />
+                                                    <span class="input-group-addon">
+                                                        <span class="glyphicon glyphicon-calendar"></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2" style="padding-top:25px">
+                                            <button type="submit" class="btn blue-hoki btn-outline sbold uppercase" id="btnMostrar"><i class="fa fa-search"></i> Mostrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <hr />
+
+                            <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+
+                            @if (mostrarTabla)
+                            {
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@Model.TotalActivosBase</h4>
+                                                    <small>Total AFT Base (Dic @(anio - 1))</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@Model.DiezPorCientoEsperado</h4>
+                                                    <small>10% Esperado</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@sumaMesesRegulares</h4>
+                                                    <small>Total Planif. (meses regulares)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@sumaJunDic</h4>
+                                                    <small>Jun + Dic (100%)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="portlet box blue-hoki">
+                                            <div class="portlet-title">
+                                                <div class="caption">
+                                                    Planificación @anio (base: diciembre @(anio - 1))
+                                                    @if (estaGuardado)
+                                                    {
+                                                        <span class="badge badge-success" style="background-color:#26a69a; margin-left:10px;">Plan guardado</span>
+                                                    }
+                                                </div>
+                                                <div class="tools">
+                                                    <a href="" class="fullscreen"></a>
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                @if (!estaGuardado)
+                                                {
+                                                    <div class="row" style="margin-bottom:15px;">
+                                                        <div class="col-md-12 text-right">
+                                                            <button type="button" class="btn green-hoki sbold uppercase" id="btnGuardarPlan">
+                                                                <i class="fa fa-save"></i> Guardar Planificación
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" id="hiddenAreasSeleccionadas" value="@ViewData["areasSeleccionadas"]" />
+                                                }
+                                                <table class="table table-striped table-bordered table-hover" id="tablaPlan">
+                                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                                        <tr>
+                                                            <th>Área</th>
+                                                            <th>Centro Costo (#)</th>
+                                                            <th>Total</th>
+                                                            <th>Ene</th>
+                                                            <th>Feb</th>
+                                                            <th>Mar</th>
+                                                            <th>Abr</th>
+                                                            <th>May</th>
+                                                            <th>Jun</th>
+                                                            <th>Jul</th>
+                                                            <th>Ago</th>
+                                                            <th>Sep</th>
+                                                            <th>Oct</th>
+                                                            <th>Nov</th>
+                                                            <th>Dic</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var item in Model.Items)
+                                                        {
+                                                            <tr>
+                                                                <td>@item.NombreArea</td>
+                                                                <td>@item.NumeroCentroCosto</td>
+                                                                <td class="text-center">@item.TotalActivos</td>
+                                                                <td class="text-center">@item.Ene</td>
+                                                                <td class="text-center">@item.Feb</td>
+                                                                <td class="text-center">@item.Mar</td>
+                                                                <td class="text-center">@item.Abr</td>
+                                                                <td class="text-center">@item.May</td>
+                                                                <td class="text-center">@item.Jun</td>
+                                                                <td class="text-center">@item.Jul</td>
+                                                                <td class="text-center">@item.Ago</td>
+                                                                <td class="text-center">@item.Sep</td>
+                                                                <td class="text-center">@item.Oct</td>
+                                                                <td class="text-center">@item.Nov</td>
+                                                                <td class="text-center">@item.Dic</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                    @if (totales != null)
+                                                    {
+                                                        <tfoot>
+                                                            <tr style="font-weight:bold; background-color:#f5f5f5;">
+                                                                <td>@totales.NombreArea</td>
+                                                                <td></td>
+                                                                <td class="text-center">@totales.TotalActivos</td>
+                                                                <td class="text-center">@totales.Ene</td>
+                                                                <td class="text-center">@totales.Feb</td>
+                                                                <td class="text-center">@totales.Mar</td>
+                                                                <td class="text-center">@totales.Abr</td>
+                                                                <td class="text-center">@totales.May</td>
+                                                                <td class="text-center">@totales.Jun</td>
+                                                                <td class="text-center">@totales.Jul</td>
+                                                                <td class="text-center">@totales.Ago</td>
+                                                                <td class="text-center">@totales.Sep</td>
+                                                                <td class="text-center">@totales.Oct</td>
+                                                                <td class="text-center">@totales.Nov</td>
+                                                                <td class="text-center">@totales.Dic</td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (anio > 0 && !mostrarModal)
+                            {
+                                <div class="alert alert-warning">
+                                    <strong>Sin resultados</strong> No se encontraron activos en diciembre de @(anio - 1) (año base) para generar la planificación de @anio.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (mostrarModal)
+{
+    <div class="modal fade" id="modalAreas" tabindex="-1" role="dialog" aria-labelledby="modalAreasLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="modalAreasLabel">Seleccionar Áreas para la Planificación @anio</h4>
+                </div>
+                <form method="post" asp-action="PlanMuestreoAnual" asp-controller="ctActFijos">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="anio" value="@anio" />
+                    <div class="modal-body">
+                        <p>Seleccione las áreas que desea incluir en la planificación (base: diciembre @(anio - 1)):</p>
+                        <div class="table-scrollable">
+                            <table class="table table-striped table-bordered table-hover">
+                                <thead style="background-color: #444d58 !important; color: #ced5de">
+                                    <tr>
+                                        <th style="width:40px;">
+                                            <input type="checkbox" id="chkSeleccionarTodo" checked />
+                                        </th>
+                                        <th>Área</th>
+                                        <th>Centros de Costo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var area in Model.Areas!)
+                                    {
+                                        <tr>
+                                            <td class="text-center">
+                                                <input type="checkbox" name="areasSeleccionadas" value="@area.AreaId" class="chkArea" checked="@area.Seleccionado" />
+                                            </td>
+                                            <td>@area.NombreArea</td>
+                                            <td>@area.CantidadCentros</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn blue-hoki sbold uppercase">Generar Planificación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section PluginsJS {
+    <environment names="Development,Staging,Production">
+        <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+        <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
+        <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
+        <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+    </environment>
+}
+
+@section Scripts {
+    <script type="text/javascript">
+        var baseUrl = $('base').attr('href');
+
+        @if (anioStr != "")
+        {
+            <text>
+        var f = moment("@anioStr", "YYYY");
+        document.getElementById('Anio').value = f.format("YYYY");
+        </text>
+        }
+
+        $('#datetimepickerPlan').datetimepicker({
+            format: 'YYYY',
+            locale: 'es',
+            viewMode: 'years'
+        });
+
+        $('#datetimepickerPlan').on('dp.change', function (e) {
+            var value = moment(e.date).format("YYYY");
+            document.getElementById('Anio').value = value;
+        });
+
+        @if (mostrarTabla)
+        {
+            <text>
+        var tablaPlan = $('#tablaPlan').DataTable({
+            language: {
+                url: baseUrl + 'global/plugins/datatables/Spanish.json'
+            },
+            order: [[0, 'asc']],
+            pageLength: 25
+        });
+        </text>
+        }
+
+        $('#chkSeleccionarTodo').on('change', function () {
+            $('.chkArea').prop('checked', $(this).prop('checked'));
+        });
+
+        $(document).on('change', '.chkArea', function () {
+            var total = $('.chkArea').length;
+            var checked = $('.chkArea:checked').length;
+            $('#chkSeleccionarTodo').prop('checked', total === checked);
+        });
+
+        @if (mostrarModal)
+        {
+            <text>
+        $(document).ready(function () {
+            $('#modalAreas').modal('show');
+        });
+        </text>
+        }
+
+        $('#btnGuardarPlan').on('click', function () {
+            var anio = @Html.Raw(anio > 0 ? anio.ToString() : "0");
+
+            if (anio <= 0) {
+                MiApp.Mensajes.mostrarNotificacion('error', 'Seleccione un año primero.', 'Error');
+                return;
+            }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+
+            var areasStr = $('#hiddenAreasSeleccionadas').val();
+            var areas = areasStr ? areasStr.split(',') : [];
+
+            if (areas.length === 0) {
+                MiApp.Mensajes.mostrarNotificacion('error', 'No hay áreas seleccionadas. Genere la planificación primero.', 'Error');
+                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar Planificación');
+                return;
+            }
+
+            $.ajax({
+                url: baseUrl + 'ctActFijos/GuardarPlanMuestreo',
+                type: 'POST',
+                data: { anio: anio, areasSeleccionadas: areas },
+                headers: {
+                    'XSRF-TOKEN': $('#RequestVerificationToken').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        MiApp.Mensajes.mostrarNotificacion('success', response.mensaje, 'Guardado');
+                        setTimeout(function () {
+                            window.location.href = baseUrl + 'ctActFijos/PlanMuestreoAnual?anio=' + anio;
+                        }, 1500);
+                    } else {
+                        MiApp.Mensajes.mostrarNotificacion('error', response.mensaje, 'Error');
+                        $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar Planificación');
+                    }
+                },
+                error: function () {
+                    MiApp.Mensajes.mostrarNotificacion('error', 'Error al guardar la planificación.', 'Error');
+                    $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar Planificación');
+                }
+            });
+        });
+    </script>
+}
+
