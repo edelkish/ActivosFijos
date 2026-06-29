@@ -2623,26 +2623,56 @@ namespace ActivosFijos.Controllers
                 foreach (var p in planGuardado)
                     model.Items.Add(MapearItem(p, centros, areas));
 
+                model.Items = model.Items
+                    .GroupBy(i => i.NombreArea ?? "S/A")
+                    .Select(g =>
+                    {
+                        var rep = g.FirstOrDefault(i => i.NumeroCentroCosto != "S/A") ?? g.First();
+                        return new Models.Auxiliar.mdPlanMuestreoAnualItem
+                        {
+                            CentroCosto = rep.CentroCosto,
+                            NumeroCentroCosto = rep.NumeroCentroCosto,
+                            NombreCentroCosto = rep.NombreCentroCosto,
+                            AreaResponsabilidad = rep.AreaResponsabilidad,
+                            NombreArea = g.Key,
+                            TotalActivos = g.Sum(i => i.TotalActivos),
+                            Ene = g.Sum(i => i.Ene),
+                            Feb = g.Sum(i => i.Feb),
+                            Mar = g.Sum(i => i.Mar),
+                            Abr = g.Sum(i => i.Abr),
+                            May = g.Sum(i => i.May),
+                            Jun = g.Sum(i => i.Jun),
+                            Jul = g.Sum(i => i.Jul),
+                            Ago = g.Sum(i => i.Ago),
+                            Sep = g.Sum(i => i.Sep),
+                            Oct = g.Sum(i => i.Oct),
+                            Nov = g.Sum(i => i.Nov),
+                            Dic = g.Sum(i => i.Dic)
+                        };
+                    })
+                    .OrderBy(i => i.NombreArea)
+                    .ToList();
+
                 model.Totales = CalcularTotales(model.Items);
             }
             else
             {
-                var areasAgrupadas = await _context.ActFijos
-                    .Include(a => a.CentroCostoNavigation)
+                var activos = await _context.ActFijos
                     .Include(a => a.AreaResponsabilidadNavigation)
                     .Where(a => a.FechaSubmayor.Year == year - 1 && a.FechaSubmayor.Month == 12)
-                    .GroupBy(a => a.AreaResponsabilidad ?? Guid.Empty)
+                    .ToListAsync();
+
+                var areasAgrupadas = activos
+                    .GroupBy(a => a.AreaResponsabilidadNavigation?.Nombre ?? "S/A")
                     .Select(g => new Models.Auxiliar.mdPlanMuestreoArea
                     {
-                        AreaId = g.Key,
-                        NombreArea = g.First().AreaResponsabilidadNavigation != null
-                            ? g.First().AreaResponsabilidadNavigation.Nombre
-                            : "S/A",
+                        AreaId = g.First().AreaResponsabilidad ?? Guid.Empty,
+                        NombreArea = g.Key,
                         CantidadCentros = g.Select(a => a.CentroCosto ?? Guid.Empty).Distinct().Count(),
                         Seleccionado = true
                     })
                     .OrderBy(a => a.NombreArea)
-                    .ToListAsync();
+                    .ToList();
 
                 model.Areas = areasAgrupadas;
             }
@@ -2656,7 +2686,7 @@ namespace ActivosFijos.Controllers
         {
             ViewData["breadsC"] = LlenarBreadsCumbs("Planificación Muestreo Anual");
 
-            var selectedAreas = areasSeleccionadas?
+            var selectedGuids = areasSeleccionadas?
                 .Select(a => Guid.TryParse(a, out var g) ? (Guid?)g : null)
                 .Where(g => g.HasValue)
                 .Select(g => g.Value)
@@ -2682,14 +2712,27 @@ namespace ActivosFijos.Controllers
                 .Where(a => a.FechaSubmayor.Year == anio - 1 && a.FechaSubmayor.Month == 12)
                 .ToListAsync();
 
+            var selectedNames = activosDic
+                .Where(a => a.AreaResponsabilidadNavigation != null
+                    && selectedGuids.Contains(a.AreaResponsabilidad ?? Guid.Empty))
+                .Select(a => a.AreaResponsabilidadNavigation!.Nombre)
+                .Distinct()
+                .ToHashSet();
+
+            var expandedGuids = activosDic
+                .Where(a => a.AreaResponsabilidadNavigation != null
+                    && selectedNames.Contains(a.AreaResponsabilidadNavigation.Nombre))
+                .Select(a => a.AreaResponsabilidad ?? Guid.Empty)
+                .Distinct()
+                .ToHashSet();
+
+            if (selectedGuids.Contains(Guid.Empty))
+                expandedGuids.Add(Guid.Empty);
+
             var grupos = activosDic
-                .GroupBy(a => new
-                {
-                    CentroCosto = a.CentroCosto ?? Guid.Empty,
-                    Area = a.AreaResponsabilidad ?? Guid.Empty
-                })
-                .Where(g => selectedAreas.Contains(g.Key.Area))
-                .OrderBy(g => g.Key.Area).ThenBy(g => g.Key.CentroCosto)
+                .Where(a => expandedGuids.Contains(a.AreaResponsabilidad ?? Guid.Empty))
+                .GroupBy(a => a.AreaResponsabilidadNavigation?.Nombre ?? "S/A")
+                .OrderBy(g => g.Key)
                 .ToList();
 
             foreach (var grupo in grupos)
@@ -2697,28 +2740,26 @@ namespace ActivosFijos.Controllers
                 int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
                 int porMes = (int)Math.Max(1, Math.Round(total * 0.10));
 
-                string? numeroCC = null;
-                string? nombreCC = null;
-                string? nombreArea = null;
+                var ccValido = grupo
+                    .Where(a => a.CentroCostoNavigation != null && a.CentroCostoNavigation.Numero != null)
+                    .Select(a => a.CentroCostoNavigation)
+                    .FirstOrDefault();
+
+                var numeroCC = ccValido?.Numero?.ToString();
+                var nombreCC = ccValido?.Nombre;
+                var centroCostoId = ccValido?.IdCentroCosto;
 
                 var first = grupo.First();
-                if (first.CentroCostoNavigation != null)
-                {
-                    numeroCC = first.CentroCostoNavigation.Numero?.ToString();
-                    nombreCC = first.CentroCostoNavigation.Nombre;
-                }
-                if (first.AreaResponsabilidadNavigation != null)
-                {
-                    nombreArea = first.AreaResponsabilidadNavigation.Nombre;
-                }
+                var nombreArea = first.AreaResponsabilidadNavigation?.Nombre ?? "S/A";
+                Guid areaId = first.AreaResponsabilidad ?? Guid.Empty;
 
                 model.Items.Add(new Models.Auxiliar.mdPlanMuestreoAnualItem
                 {
-                    CentroCosto = grupo.Key.CentroCosto,
+                    CentroCosto = centroCostoId ?? Guid.Empty,
                     NumeroCentroCosto = numeroCC ?? "S/A",
                     NombreCentroCosto = nombreCC ?? "S/A",
-                    AreaResponsabilidad = grupo.Key.Area,
-                    NombreArea = nombreArea ?? "S/A",
+                    AreaResponsabilidad = areaId,
+                    NombreArea = nombreArea,
                     TotalActivos = total,
                     Ene = porMes, Feb = porMes, Mar = porMes, Abr = porMes,
                     May = porMes, Jun = total, Jul = porMes, Ago = porMes,
@@ -2728,7 +2769,7 @@ namespace ActivosFijos.Controllers
 
             model.Totales = CalcularTotales(model.Items);
 
-            ViewData["areasSeleccionadas"] = string.Join(",", selectedAreas);
+            ViewData["areasSeleccionadas"] = string.Join(",", expandedGuids);
 
             return View("vPlanMuestreoAnual", model);
         }
