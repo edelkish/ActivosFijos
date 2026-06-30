@@ -9,6 +9,8 @@ namespace ActivosFijos.Models.Auxiliar
         public bool EstaGuardado { get; set; }
         public int TotalActivosBase { get; set; }
         public int DiezPorCientoEsperado { get; set; }
+        public bool HayAreasSinCentroCosto { get; set; }
+        public List<string>? AreasSinCentroCosto { get; set; }
         public List<mdPlanMuestreoAnualItem> Items { get; set; } = new();
         public mdPlanMuestreoAnualItem? Totales { get; set; }
         public List<mdPlanMuestreoArea>? Areas { get; set; }
