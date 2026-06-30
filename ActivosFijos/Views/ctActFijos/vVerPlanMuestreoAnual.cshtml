@@ -17,6 +17,12 @@
     var totales = Model.Totales;
     int sumaMesesRegulares = totales != null ? totales.Ene + totales.Feb + totales.Mar + totales.Abr + totales.May + totales.Jul + totales.Ago + totales.Sep + totales.Oct + totales.Nov : 0;
     int sumaJunDic = totales != null ? totales.Jun + totales.Dic : 0;
+    int tasaPorMes = totales?.Ene ?? 0;
+    int totalActivos = totales?.TotalActivos ?? 0;
+    int mesesNec = tasaPorMes > 0 ? (int)Math.Ceiling((double)totalActivos / tasaPorMes) : 0;
+    string[] mesesNom = { "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
+    string mesEstimado = mesesNec >= 1 && mesesNec <= 12 ? mesesNom[mesesNec - 1] : $"> 12 meses ({mesesNec})";
 }
 
 @section PluginsCSS{
@@ -132,6 +138,18 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@mesEstimado</h4>
+                                                    <small>Cobertura 100% estimada</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div class="row">
                                     <div class="col-md-12">
@@ -218,6 +236,16 @@
                                                         </tfoot>
                                                     }
                                                 </table>
+                                                <div class="alert alert-info" style="margin-top:15px;">
+                                                    <strong><i class="fa fa-info-circle"></i> Metodología de muestreo:</strong>
+                                                    La planificación distribuye aproximadamente el 10% de los activos (mínimo 1)
+                                                    por cada área en los meses de enero a mayo y de julio a noviembre, complementado
+                                                    con conteo físico del 100% en junio y diciembre. A razón de
+                                                    <strong>@tasaPorMes activos por mes</strong> en meses regulares, se requieren
+                                                    aproximadamente <strong>@mesesNec meses</strong> para cubrir los
+                                                    <strong>@totalActivos activos</strong> totales, completándose cerca de
+                                                    <strong>@mesEstimado</strong>.
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
