@@ -15,7 +15,6 @@
     string anioStr = anio > 0 ? anio.ToString() : "";
     bool mostrarTabla = Model.Items.Any();
     var totales = Model.Totales;
-    int sumaMesesRegulares = totales != null ? totales.Ene + totales.Feb + totales.Mar + totales.Abr + totales.May + totales.Jul + totales.Ago + totales.Sep + totales.Oct + totales.Nov : 0;
     int tasaPorMes = totales?.Ene ?? 0;
     int totalActivos = totales?.TotalActivos ?? 0;
     int mesesNec = tasaPorMes > 0 ? (int)Math.Ceiling((double)totalActivos / tasaPorMes) : 0;
@@ -120,8 +119,8 @@
                                         <div class="portlet light bordered">
                                             <div class="portlet-body">
                                                 <div>
-                                                    <h4>@sumaMesesRegulares</h4>
-                                                    <small>Total Planif. (meses regulares)</small>
+                                                    <h4>@(totales?.TotalActivos ?? 0)</h4>
+                                                    <small>Total AFT Planificados</small>
                                                 </div>
                                             </div>
                                         </div>

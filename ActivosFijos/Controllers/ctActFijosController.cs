@@ -2689,7 +2689,18 @@ namespace ActivosFijos.Controllers
             foreach (var grupo in grupos)
             {
                 int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
-                int porMes = (int)Math.Max(1, Math.Round(total * 0.10));
+                int porMesBase = (int)Math.Max(1, Math.Round(total * 0.10));
+                int rem = Math.Max(0, total - porMesBase * 10);
+                int ene = porMesBase + (rem-- > 0 ? 1 : 0),
+                    feb = porMesBase + (rem-- > 0 ? 1 : 0),
+                    mar = porMesBase + (rem-- > 0 ? 1 : 0),
+                    abr = porMesBase + (rem-- > 0 ? 1 : 0),
+                    may = porMesBase + (rem-- > 0 ? 1 : 0),
+                    jul = porMesBase + (rem-- > 0 ? 1 : 0),
+                    ago = porMesBase + (rem-- > 0 ? 1 : 0),
+                    sep = porMesBase + (rem-- > 0 ? 1 : 0),
+                    oct = porMesBase + (rem-- > 0 ? 1 : 0),
+                    nov = porMesBase + (rem-- > 0 ? 1 : 0);
 
                 var first = grupo.First();
 
@@ -2701,9 +2712,9 @@ namespace ActivosFijos.Controllers
                     AreaResponsabilidad = grupo.Key.Area,
                     NombreArea = first.AreaResponsabilidadNavigation?.Nombre ?? "S/A",
                     TotalActivos = total,
-                    Ene = porMes, Feb = porMes, Mar = porMes, Abr = porMes,
-                    May = porMes, Jun = total, Jul = porMes, Ago = porMes,
-                    Sep = porMes, Oct = porMes, Nov = porMes, Dic = total
+                    Ene = ene, Feb = feb, Mar = mar, Abr = abr,
+                    May = may, Jun = total, Jul = jul, Ago = ago,
+                    Sep = sep, Oct = oct, Nov = nov, Dic = total
                 });
             }
 
@@ -2773,7 +2784,18 @@ namespace ActivosFijos.Controllers
                 foreach (var grupo in grupos)
                 {
                     int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
-                    int porMes = (int)Math.Max(1, Math.Round(total * 0.10));
+                    int porMesBase = (int)Math.Max(1, Math.Round(total * 0.10));
+                    int rem = Math.Max(0, total - porMesBase * 10);
+                    int ene = porMesBase + (rem-- > 0 ? 1 : 0),
+                        feb = porMesBase + (rem-- > 0 ? 1 : 0),
+                        mar = porMesBase + (rem-- > 0 ? 1 : 0),
+                        abr = porMesBase + (rem-- > 0 ? 1 : 0),
+                        may = porMesBase + (rem-- > 0 ? 1 : 0),
+                        jul = porMesBase + (rem-- > 0 ? 1 : 0),
+                        ago = porMesBase + (rem-- > 0 ? 1 : 0),
+                        sep = porMesBase + (rem-- > 0 ? 1 : 0),
+                        oct = porMesBase + (rem-- > 0 ? 1 : 0),
+                        nov = porMesBase + (rem-- > 0 ? 1 : 0);
 
                     planes.Add(new PlanMuestreoAnual
                     {
@@ -2781,9 +2803,9 @@ namespace ActivosFijos.Controllers
                         CentroCosto = grupo.Key.CentroCosto,
                         AreaResponsabilidad = grupo.Key.Area,
                         TotalActivos = total,
-                        Ene = porMes, Feb = porMes, Mar = porMes, Abr = porMes,
-                        May = porMes, Jun = total, Jul = porMes, Ago = porMes,
-                        Sep = porMes, Oct = porMes, Nov = porMes, Dic = total,
+                        Ene = ene, Feb = feb, Mar = mar, Abr = abr,
+                        May = may, Jun = total, Jul = jul, Ago = ago,
+                        Sep = sep, Oct = oct, Nov = nov, Dic = total,
                         FechaCreacion = DateTime.Now
                     });
                 }
