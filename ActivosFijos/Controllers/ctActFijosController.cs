@@ -2678,47 +2678,30 @@ namespace ActivosFijos.Controllers
 
             var grupos = activosDic
                 .Where(a => expandedGuids.Contains(a.AreaResponsabilidad ?? Guid.Empty))
-                .GroupBy(a => new
-                {
-                    CentroCosto = a.CentroCosto ?? Guid.Empty,
-                    Area = a.AreaResponsabilidad ?? Guid.Empty
-                })
+                .GroupBy(a => a.AreaResponsabilidad ?? Guid.Empty)
                 .ToList();
 
-            model.Items.Clear();
+            var areasInfo = new List<(Guid areaId, string nombreArea, int total, Guid centroCosto, string numCC, string nomCC)>();
             foreach (var grupo in grupos)
             {
                 int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
-                int porMesBase = (int)Math.Max(1, Math.Round(total * 0.10));
-                int rem = Math.Max(0, total - porMesBase * 10);
-                int ene = porMesBase + (rem-- > 0 ? 1 : 0),
-                    feb = porMesBase + (rem-- > 0 ? 1 : 0),
-                    mar = porMesBase + (rem-- > 0 ? 1 : 0),
-                    abr = porMesBase + (rem-- > 0 ? 1 : 0),
-                    may = porMesBase + (rem-- > 0 ? 1 : 0),
-                    jul = porMesBase + (rem-- > 0 ? 1 : 0),
-                    ago = porMesBase + (rem-- > 0 ? 1 : 0),
-                    sep = porMesBase + (rem-- > 0 ? 1 : 0),
-                    oct = porMesBase + (rem-- > 0 ? 1 : 0),
-                    nov = porMesBase + (rem-- > 0 ? 1 : 0);
-
                 var first = grupo.First();
+                var ccValido = grupo
+                    .Where(a => a.CentroCostoNavigation != null && a.CentroCostoNavigation.Numero != null)
+                    .Select(a => a.CentroCostoNavigation)
+                    .FirstOrDefault();
 
-                model.Items.Add(new Models.Auxiliar.mdPlanMuestreoAnualItem
-                {
-                    CentroCosto = grupo.Key.CentroCosto,
-                    NumeroCentroCosto = first.CentroCostoNavigation?.Numero?.ToString() ?? "S/A",
-                    NombreCentroCosto = first.CentroCostoNavigation?.Nombre ?? "S/A",
-                    AreaResponsabilidad = grupo.Key.Area,
-                    NombreArea = first.AreaResponsabilidadNavigation?.Nombre ?? "S/A",
-                    TotalActivos = total,
-                    Ene = ene, Feb = feb, Mar = mar, Abr = abr,
-                    May = may, Jun = total, Jul = jul, Ago = ago,
-                    Sep = sep, Oct = oct, Nov = nov, Dic = total
-                });
+                areasInfo.Add((
+                    grupo.Key,
+                    first.AreaResponsabilidadNavigation?.Nombre ?? "S/A",
+                    total,
+                    ccValido?.IdCentroCosto ?? Guid.Empty,
+                    ccValido?.Numero?.ToString() ?? "S/A",
+                    ccValido?.Nombre ?? "S/A"
+                ));
             }
 
-            model.Items = AgruparItemsPorArea(model.Items);
+            model.Items = CalcularItemsConDistribucionGlobal(areasInfo);
             model.Totales = CalcularTotales(model.Items);
 
             var areasSinCC = model.Items
@@ -2772,43 +2755,42 @@ namespace ActivosFijos.Controllers
                     return Json(new { success = false, mensaje = $"No se puede guardar: las siguientes áreas no tienen centro de costo asignado: {string.Join(", ", nombresSinCC)}. Asígneles un centro de costo e intente nuevamente." });
 
                 var grupos = activosDic
-                    .GroupBy(a => new
-                    {
-                        CentroCosto = a.CentroCosto ?? Guid.Empty,
-                        Area = a.AreaResponsabilidad ?? Guid.Empty
-                    })
-                    .Where(g => selectedAreas.Contains(g.Key.Area))
+                    .Where(a => selectedAreas.Contains(a.AreaResponsabilidad ?? Guid.Empty))
+                    .GroupBy(a => a.AreaResponsabilidad ?? Guid.Empty)
                     .ToList();
 
-                var planes = new List<PlanMuestreoAnual>();
+                var areasInfo = new List<(Guid areaId, string nombreArea, int total, Guid centroCosto, string numCC, string nomCC)>();
                 foreach (var grupo in grupos)
                 {
                     int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
-                    int porMesBase = (int)Math.Max(1, Math.Round(total * 0.10));
-                    int rem = Math.Max(0, total - porMesBase * 10);
-                    int ene = porMesBase + (rem-- > 0 ? 1 : 0),
-                        feb = porMesBase + (rem-- > 0 ? 1 : 0),
-                        mar = porMesBase + (rem-- > 0 ? 1 : 0),
-                        abr = porMesBase + (rem-- > 0 ? 1 : 0),
-                        may = porMesBase + (rem-- > 0 ? 1 : 0),
-                        jul = porMesBase + (rem-- > 0 ? 1 : 0),
-                        ago = porMesBase + (rem-- > 0 ? 1 : 0),
-                        sep = porMesBase + (rem-- > 0 ? 1 : 0),
-                        oct = porMesBase + (rem-- > 0 ? 1 : 0),
-                        nov = porMesBase + (rem-- > 0 ? 1 : 0);
+                    var first = grupo.First();
+                    var ccValido = grupo
+                        .Where(a => a.CentroCostoNavigation != null && a.CentroCostoNavigation.Numero != null)
+                        .Select(a => a.CentroCostoNavigation)
+                        .FirstOrDefault();
 
-                    planes.Add(new PlanMuestreoAnual
-                    {
-                        Anno = anio,
-                        CentroCosto = grupo.Key.CentroCosto,
-                        AreaResponsabilidad = grupo.Key.Area,
-                        TotalActivos = total,
-                        Ene = ene, Feb = feb, Mar = mar, Abr = abr,
-                        May = may, Jun = total, Jul = jul, Ago = ago,
-                        Sep = sep, Oct = oct, Nov = nov, Dic = total,
-                        FechaCreacion = DateTime.Now
-                    });
+                    areasInfo.Add((
+                        grupo.Key,
+                        first.AreaResponsabilidadNavigation?.Nombre ?? "S/A",
+                        total,
+                        ccValido?.IdCentroCosto ?? Guid.Empty,
+                        ccValido?.Numero?.ToString() ?? "S/A",
+                        ccValido?.Nombre ?? "S/A"
+                    ));
                 }
+
+                var items = CalcularItemsConDistribucionGlobal(areasInfo);
+                var planes = items.Select(item => new PlanMuestreoAnual
+                {
+                    Anno = anio,
+                    CentroCosto = item.CentroCosto,
+                    AreaResponsabilidad = item.AreaResponsabilidad,
+                    TotalActivos = item.TotalActivos,
+                    Ene = item.Ene, Feb = item.Feb, Mar = item.Mar, Abr = item.Abr,
+                    May = item.May, Jun = item.Jun, Jul = item.Jul, Ago = item.Ago,
+                    Sep = item.Sep, Oct = item.Oct, Nov = item.Nov, Dic = item.Dic,
+                    FechaCreacion = DateTime.Now
+                }).ToList();
 
                 if (!planes.Any())
                     return Json(new { success = false, mensaje = "No se encontraron activos en diciembre para generar la planificación con las áreas seleccionadas." });
@@ -2816,7 +2798,7 @@ namespace ActivosFijos.Controllers
                 _context.PlanMuestreoAnuals.AddRange(planes);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, mensaje = $"Planificación del año {anio} guardada correctamente ({planes.Count} centros/áreas)." });
+                return Json(new { success = true, mensaje = $"Planificación del año {anio} guardada correctamente ({planes.Count} áreas)." });
             }
             catch (Exception ex)
             {
@@ -3016,6 +2998,75 @@ namespace ActivosFijos.Controllers
                 May = p.May, Jun = p.Jun, Jul = p.Jul, Ago = p.Ago,
                 Sep = p.Sep, Oct = p.Oct, Nov = p.Nov, Dic = p.Dic
             };
+        }
+
+        private static List<Models.Auxiliar.mdPlanMuestreoAnualItem> CalcularItemsConDistribucionGlobal(
+            List<(Guid areaId, string nombreArea, int total, Guid centroCosto, string numCC, string nomCC)> areas)
+        {
+            int grandTotal = areas.Sum(a => a.total);
+            if (grandTotal == 0) return new List<Models.Auxiliar.mdPlanMuestreoAnualItem>();
+
+            int globalBase = Math.Max(1, (int)Math.Floor(grandTotal * 0.10));
+            int globalRem = grandTotal - globalBase * 10;
+
+            int[] monthTargets = new int[10];
+            for (int m = 0; m < 10; m++)
+                monthTargets[m] = globalBase + (m < globalRem ? 1 : 0);
+
+            int n = areas.Count;
+            int[][] vals = new int[n][];
+            for (int i = 0; i < n; i++)
+                vals[i] = new int[10];
+
+            for (int m = 0; m < 10; m++)
+            {
+                int[] floors = new int[n];
+                long[] remainders = new long[n];
+                int totalFloor = 0;
+
+                for (int i = 0; i < n; i++)
+                {
+                    long prod = (long)areas[i].total * monthTargets[m];
+                    floors[i] = (int)(prod / grandTotal);
+                    remainders[i] = prod - floors[i] * grandTotal;
+                    totalFloor += floors[i];
+                }
+
+                int rem = monthTargets[m] - totalFloor;
+                if (rem > 0)
+                {
+                    var topAreas = Enumerable.Range(0, n)
+                        .OrderByDescending(i => remainders[i])
+                        .Take(rem)
+                        .ToList();
+
+                    foreach (int i in topAreas)
+                        floors[i]++;
+                }
+
+                for (int i = 0; i < n; i++)
+                    vals[i][m] = floors[i];
+            }
+
+            var items = new List<Models.Auxiliar.mdPlanMuestreoAnualItem>();
+            for (int i = 0; i < n; i++)
+            {
+                items.Add(new Models.Auxiliar.mdPlanMuestreoAnualItem
+                {
+                    CentroCosto = areas[i].centroCosto,
+                    NumeroCentroCosto = areas[i].numCC,
+                    NombreCentroCosto = areas[i].nomCC,
+                    AreaResponsabilidad = areas[i].areaId,
+                    NombreArea = areas[i].nombreArea,
+                    TotalActivos = areas[i].total,
+                    Ene = vals[i][0], Feb = vals[i][1], Mar = vals[i][2],
+                    Abr = vals[i][3], May = vals[i][4], Jun = areas[i].total,
+                    Jul = vals[i][5], Ago = vals[i][6], Sep = vals[i][7],
+                    Oct = vals[i][8], Nov = vals[i][9], Dic = areas[i].total
+                });
+            }
+
+            return items;
         }
 
         private static Models.Auxiliar.mdPlanMuestreoAnualItem CalcularTotales(List<Models.Auxiliar.mdPlanMuestreoAnualItem> items)
