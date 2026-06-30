@@ -16,7 +16,6 @@
     bool mostrarTabla = Model.Items.Any();
     var totales = Model.Totales;
     int sumaMesesRegulares = totales != null ? totales.Ene + totales.Feb + totales.Mar + totales.Abr + totales.May + totales.Jul + totales.Ago + totales.Sep + totales.Oct + totales.Nov : 0;
-    int sumaJunDic = totales != null ? totales.Jun + totales.Dic : 0;
     int tasaPorMes = totales?.Ene ?? 0;
     int totalActivos = totales?.TotalActivos ?? 0;
     int mesesNec = tasaPorMes > 0 ? (int)Math.Ceiling((double)totalActivos / tasaPorMes) : 0;
@@ -123,16 +122,6 @@
                                                 <div>
                                                     <h4>@sumaMesesRegulares</h4>
                                                     <small>Total Planif. (meses regulares)</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="portlet light bordered">
-                                            <div class="portlet-body">
-                                                <div>
-                                                    <h4>@sumaJunDic</h4>
-                                                    <small>Jun + Dic (100%)</small>
                                                 </div>
                                             </div>
                                         </div>

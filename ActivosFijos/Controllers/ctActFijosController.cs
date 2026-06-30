@@ -2678,35 +2678,28 @@ namespace ActivosFijos.Controllers
 
             var grupos = activosDic
                 .Where(a => expandedGuids.Contains(a.AreaResponsabilidad ?? Guid.Empty))
-                .GroupBy(a => a.AreaResponsabilidadNavigation?.Nombre ?? "S/A")
-                .OrderBy(g => g.Key)
+                .GroupBy(a => new
+                {
+                    CentroCosto = a.CentroCosto ?? Guid.Empty,
+                    Area = a.AreaResponsabilidad ?? Guid.Empty
+                })
                 .ToList();
 
+            model.Items.Clear();
             foreach (var grupo in grupos)
             {
                 int total = grupo.Select(a => new { a.NoInventario, a.SubNumero }).Distinct().Count();
                 int porMes = (int)Math.Max(1, Math.Round(total * 0.10));
 
-                var ccValido = grupo
-                    .Where(a => a.CentroCostoNavigation != null && a.CentroCostoNavigation.Numero != null)
-                    .Select(a => a.CentroCostoNavigation)
-                    .FirstOrDefault();
-
-                var numeroCC = ccValido?.Numero?.ToString();
-                var nombreCC = ccValido?.Nombre;
-                var centroCostoId = ccValido?.IdCentroCosto;
-
                 var first = grupo.First();
-                var nombreArea = first.AreaResponsabilidadNavigation?.Nombre ?? "S/A";
-                Guid areaId = first.AreaResponsabilidad ?? Guid.Empty;
 
                 model.Items.Add(new Models.Auxiliar.mdPlanMuestreoAnualItem
                 {
-                    CentroCosto = centroCostoId ?? Guid.Empty,
-                    NumeroCentroCosto = numeroCC ?? "S/A",
-                    NombreCentroCosto = nombreCC ?? "S/A",
-                    AreaResponsabilidad = areaId,
-                    NombreArea = nombreArea,
+                    CentroCosto = grupo.Key.CentroCosto,
+                    NumeroCentroCosto = first.CentroCostoNavigation?.Numero?.ToString() ?? "S/A",
+                    NombreCentroCosto = first.CentroCostoNavigation?.Nombre ?? "S/A",
+                    AreaResponsabilidad = grupo.Key.Area,
+                    NombreArea = first.AreaResponsabilidadNavigation?.Nombre ?? "S/A",
                     TotalActivos = total,
                     Ene = porMes, Feb = porMes, Mar = porMes, Abr = porMes,
                     May = porMes, Jun = total, Jul = porMes, Ago = porMes,
@@ -2714,6 +2707,7 @@ namespace ActivosFijos.Controllers
                 });
             }
 
+            model.Items = AgruparItemsPorArea(model.Items);
             model.Totales = CalcularTotales(model.Items);
 
             var areasSinCC = model.Items
