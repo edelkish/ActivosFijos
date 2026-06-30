@@ -2899,7 +2899,7 @@ namespace ActivosFijos.Controllers
             var ws = package.Workbook.Worksheets.Add("PlanMuestreo");
 
             ws.Cells[1, 1].Value = "Planificación Muestreo Anual - " + anio;
-            ws.Cells[1, 1, 1, 16].Merge = true;
+            ws.Cells[1, 1, 1, 15].Merge = true;
             ws.Cells[1, 1].Style.Font.Bold = true;
             ws.Cells[1, 1].Style.Font.Size = 14;
             ws.Cells[1, 1].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
@@ -2958,8 +2958,13 @@ namespace ActivosFijos.Controllers
                 var footerRange = ws.Cells[row, 1, row, 15];
                 footerRange.Style.Font.Bold = true;
                 footerRange.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                footerRange.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(245, 245, 245));
+                footerRange.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(176, 176, 176));
             }
+
+            ws.PrinterSettings.Orientation = eOrientation.Landscape;
+            ws.PrinterSettings.FitToPage = true;
+            ws.PrinterSettings.FitToWidth = 1;
+            ws.PrinterSettings.FitToHeight = 0;
 
             ws.Cells[1, 1, row, 15].AutoFitColumns();
 
