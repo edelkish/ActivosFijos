@@ -2206,31 +2206,65 @@ namespace ActivosFijos.Controllers
 
             var activosDelMes = await _context.ActFijos
                 .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
-                .Select(a => new { a.NoInventario, a.SubNumero, a.AreaResponsabilidad })
+                .Select(a => new { a.NoInventario, a.SubNumero, a.AreaResponsabilidad, AreaNombre = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre : "" })
                 .Distinct()
                 .ToListAsync();
 
             int totalActivosDistintos = activosDelMes.Count;
-            int limiteMuestra = (int)Math.Max(1, Math.Round(totalActivosDistintos * 0.10));
-            int totalAreas = activosDelMes.Where(a => a.AreaResponsabilidad != null).Select(a => a.AreaResponsabilidad).Distinct().Count();
-            int areasCubiertas = muestra.Any() ? muestra.Select(m => m.ActFijoNavigation?.AreaResponsabilidad).Distinct().Count() : 0;
+            int limiteMuestra = (int)Math.Max(1, Math.Floor(totalActivosDistintos * 0.10));
 
-            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = new();
-            if (muestra.Any())
+            var areaTotals = activosDelMes
+                .Where(a => a.AreaResponsabilidad != null)
+                .GroupBy(a => a.AreaResponsabilidad)
+                .Select(g => new { Area = g.Key, Count = g.Count(), Nombre = g.First().AreaNombre ?? "" })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
+            int totalAreas = areaTotals.Count;
+
+            var actualLookup = muestra
+                .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
+                .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
+                .ToDictionary(g => g.Key, g => g.Select(m => m.NoInventario).ToList());
+
+            int totalMuestra = limiteMuestra;
+            var expected = new Dictionary<Guid?, int>();
+            var residuals = new Dictionary<Guid?, double>();
+            int sumaBase = 0;
+            foreach (var at in areaTotals)
             {
-                resumenAreas = muestra
-                    .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
-                    .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
-                    .Select(g => new Models.Auxiliar.mdMuestreoResumenArea
-                    {
-                        AreaResponsabilidad = g.Key,
-                        AreaNombre = g.First().ActFijoNavigation.AreaResponsabilidadNavigation?.Nombre ?? "",
-                        Cantidad = g.Count(),
-                        Inventarios = string.Join(", ", g.Select(m => m.NoInventario))
-                    })
-                    .OrderByDescending(r => r.Cantidad)
-                    .ToList();
+                double raw = (double)at.Count * totalMuestra / totalActivosDistintos;
+                int baseVal = (int)Math.Floor(raw);
+                expected[at.Area] = baseVal;
+                residuals[at.Area] = raw - baseVal;
+                sumaBase += baseVal;
             }
+            int rem = totalMuestra - sumaBase;
+            if (rem > 0)
+            {
+                foreach (var kvp in residuals.OrderByDescending(r => r.Value).ThenByDescending(r => expected[r.Key]).Take(rem))
+                {
+                    expected[kvp.Key] = expected[kvp.Key] + 1;
+                }
+            }
+
+            var areaNombreLookup = areaTotals.ToDictionary(at => at.Area, at => at.Nombre);
+
+            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = expected
+                .Where(kvp => kvp.Value > 0)
+                .Select(kvp => new Models.Auxiliar.mdMuestreoResumenArea
+                {
+                    AreaResponsabilidad = kvp.Key,
+                    AreaNombre = areaNombreLookup.ContainsKey(kvp.Key) ? areaNombreLookup[kvp.Key] : "",
+                    Cantidad = kvp.Value,
+                    Inventarios = actualLookup.ContainsKey(kvp.Key)
+                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value))
+                        : ""
+                })
+                .OrderByDescending(r => r.Cantidad)
+                .ToList();
+
+            int areasCubiertas = resumenAreas.Count;
 
             ViewData["totalActivosDistintos"] = totalActivosDistintos;
             ViewData["limiteMuestra"] = limiteMuestra;
@@ -2279,31 +2313,65 @@ namespace ActivosFijos.Controllers
 
             var activosDelMes = await _context.ActFijos
                 .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
-                .Select(a => new { a.NoInventario, a.SubNumero, a.AreaResponsabilidad })
+                .Select(a => new { a.NoInventario, a.SubNumero, a.AreaResponsabilidad, AreaNombre = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre : "" })
                 .Distinct()
                 .ToListAsync();
 
             int totalActivosDistintos = activosDelMes.Count;
-            int limiteMuestra = (int)Math.Max(1, Math.Round(totalActivosDistintos * 0.10));
-            int totalAreas = activosDelMes.Where(a => a.AreaResponsabilidad != null).Select(a => a.AreaResponsabilidad).Distinct().Count();
-            int areasCubiertas = muestra.Any() ? muestra.Select(m => m.ActFijoNavigation?.AreaResponsabilidad).Distinct().Count() : 0;
+            int limiteMuestra = (int)Math.Max(1, Math.Floor(totalActivosDistintos * 0.10));
 
-            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = new();
-            if (muestra.Any())
+            var areaTotals = activosDelMes
+                .Where(a => a.AreaResponsabilidad != null)
+                .GroupBy(a => a.AreaResponsabilidad)
+                .Select(g => new { Area = g.Key, Count = g.Count(), Nombre = g.First().AreaNombre ?? "" })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
+            int totalAreas = areaTotals.Count;
+
+            var actualLookup = muestra
+                .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
+                .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
+                .ToDictionary(g => g.Key, g => g.Select(m => m.NoInventario).ToList());
+
+            int totalMuestra = limiteMuestra;
+            var expected = new Dictionary<Guid?, int>();
+            var residuals = new Dictionary<Guid?, double>();
+            int sumaBase = 0;
+            foreach (var at in areaTotals)
             {
-                resumenAreas = muestra
-                    .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
-                    .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
-                    .Select(g => new Models.Auxiliar.mdMuestreoResumenArea
-                    {
-                        AreaResponsabilidad = g.Key,
-                        AreaNombre = g.First().ActFijoNavigation.AreaResponsabilidadNavigation?.Nombre ?? "",
-                        Cantidad = g.Count(),
-                        Inventarios = string.Join(", ", g.Select(m => m.NoInventario))
-                    })
-                    .OrderByDescending(r => r.Cantidad)
-                    .ToList();
+                double raw = (double)at.Count * totalMuestra / totalActivosDistintos;
+                int baseVal = (int)Math.Floor(raw);
+                expected[at.Area] = baseVal;
+                residuals[at.Area] = raw - baseVal;
+                sumaBase += baseVal;
             }
+            int rem = totalMuestra - sumaBase;
+            if (rem > 0)
+            {
+                foreach (var kvp in residuals.OrderByDescending(r => r.Value).ThenByDescending(r => expected[r.Key]).Take(rem))
+                {
+                    expected[kvp.Key] = expected[kvp.Key] + 1;
+                }
+            }
+
+            var areaNombreLookup = areaTotals.ToDictionary(at => at.Area, at => at.Nombre);
+
+            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = expected
+                .Where(kvp => kvp.Value > 0)
+                .Select(kvp => new Models.Auxiliar.mdMuestreoResumenArea
+                {
+                    AreaResponsabilidad = kvp.Key,
+                    AreaNombre = areaNombreLookup.ContainsKey(kvp.Key) ? areaNombreLookup[kvp.Key] : "",
+                    Cantidad = kvp.Value,
+                    Inventarios = actualLookup.ContainsKey(kvp.Key)
+                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value))
+                        : ""
+                })
+                .OrderByDescending(r => r.Cantidad)
+                .ToList();
+
+            int areasCubiertas = resumenAreas.Count;
 
             ViewData["totalActivosDistintos"] = totalActivosDistintos;
             ViewData["limiteMuestra"] = limiteMuestra;
@@ -2325,27 +2393,41 @@ namespace ActivosFijos.Controllers
 
             try
             {
-                bool yaExiste = await _context.MuestreoMensualDiezPorCientos
-                    .AnyAsync(m => m.Anno == anio && m.Mes == mes);
+                bool hayActivos = await _context.ActFijos
+                    .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
+                    .Select(a => new { a.NoInventario, a.SubNumero })
+                    .Distinct()
+                    .AnyAsync();
 
-                if (yaExiste)
+                if (!hayActivos)
                 {
                     clGlobal.siNo = false;
-                    clGlobal.objMensaje = $"ERROR: El muestreo de {mes}/{anio} ya fue ejecutado anteriormente.";
+                    clGlobal.objMensaje = $"No existen activos fijos registrados en el submayor del período {mes}/{anio}. No es posible ejecutar el muestreo.";
                 }
                 else
                 {
-                    var muestra = await _repoActivosFijos.EjecutarMuestreoDiezPorCiento();
+                    bool yaExiste = await _context.MuestreoMensualDiezPorCientos
+                        .AnyAsync(m => m.Anno == anio && m.Mes == mes);
 
-                    if (muestra.Count == 0)
+                    if (yaExiste)
                     {
                         clGlobal.siNo = false;
-                        clGlobal.objMensaje = "No se encontraron activos para muestrear.";
+                        clGlobal.objMensaje = $"ERROR: El muestreo de {mes}/{anio} ya fue ejecutado anteriormente.";
                     }
                     else
                     {
-                        clGlobal.siNo = true;
-                        clGlobal.objMensaje = $"Muestreo de {mes}/{anio} completado exitosamente: {muestra.Count} activos seleccionados.";
+                        var muestra = await _repoActivosFijos.EjecutarMuestreoDiezPorCiento();
+
+                        if (muestra.Count == 0)
+                        {
+                            clGlobal.siNo = false;
+                            clGlobal.objMensaje = "No se encontraron activos para muestrear.";
+                        }
+                        else
+                        {
+                            clGlobal.siNo = true;
+                            clGlobal.objMensaje = $"Muestreo de {mes}/{anio} completado exitosamente: {muestra.Count} activos seleccionados.";
+                        }
                     }
                 }
             }
