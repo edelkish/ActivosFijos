@@ -2225,7 +2225,7 @@ namespace ActivosFijos.Controllers
             var actualLookup = muestra
                 .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
                 .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
-                .ToDictionary(g => g.Key, g => g.Select(m => m.NoInventario).ToList());
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             int totalMuestra = limiteMuestra;
             var expected = new Dictionary<Guid?, int>();
@@ -2258,7 +2258,7 @@ namespace ActivosFijos.Controllers
                     AreaNombre = areaNombreLookup.ContainsKey(kvp.Key) ? areaNombreLookup[kvp.Key] : "",
                     Cantidad = kvp.Value,
                     Inventarios = actualLookup.ContainsKey(kvp.Key)
-                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value))
+                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value).Select(m => m.NoInventario))
                         : ""
                 })
                 .OrderByDescending(r => r.Cantidad)
@@ -2266,12 +2266,23 @@ namespace ActivosFijos.Controllers
 
             int areasCubiertas = resumenAreas.Count;
 
+            var selectedKeys = new HashSet<(long NoInventario, int SubNumero, DateTime FechaSubmayor)>();
+            foreach (var area in resumenAreas)
+            {
+                if (actualLookup.TryGetValue(area.AreaResponsabilidad, out var assets))
+                {
+                    foreach (var asset in assets.Take(area.Cantidad))
+                        selectedKeys.Add((asset.NoInventario, asset.SubNumero, asset.FechaSubmayor));
+                }
+            }
+            var muestraFiltrada = muestra.Where(m => selectedKeys.Contains((m.NoInventario, m.SubNumero, m.FechaSubmayor))).ToList();
+
             ViewData["totalActivosDistintos"] = totalActivosDistintos;
             ViewData["limiteMuestra"] = limiteMuestra;
             ViewData["totalAreas"] = totalAreas;
             ViewData["areasCubiertas"] = areasCubiertas;
             ViewData["resumenAreas"] = resumenAreas;
-            ViewData["yaExisteMuestreo"] = muestra.Count > 0;
+            ViewData["yaExisteMuestreo"] = muestraFiltrada.Count > 0;
             ViewData["mesMuestreo"] = mes;
             ViewData["anioMuestreo"] = anio;
 
@@ -2285,7 +2296,7 @@ namespace ActivosFijos.Controllers
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
-            return View("vMuestreoDiezPorCiento", muestra);
+            return View("vMuestreoDiezPorCiento", muestraFiltrada);
         }
 
         [HttpGet]
@@ -2332,7 +2343,7 @@ namespace ActivosFijos.Controllers
             var actualLookup = muestra
                 .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
                 .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
-                .ToDictionary(g => g.Key, g => g.Select(m => m.NoInventario).ToList());
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             int totalMuestra = limiteMuestra;
             var expected = new Dictionary<Guid?, int>();
@@ -2365,7 +2376,7 @@ namespace ActivosFijos.Controllers
                     AreaNombre = areaNombreLookup.ContainsKey(kvp.Key) ? areaNombreLookup[kvp.Key] : "",
                     Cantidad = kvp.Value,
                     Inventarios = actualLookup.ContainsKey(kvp.Key)
-                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value))
+                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value).Select(m => m.NoInventario))
                         : ""
                 })
                 .OrderByDescending(r => r.Cantidad)
@@ -2373,14 +2384,25 @@ namespace ActivosFijos.Controllers
 
             int areasCubiertas = resumenAreas.Count;
 
+            var selectedKeys = new HashSet<(long NoInventario, int SubNumero, DateTime FechaSubmayor)>();
+            foreach (var area in resumenAreas)
+            {
+                if (actualLookup.TryGetValue(area.AreaResponsabilidad, out var assets))
+                {
+                    foreach (var asset in assets.Take(area.Cantidad))
+                        selectedKeys.Add((asset.NoInventario, asset.SubNumero, asset.FechaSubmayor));
+                }
+            }
+            var muestraFiltrada = muestra.Where(m => selectedKeys.Contains((m.NoInventario, m.SubNumero, m.FechaSubmayor))).ToList();
+
             ViewData["totalActivosDistintos"] = totalActivosDistintos;
             ViewData["limiteMuestra"] = limiteMuestra;
             ViewData["totalAreas"] = totalAreas;
             ViewData["areasCubiertas"] = areasCubiertas;
             ViewData["resumenAreas"] = resumenAreas;
-            ViewData["yaExisteMuestreo"] = muestra.Count > 0;
+            ViewData["yaExisteMuestreo"] = muestraFiltrada.Count > 0;
 
-            return View("vConsultaMuestreoDiezPorCiento", muestra);
+            return View("vConsultaMuestreoDiezPorCiento", muestraFiltrada);
         }
 
         [HttpPost]
