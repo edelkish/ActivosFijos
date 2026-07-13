@@ -22,6 +22,8 @@
     var resumenAreas = ViewBag.resumenAreas as List<mdMuestreoResumenArea> ?? new List<mdMuestreoResumenArea>();
     int mesMuestreo = ViewBag.mesMuestreo ?? 0;
     int anioMuestreo = ViewBag.anioMuestreo ?? 0;
+    bool muestraPendiente = ViewBag.muestraPendiente == true;
+    bool yaExisteConfirmado = ViewBag.yaExisteConfirmado == true;
 }
 
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
@@ -78,26 +80,34 @@
                             </div>
                         </div>
                         <div class="portlet-body">
-                            <form id="formMuestreo" asp-action="EjecutarMuestreo" asp-controller="ctActFijos" method="post">
-                                @Html.AntiForgeryToken()
-                                <div class="form-actions">
-                                    <div class="btn-set pull-left">
-                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="btnEjecutarMuestreo"><i class="fa fa-random"></i> Ejecutar Muestreo 10%</button>
+                            @if (!yaExisteConfirmado)
+                            {
+                                <form id="formMuestreo" asp-action="EjecutarMuestreo" asp-controller="ctActFijos" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="form-actions">
+                                        <div class="btn-set pull-left">
+                                            <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="btnEjecutarMuestreo"><i class="fa fa-random"></i> Ejecutar Muestreo 10%</button>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                            }
                             @if (yaExisteMuestreo)
                             {
-                                <form asp-action="ExportarActaMuestreo" asp-controller="ctActFijos" method="post" style="display:inline; margin-left:5px">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Acta</button>
-                                </form>
                                 <div class="pull-right">
                                     <button type="button" class="btn green btn-outline sbold uppercase" id="btnConfirmarMuestreo" style="margin-left:5px"><i class="fa fa-check"></i> Confirmar Muestreo</button>
                                 </div>
                             }
                             <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+                            <input type="hidden" id="hdnAnno" value="@anioMuestreo" />
+                            <input type="hidden" id="hdnMes" value="@mesMuestreo" />
                             <hr />
+
+                            @if (muestraPendiente)
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="fa fa-clock-o"></i> <strong>Muestreo pendiente de confirmar</strong> Revise los datos y haga clic en "Confirmar Muestreo" para guardar los resultados.
+                                </div>
+                            }
 
                             @if (yaExisteMuestreo)
                             {
@@ -196,9 +206,7 @@
                                                             <th>Descripción</th>
                                                             <th>Centro de Costo</th>
                                                             <th>Responsable</th>
-                                                            <th class="text-center">
-                                                                ¿Existe? <input type="checkbox" id="chkSeleccionarTodo" style="margin-left:4px" />
-                                                            </th>
+                                                        
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -209,15 +217,7 @@
                                                                 <td>@item.Descripcion</td>
                                                                 <td>@(item.CentroCostoNavigation?.Nombre ?? "-")</td>
                                                                 <td>@(item.ActFijoNavigation?.ResponsableNavigation != null ? item.ActFijoNavigation.ResponsableNavigation.Nombre + " " + item.ActFijoNavigation.ResponsableNavigation.Apellidos : "-")</td>
-                                                                    <td class="text-center">
-                                                                        <input type="checkbox" class="chk-si-existe"
-                                                                           data-anno="@item.Anno"
-                                                                           data-mes="@item.Mes"
-                                                                           data-no-inventario="@item.NoInventario"
-                                                                           data-sub-numero="@item.SubNumero"
-                                                                            data-fecha-submayor="@item.FechaSubmayor.ToString("yyyy-MM-ddTHH:mm:ss")"
-                                                                           @(item.SiExiste ? "checked" : "") />
-                                                                </td>
+                                                        
                                                             </tr>
                                                         }
                                                     </tbody>
@@ -225,6 +225,12 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            }
+                            else if (yaExisteConfirmado)
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="fa fa-info-circle"></i> <strong>Muestreo confirmado</strong> Ya existe un muestreo confirmado para @mesMuestreo/@anioMuestreo. No es posible ejecutar uno nuevo.
                                 </div>
                             }
                             else
@@ -276,15 +282,6 @@
             pageLength: 25
         });
 
-        $('#chkSeleccionarTodo').on('change', function () {
-            var marcado = $(this).is(':checked');
-            tablaMuestreo.rows().every(function () {
-                $(this.node()).find('.chk-si-existe').prop('checked', marcado);
-            });
-        }).on('click', function (e) {
-            e.stopPropagation();
-        });
-
         $('#btnEjecutarMuestreo').on('click', function () {
             $.confirm({
                 title: 'Confirmar',
@@ -307,22 +304,10 @@
         });
 
         function recolectarItems() {
-            var items = [];
-            tablaMuestreo.rows().every(function () {
-                var chk = $(this.node()).find('.chk-si-existe');
-                var desc = $(this.node()).find('td').eq(1).text();
-                items.push({
-                    anno: parseInt(chk.data('anno')),
-                    mes: parseInt(chk.data('mes')),
-                    noInventario: parseInt(chk.data('no-inventario')),
-                    subNumero: parseInt(chk.data('sub-numero')),
-                    fechaSubmayor: chk.data('fecha-submayor'),
-                    siExiste: chk.is(':checked'),
-                    observaciones: null,
-                    descripcion: desc
-                });
-            });
-            return items;
+            return [{
+                anno: parseInt($('#hdnAnno').val()),
+                mes: parseInt($('#hdnMes').val())
+            }];
         }
 
         function enviarConfirmacion(items) {
@@ -337,6 +322,7 @@
                 success: function (response) {
                     if (response.success) {
                         MiApp.Mensajes.mostrarNotificacion("success", response.mensaje);
+                        setTimeout(function () { location.reload(); }, 1500);
                     } else {
                         MiApp.Mensajes.mostrarNotificacion("error", response.mensaje);
                     }
@@ -348,69 +334,7 @@
         }
 
         $('#btnConfirmarMuestreo').on('click', function () {
-            var items = recolectarItems();
-            var noExistentes = items.filter(function (i) { return !i.siExiste; });
-
-            if (noExistentes.length === 0) {
-                enviarConfirmacion(items);
-                return;
-            }
-
-            var modalContent = '<div class="table-responsive"><table class="table table-bordered table-striped">' +
-                '<thead><tr><th>No. Inventario</th><th>Descripción</th><th>Observaciones <span style="color:red">*</span></th></tr></thead><tbody>';
-
-            for (var i = 0; i < noExistentes.length; i++) {
-                var item = noExistentes[i];
-                var noInv = item.subNumero > 0 ? item.noInventario + '-' + item.subNumero : item.noInventario.toString();
-                modalContent += '<tr>' +
-                    '<td>' + noInv + '</td>' +
-                    '<td>' + item.descripcion + '</td>' +
-                    '<td><textarea class="form-control obs-textarea" data-index="' + items.indexOf(item) + '" rows="2" required></textarea></td>' +
-                    '</tr>';
-            }
-            modalContent += '</tbody></table></div>';
-
-            $.confirm({
-                title: 'Motivos de activos no muestreados',
-                content: modalContent,
-                type: 'orange',
-                columnClass: 'col-md-8 col-md-offset-2',
-                buttons: {
-                    guardar: {
-                        text: 'Guardar',
-                        btnClass: 'btn-green',
-                        action: function () {
-                            var valido = true;
-                            $('.obs-textarea').each(function () {
-                                if ($(this).val().trim() === '') {
-                                    valido = false;
-                                    $(this).css('border-color', 'red');
-                                } else {
-                                    $(this).css('border-color', '');
-                                }
-                            });
-                            if (!valido) {
-                                MiApp.Mensajes.mostrarNotificacion("error", "Debe especificar las observaciones para cada activo no existente.");
-                                return false;
-                            }
-                            $('.obs-textarea').each(function () {
-                                var idx = parseInt($(this).data('index'));
-                                items[idx].observaciones = $(this).val().trim();
-                            });
-                            enviarConfirmacion(items);
-                        }
-                    },
-                    cancelar: {
-                        text: 'Cancelar',
-                        btnClass: 'btn-default'
-                    }
-                },
-                onContentReady: function () {
-                    this.$content.find('textarea').on('input', function () {
-                        $(this).css('border-color', '');
-                    });
-                }
-            });
+            enviarConfirmacion(recolectarItems());
         });
     </script>
 }

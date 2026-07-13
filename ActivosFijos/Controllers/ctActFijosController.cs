@@ -14,6 +14,8 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Data;
 using System.Diagnostics;
 using ActivosFijos.Models.Auxiliar;
@@ -45,6 +47,13 @@ namespace ActivosFijos.Controllers
             public Guid IdResponsable { get; set; }
             public string NombreCompleto { get; set; }
         }
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles
+        };
+
+        private string SessionKeyMuestra(int anno, int mes) => $"MuestraPendiente_{anno}_{mes}";
 
         public ctActFijosController(aftContext context, repoActivosFijos repoActivosFijos, repoAreasDeResponsabilidad repoAreas, repoResponsables repoResponsables,
             repoCentrosDeCosto repoCentroDeCostos, repoValidaciones repoValidaciones, repoServcioActas repoServcioActas, repoClasificador repoClasificador,
@@ -2197,12 +2206,65 @@ namespace ActivosFijos.Controllers
             int anio = mes == 0 ? DateTime.Today.Year - 1 : DateTime.Today.Year;
             if (mes == 0) mes = 12;
 
-            var muestra = await _context.MuestreoMensualDiezPorCientos
-                .Include(m => m.ActFijoNavigation).ThenInclude(a => a.AreaResponsabilidadNavigation)
-                .Include(m => m.ActFijoNavigation).ThenInclude(a => a.ResponsableNavigation)
-                .Include(m => m.CentroCostoNavigation)
-                .Where(m => m.Anno == anio && m.Mes == mes)
-                .ToListAsync();
+            List<MuestreoMensualDiezPorCiento> muestra;
+            bool muestraPendiente = false;
+            bool yaExisteConfirmado = false;
+
+            var sessionJson = HttpContext.Session.GetString(SessionKeyMuestra(anio, mes));
+            if (sessionJson != null)
+            {
+                var pendiente = JsonSerializer.Deserialize<mdMuestreoPendiente>(sessionJson, _jsonOptions);
+                if (pendiente?.Items.Count > 0)
+                {
+                    muestraPendiente = true;
+                    muestra = pendiente.Items.Select(i => new MuestreoMensualDiezPorCiento
+                    {
+                        Anno = pendiente.Anno,
+                        Mes = pendiente.Mes,
+                        NoInventario = i.NoInventario,
+                        SubNumero = i.SubNumero,
+                        FechaSubmayor = i.FechaSubmayor,
+                        Descripcion = i.Descripcion,
+                        CentroCosto = i.CentroCosto,
+                        SiExiste = i.SiExiste,
+                        Observaciones = i.Observaciones,
+                        FechaMuestreo = DateTime.Now,
+                        ActFijoNavigation = new ActFijo
+                        {
+                            NoInventario = i.NoInventario,
+                            SubNumero = i.SubNumero,
+                            FechaSubmayor = i.FechaSubmayor,
+                            AreaResponsabilidad = i.AreaResponsabilidad,
+                            ResponsableNavigation = i.NombreResponsable != null ? new Responsable
+                            {
+                                Nombre = i.NombreResponsable,
+                                Apellidos = i.ApellidosResponsable
+                            } : null
+                        },
+                        CentroCostoNavigation = i.NombreCentroCosto != null ? new CentroCosto
+                        {
+                            Nombre = i.NombreCentroCosto
+                        } : null
+                    }).ToList();
+                }
+                else
+                {
+                    muestra = new List<MuestreoMensualDiezPorCiento>();
+                }
+            }
+            else
+            {
+                yaExisteConfirmado = await _context.MuestreoMensualDiezPorCientos
+                    .AnyAsync(m => m.Anno == anio && m.Mes == mes);
+
+                if (yaExisteConfirmado)
+                {
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = $"Ya existe un muestreo confirmado para {mes}/{anio}.";
+                }
+
+                muestra = new List<MuestreoMensualDiezPorCiento>();
+            }
 
             var activosDelMes = await _context.ActFijos
                 .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
@@ -2211,71 +2273,48 @@ namespace ActivosFijos.Controllers
                 .ToListAsync();
 
             int totalActivosDistintos = activosDelMes.Count;
-            int limiteMuestra = (int)Math.Max(1, Math.Floor(totalActivosDistintos * 0.10));
+            int totalAreas = activosDelMes
+                .Where(a => a.AreaResponsabilidad != null)
+                .Select(a => a.AreaResponsabilidad)
+                .Distinct()
+                .Count();
 
-            var areaTotals = activosDelMes
+            var areaNombreLookup = activosDelMes
                 .Where(a => a.AreaResponsabilidad != null)
                 .GroupBy(a => a.AreaResponsabilidad)
-                .Select(g => new { Area = g.Key, Count = g.Count(), Nombre = g.First().AreaNombre ?? "" })
-                .OrderByDescending(x => x.Count)
-                .ToList();
+                .ToDictionary(g => g.Key, g => g.First().AreaNombre ?? "");
 
-            int totalAreas = areaTotals.Count;
+            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas;
+            int limiteMuestra;
+            int areasCubiertas;
+            List<MuestreoMensualDiezPorCiento> muestraFiltrada;
 
-            var actualLookup = muestra
-                .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
-                .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            int totalMuestra = limiteMuestra;
-            var expected = new Dictionary<Guid?, int>();
-            var residuals = new Dictionary<Guid?, double>();
-            int sumaBase = 0;
-            foreach (var at in areaTotals)
+            if (muestraPendiente)
             {
-                double raw = (double)at.Count * totalMuestra / totalActivosDistintos;
-                int baseVal = (int)Math.Floor(raw);
-                expected[at.Area] = baseVal;
-                residuals[at.Area] = raw - baseVal;
-                sumaBase += baseVal;
+                resumenAreas = muestra
+                    .Where(m => m.ActFijoNavigation?.AreaResponsabilidad != null)
+                    .GroupBy(m => m.ActFijoNavigation.AreaResponsabilidad)
+                    .Select(g => new Models.Auxiliar.mdMuestreoResumenArea
+                    {
+                        AreaResponsabilidad = g.Key,
+                        AreaNombre = areaNombreLookup.GetValueOrDefault(g.Key) ?? "",
+                        Cantidad = g.Count(),
+                        Inventarios = string.Join(", ", g.Select(m => m.NoInventario))
+                    })
+                    .OrderByDescending(r => r.Cantidad)
+                    .ToList();
+
+                limiteMuestra = muestra.Count;
+                areasCubiertas = resumenAreas.Count;
+                muestraFiltrada = muestra;
             }
-            int rem = totalMuestra - sumaBase;
-            if (rem > 0)
+            else
             {
-                foreach (var kvp in residuals.OrderByDescending(r => r.Value).ThenByDescending(r => expected[r.Key]).Take(rem))
-                {
-                    expected[kvp.Key] = expected[kvp.Key] + 1;
-                }
+                resumenAreas = new List<Models.Auxiliar.mdMuestreoResumenArea>();
+                limiteMuestra = 0;
+                areasCubiertas = 0;
+                muestraFiltrada = new List<MuestreoMensualDiezPorCiento>();
             }
-
-            var areaNombreLookup = areaTotals.ToDictionary(at => at.Area, at => at.Nombre);
-
-            List<Models.Auxiliar.mdMuestreoResumenArea> resumenAreas = expected
-                .Where(kvp => kvp.Value > 0)
-                .Select(kvp => new Models.Auxiliar.mdMuestreoResumenArea
-                {
-                    AreaResponsabilidad = kvp.Key,
-                    AreaNombre = areaNombreLookup.ContainsKey(kvp.Key) ? areaNombreLookup[kvp.Key] : "",
-                    Cantidad = kvp.Value,
-                    Inventarios = actualLookup.ContainsKey(kvp.Key)
-                        ? string.Join(", ", actualLookup[kvp.Key].Take(kvp.Value).Select(m => m.NoInventario))
-                        : ""
-                })
-                .OrderByDescending(r => r.Cantidad)
-                .ToList();
-
-            int areasCubiertas = resumenAreas.Count;
-
-            var selectedKeys = new HashSet<(long NoInventario, int SubNumero, DateTime FechaSubmayor)>();
-            foreach (var area in resumenAreas)
-            {
-                if (actualLookup.TryGetValue(area.AreaResponsabilidad, out var assets))
-                {
-                    foreach (var asset in assets.Take(area.Cantidad))
-                        selectedKeys.Add((asset.NoInventario, asset.SubNumero, asset.FechaSubmayor));
-                }
-            }
-            var muestraFiltrada = muestra.Where(m => selectedKeys.Contains((m.NoInventario, m.SubNumero, m.FechaSubmayor))).ToList();
 
             ViewData["totalActivosDistintos"] = totalActivosDistintos;
             ViewData["limiteMuestra"] = limiteMuestra;
@@ -2283,6 +2322,8 @@ namespace ActivosFijos.Controllers
             ViewData["areasCubiertas"] = areasCubiertas;
             ViewData["resumenAreas"] = resumenAreas;
             ViewData["yaExisteMuestreo"] = muestraFiltrada.Count > 0;
+            ViewData["muestraPendiente"] = muestraPendiente;
+            ViewData["yaExisteConfirmado"] = yaExisteConfirmado;
             ViewData["mesMuestreo"] = mes;
             ViewData["anioMuestreo"] = anio;
 
@@ -2402,6 +2443,11 @@ namespace ActivosFijos.Controllers
             ViewData["resumenAreas"] = resumenAreas;
             ViewData["yaExisteMuestreo"] = muestraFiltrada.Count > 0;
 
+            var hoy = DateTime.Today;
+            int mesEditable = hoy.Month == 1 ? 12 : hoy.Month - 1;
+            int anioEditable = hoy.Month == 1 ? hoy.Year - 1 : hoy.Year;
+            ViewData["editable"] = anio == anioEditable && mes == mesEditable && muestraFiltrada.Count > 0;
+
             return View("vConsultaMuestreoDiezPorCiento", muestraFiltrada);
         }
 
@@ -2415,41 +2461,126 @@ namespace ActivosFijos.Controllers
 
             try
             {
-                bool hayActivos = await _context.ActFijos
+                var activosDelMes = await _context.ActFijos
+                    .Include(a => a.AreaResponsabilidadNavigation)
+                    .Include(a => a.ResponsableNavigation)
+                    .Include(a => a.CentroCostoNavigation)
                     .Where(a => a.FechaSubmayor.Year == anio && a.FechaSubmayor.Month == mes)
-                    .Select(a => new { a.NoInventario, a.SubNumero })
-                    .Distinct()
-                    .AnyAsync();
+                    .ToListAsync();
 
-                if (!hayActivos)
+                if (activosDelMes.Count == 0)
                 {
                     clGlobal.siNo = false;
                     clGlobal.objMensaje = $"No existen activos fijos registrados en el submayor del período {mes}/{anio}. No es posible ejecutar el muestreo.";
                 }
                 else
                 {
-                    bool yaExiste = await _context.MuestreoMensualDiezPorCientos
+                    bool yaExisteBD = await _context.MuestreoMensualDiezPorCientos
                         .AnyAsync(m => m.Anno == anio && m.Mes == mes);
 
-                    if (yaExiste)
+                    if (yaExisteBD)
                     {
                         clGlobal.siNo = false;
-                        clGlobal.objMensaje = $"ERROR: El muestreo de {mes}/{anio} ya fue ejecutado anteriormente.";
+                        clGlobal.objMensaje = $"El muestreo de {mes}/{anio} ya fue ejecutado y confirmado anteriormente.";
                     }
                     else
                     {
-                        var muestra = await _repoActivosFijos.EjecutarMuestreoDiezPorCiento();
+                        var yaMuestreados = await _context.MuestreoMensualDiezPorCientos
+                            .Where(m => m.Anno == anio)
+                            .Select(m => new { m.NoInventario, m.SubNumero, m.FechaSubmayor })
+                            .ToListAsync();
 
-                        if (muestra.Count == 0)
+                        var excluidos = yaMuestreados
+                            .Select(m => (m.NoInventario, m.SubNumero, m.FechaSubmayor))
+                            .ToHashSet();
+
+                        var activosDisponibles = activosDelMes
+                            .Where(a => !excluidos.Contains((a.NoInventario, a.SubNumero, a.FechaSubmayor)))
+                            .ToList();
+
+                        if (activosDisponibles.Count == 0)
                         {
                             clGlobal.siNo = false;
-                            clGlobal.objMensaje = "No se encontraron activos para muestrear.";
+                            clGlobal.objMensaje = $"Todos los activos del período {mes}/{anio} ya fueron muestreados anteriormente.";
                         }
                         else
                         {
-                            clGlobal.siNo = true;
-                            clGlobal.objMensaje = $"Muestreo de {mes}/{anio} completado exitosamente: {muestra.Count} activos seleccionados.";
+                            int totalActivosDistintos = activosDelMes.Count;
+                            int limiteMuestra = (int)Math.Max(1, Math.Floor(totalActivosDistintos * 0.10));
+
+                            var areaTotals = activosDelMes
+                                .Where(a => a.AreaResponsabilidad != null)
+                                .GroupBy(a => a.AreaResponsabilidad)
+                                .Select(g => new { Area = g.Key, Count = g.Count(), Nombre = g.First().AreaResponsabilidadNavigation != null ? g.First().AreaResponsabilidadNavigation.Nombre : "" })
+                                .OrderByDescending(x => x.Count)
+                                .ToList();
+
+                            var expected = new Dictionary<Guid?, int>();
+                            var residuals = new Dictionary<Guid?, double>();
+                            int sumaBase = 0;
+                            foreach (var at in areaTotals)
+                            {
+                                double raw = (double)at.Count * limiteMuestra / totalActivosDistintos;
+                                int baseVal = (int)Math.Floor(raw);
+                                expected[at.Area] = baseVal;
+                                residuals[at.Area] = raw - baseVal;
+                                sumaBase += baseVal;
+                            }
+                            int rem = limiteMuestra - sumaBase;
+                            if (rem > 0)
+                            {
+                                foreach (var kvp in residuals.OrderByDescending(r => r.Value).ThenByDescending(r => expected[r.Key]).Take(rem))
+                                {
+                                    expected[kvp.Key] = expected[kvp.Key] + 1;
+                                }
+                            }
+
+                            var rnd = new Random();
+                            var pendienteItems = new List<mdMuestreoPendienteItem>();
+
+                            foreach (var area in areaTotals)
+                            {
+                                int quota = expected.GetValueOrDefault(area.Area, 0);
+                                if (quota <= 0) continue;
+
+                                var seleccionados = activosDisponibles
+                                    .Where(a => a.AreaResponsabilidad == area.Area)
+                                    .OrderBy(_ => rnd.Next())
+                                    .Take(quota)
+                                    .ToList();
+
+                            foreach (var a in seleccionados)
+                            {
+                                pendienteItems.Add(new mdMuestreoPendienteItem
+                                {
+                                    NoInventario = a.NoInventario,
+                                    SubNumero = a.SubNumero,
+                                    FechaSubmayor = a.FechaSubmayor,
+                                    Descripcion = a.Descripcion,
+                                    CentroCosto = a.CentroCosto,
+                                    NombreCentroCosto = a.CentroCostoNavigation?.Nombre,
+                                    AreaResponsabilidad = a.AreaResponsabilidad,
+                                    AreaNombre = a.AreaResponsabilidadNavigation?.Nombre,
+                                    NombreResponsable = a.ResponsableNavigation?.Nombre,
+                                    ApellidosResponsable = a.ResponsableNavigation?.Apellidos,
+                                    SiExiste = true
+                                });
+                            }
                         }
+
+                        var pendiente = new mdMuestreoPendiente
+                        {
+                            Anno = anio,
+                            Mes = mes,
+                            Items = pendienteItems
+                        };
+
+                        var json = JsonSerializer.Serialize(pendiente, _jsonOptions);
+                        HttpContext.Session.SetString(SessionKeyMuestra(anio, mes), json);
+
+                        clGlobal.siNo = true;
+                        clGlobal.objMensaje = $"Muestreo de {mes}/{anio} completado exitosamente: {pendienteItems.Count} activos seleccionados.";
+                    }
                     }
                 }
             }
@@ -2479,7 +2610,7 @@ namespace ActivosFijos.Controllers
             if (!muestra.Any())
             {
                 TempData["Mensaje"] = "No hay datos de muestreo para exportar.";
-                return RedirectToAction(nameof(MuestreoDiezPorCiento));
+                return RedirectToAction(nameof(ConsultaMuestreoDiezPorCiento));
             }
 
             string templatePath = System.IO.Path.Combine(_env.WebRootPath, "plantillas", "PlantillaActaMuestreo.xlsx");
@@ -2493,7 +2624,7 @@ namespace ActivosFijos.Controllers
             if (!grupos.Any())
             {
                 TempData["Mensaje"] = "No hay centros de costo asociados a la muestra.";
-                return RedirectToAction(nameof(MuestreoDiezPorCiento));
+                return RedirectToAction(nameof(ConsultaMuestreoDiezPorCiento));
             }
 
             using (var package = new ExcelPackage(new FileInfo(templatePath)))
@@ -2554,11 +2685,6 @@ namespace ActivosFijos.Controllers
                         ws.Cells[row, 14].Value = 1;
                         ws.Cells[row, 16, row, 17].Merge = true;
                         ws.Cells[row, 20, row, 21].Merge = true;
-                        if (item.SiExiste)
-                            ws.Cells[row, 16].Value = "X";
-                        else
-                            ws.Cells[row, 20].Value = "X";
-
                         ws.Cells[row, 25, row, 30].Merge = true;
 
                         ws.Row(row).CustomHeight = false;
@@ -2642,27 +2768,53 @@ namespace ActivosFijos.Controllers
             if (items == null || items.Count == 0)
                 return Json(new { success = false, mensaje = "No se recibieron datos para confirmar." });
 
-            foreach (var item in items)
-            {
-                if (!item.SiExiste && string.IsNullOrWhiteSpace(item.Observaciones))
-                    return Json(new { success = false, mensaje = $"El activo {item.NoInventario}{(item.SubNumero > 0 ? "-" + item.SubNumero : "")} no existe pero no se especificaron observaciones." });
-            }
-
             try
             {
-                foreach (var item in items)
-                {
-                    var registro = await _context.MuestreoMensualDiezPorCientos
-                        .FindAsync(item.Anno, item.Mes, item.NoInventario, item.SubNumero, item.FechaSubmayor);
+                var firstItem = items.First();
+                var json = HttpContext.Session.GetString(SessionKeyMuestra(firstItem.Anno, firstItem.Mes));
+                if (json == null)
+                    return Json(new { success = false, mensaje = "No hay datos de muestreo pendientes en la sesión." });
 
-                    if (registro != null)
+                var pendiente = JsonSerializer.Deserialize<mdMuestreoPendiente>(json, _jsonOptions);
+                if (pendiente == null || pendiente.Items.Count == 0)
+                    return Json(new { success = false, mensaje = "No hay datos de muestreo pendientes en la sesión." });
+
+                int anno = pendiente.Anno;
+                int mes = pendiente.Mes;
+
+                var existingRecords = await _context.MuestreoMensualDiezPorCientos
+                    .Where(m => m.Anno == anno && m.Mes == mes)
+                    .ToListAsync();
+
+                if (existingRecords.Any())
+                {
+                    foreach (var record in existingRecords)
                     {
-                        registro.SiExiste = item.SiExiste;
-                        registro.Observaciones = item.Observaciones;
+                        record.SiExiste = true;
+                        record.Observaciones = null;
                     }
+                }
+                else
+                {
+                    var nuevos = pendiente.Items.Select(i => new MuestreoMensualDiezPorCiento
+                    {
+                        Anno = anno,
+                        Mes = mes,
+                        NoInventario = i.NoInventario,
+                        SubNumero = i.SubNumero,
+                        FechaSubmayor = i.FechaSubmayor,
+                        Descripcion = i.Descripcion,
+                        CentroCosto = i.CentroCosto,
+                        FechaMuestreo = DateTime.Now,
+                        SiExiste = true,
+                        Observaciones = null
+                    }).ToList();
+
+                    _context.MuestreoMensualDiezPorCientos.AddRange(nuevos);
                 }
 
                 await _context.SaveChangesAsync();
+                HttpContext.Session.Remove(SessionKeyMuestra(anno, mes));
                 return Json(new { success = true, mensaje = "Muestreo confirmado correctamente." });
             }
             catch (Exception ex)
@@ -2673,15 +2825,37 @@ namespace ActivosFijos.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ActualizarSiExiste(int anno, int mes, long noInventario, int subNumero, DateTime fechaSubmayor, bool siExiste)
+        public async Task<IActionResult> ActualizarSiExiste(int anno, int mes, long noInventario, int subNumero, DateTime fechaSubmayor, bool siExiste, string? observaciones = null)
         {
-            var registro = await _context.MuestreoMensualDiezPorCientos.FindAsync(anno, mes, noInventario, subNumero, fechaSubmayor);
+            var json = HttpContext.Session.GetString(SessionKeyMuestra(anno, mes));
+            if (json != null)
+            {
+                var pendiente = JsonSerializer.Deserialize<mdMuestreoPendiente>(json, _jsonOptions);
+                if (pendiente != null)
+                {
+                    var item = pendiente.Items.FirstOrDefault(i =>
+                        i.NoInventario == noInventario && i.SubNumero == subNumero && i.FechaSubmayor == fechaSubmayor);
+
+                    if (item != null)
+                    {
+                        item.SiExiste = siExiste;
+                        item.Observaciones = observaciones;
+                        HttpContext.Session.SetString(SessionKeyMuestra(anno, mes), JsonSerializer.Serialize(pendiente, _jsonOptions));
+                        return Json(new { success = true, siExiste, observaciones });
+                    }
+                }
+            }
+
+            var registro = await _context.MuestreoMensualDiezPorCientos
+                .FindAsync(anno, mes, noInventario, subNumero, fechaSubmayor);
             if (registro != null)
             {
                 registro.SiExiste = siExiste;
+                registro.Observaciones = observaciones;
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, siExiste });
+                return Json(new { success = true, siExiste, observaciones });
             }
+
             return Json(new { success = false });
         }
 

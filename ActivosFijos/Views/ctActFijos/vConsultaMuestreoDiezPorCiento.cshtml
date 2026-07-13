@@ -1,5 +1,6 @@
 @using ActivosFijos.Models.EntidadesBD
 @using ActivosFijos.Models.Auxiliar
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
 @model List<MuestreoMensualDiezPorCiento>
 @{
     ViewData["Title"] = "Consulta Muestreo 10%";
@@ -9,6 +10,7 @@
     ViewBag.subTituloDelContenido = "Consulta del muestreo aleatorio del 10% de los activos fijos";
 
     bool yaExisteMuestreo = ViewBag.yaExisteMuestreo == true;
+    bool editable = ViewBag.editable == true;
     int totalActivosDistintos = ViewBag.totalActivosDistintos ?? 0;
     int limiteMuestra = ViewBag.limiteMuestra ?? 0;
     int totalAreas = ViewBag.totalAreas ?? 0;
@@ -17,6 +19,7 @@
     int mesMuestreo = ViewBag.mesMuestreo ?? 0;
     int anioMuestreo = ViewBag.anioMuestreo ?? 0;
     string fechaActual = mesMuestreo > 0 ? $"{mesMuestreo:D2}/{anioMuestreo}" : "";
+    string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
 }
 
 @section PluginsCSS{
@@ -24,6 +27,8 @@
         <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
         <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
         <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap-editable/bootstrap-editable/css/bootstrap-editable.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
     </environment>
 }
 
@@ -84,6 +89,19 @@
                                     </div>
                                 </div>
                             </form>
+                            @if (yaExisteMuestreo)
+                            {
+                                <div class="row">
+                                    <div class="col-md-12 text-right" style="padding-top:5px">
+                                        <form asp-action="ExportarActaMuestreo" asp-controller="ctActFijos" method="post" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Acta</button>
+                                        </form>
+                                        <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+                                    </div>
+                                </div>
+                            }
+
                             <hr />
 
                             @if (yaExisteMuestreo)
@@ -196,13 +214,31 @@
                                                                 <td>@(item.CentroCostoNavigation?.Nombre ?? "-")</td>
                                                                 <td>@(item.ActFijoNavigation?.ResponsableNavigation != null ? item.ActFijoNavigation.ResponsableNavigation.Nombre + " " + item.ActFijoNavigation.ResponsableNavigation.Apellidos : "-")</td>
                                                                 <td class="text-center">
-                                                                    @if (item.SiExiste)
+                                                                    @if (editable)
                                                                     {
-                                                                        <span class="badge badge-success" style="background-color:#26a69a">Sí</span>
+                                                                        <a href="#" class="editable-si-existe"
+                                                                           data-type="select"
+                                                                           data-pk="@item.Anno-@item.Mes-@item.NoInventario-@item.SubNumero"
+                                                                           data-source='[{"value":"true","text":"Sí"},{"value":"false","text":"No"}]'
+                                                                           data-value="@item.SiExiste.ToString().ToLower()"
+                                                                           data-anno="@item.Anno"
+                                                                           data-mes="@item.Mes"
+                                                                           data-no-inventario="@item.NoInventario"
+                                                                           data-sub-numero="@item.SubNumero"
+                                                                           data-fecha-submayor="@item.FechaSubmayor.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                                                            @(item.SiExiste ? "Sí" : "No")
+                                                                        </a>
                                                                     }
                                                                     else
                                                                     {
-                                                                        <span class="badge badge-danger" style="background-color:#ef5350">No</span>
+                                                                        @if (item.SiExiste)
+                                                                        {
+                                                                            <span class="badge badge-success" style="background-color:#26a69a">Sí</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge badge-danger" style="background-color:#ef5350">No</span>
+                                                                        }
                                                                     }
                                                                 </td>
                                                                 <td>@(item.SiExiste ? "—" : item.Observaciones)</td>
@@ -237,6 +273,8 @@
         <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
         <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
         <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap-editable/bootstrap-editable/js/bootstrap-editable.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery-confirm/js/jquery-confirm.js" type="text/javascript"></script>
     </environment>
 }
 
@@ -273,5 +311,91 @@
             order: [[0, 'asc']],
             pageLength: 25
         });
+
+        @if (editable)
+        {
+            <text>
+        $.fn.editable.defaults.mode = 'popup';
+        $('.editable-si-existe').editable({
+            display: function (value, sourceData) {
+                var isTrue = value === true || value === 'true' || value === 1 || value === '1';
+                $(this).text(isTrue ? 'Sí' : 'No');
+            }
+        });
+
+        $('.editable-si-existe').on('shown.editable', function () {
+            $(this).data('orig-val', $(this).text() === 'Sí' ? 'true' : 'false');
+        });
+
+        $('.editable-si-existe').on('save.editable', function (e, params) {
+            var el = $(this);
+            var tr = el.closest('tr');
+            var isTrue = params.newValue === true || params.newValue === 'true' || params.newValue === 1 || params.newValue === '1';
+
+            if (isTrue) {
+                guardarSiExiste(el, true, null, tr);
+            } else {
+                $.confirm({
+                    title: 'Motivo',
+                    content: '<textarea id="txtMotivo" class="form-control" rows="3" placeholder="Indique el motivo por el que no existe el activo..."></textarea>',
+                    type: 'blue',
+                    buttons: {
+                        confirmar: {
+                            text: 'Guardar',
+                            btnClass: 'btn-blue',
+                            action: function () {
+                                var motivo = this.$content.find('#txtMotivo').val().trim();
+                                if (motivo === '') {
+                                    $.alert({ title: 'Error', content: 'Debe especificar el motivo.', type: 'red' });
+                                    return false;
+                                }
+                                guardarSiExiste(el, false, motivo, tr);
+                            }
+                        },
+                        cancelar: {
+                            text: 'Cancelar',
+                            btnClass: 'btn-default',
+                            action: function () {
+                                el.editable('setValue', el.data('orig-val'), false);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        function guardarSiExiste(el, siExiste, observaciones, tr) {
+            var data = {
+                anno: +el.data('anno'),
+                mes: +el.data('mes'),
+                noInventario: +el.data('no-inventario'),
+                subNumero: +el.data('sub-numero'),
+                fechaSubmayor: el.data('fecha-submayor'),
+                siExiste: siExiste,
+                observaciones: observaciones
+            };
+
+            $.ajax({
+                url: '@Url.Action("ActualizarSiExiste", "ctActFijos")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: { 'XSRF-TOKEN': $('#RequestVerificationToken').val() },
+                success: function (resp) {
+                    if (resp.success) {
+                        tr.find('td:last').text(siExiste ? '\u2014' : (resp.observaciones || observaciones || ''));
+                    } else {
+                        el.editable('setValue', el.data('orig-val'), false);
+                        MiApp.Mensajes.mostrarNotificacion("error", "Error al actualizar. Intente de nuevo.");
+                    }
+                },
+                error: function () {
+                    el.editable('setValue', el.data('orig-val'), false);
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error de conexi\u00f3n.");
+                }
+            });
+        }
+        </text>
+        }
     </script>
 }

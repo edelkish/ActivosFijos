@@ -433,6 +433,7 @@ namespace ActivosFijos.Repositorios
                                                                                              WHERE noInventario = [@tablaDeMovimientos].NoInventario
                                                                                                    AND subNumero = [@tablaDeMovimientos].SubNumero
                                                                                                    AND YEAR(fechaSubmayor) = YEAR(@fecha)
+                                                                                                   AND MONTH(fechaSubmayor) = MONTH(@fechaAnterior)
                                                                                         );
 
                                                                                     SELECT NoInventario,
