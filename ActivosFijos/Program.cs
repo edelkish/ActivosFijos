@@ -78,6 +78,7 @@ builder.Services.AddScoped<repoUtilesHerramientas>();
 builder.Services.AddScoped<repoClasificador>();
 builder.Services.AddScoped<repoCubiculos>();
 builder.Services.AddScoped<repoLocales>();
+builder.Services.AddScoped<repoBajasActivo>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

@@ -109,6 +109,12 @@
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctActFijos", "PlanMuestreoAnual")">
                             <a asp-action="PlanMuestreoAnual" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctActFijos", "PlanMuestreoAnual")"> Planificación Muestreo Anual </a>
                         </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctBajasActivo", "Index")">
+                            <a asp-action="Index" asp-controller="ctBajasActivo" class="nav-link @Html.IsSelected("ctBajasActivo", "Index")"> Bajas de Activos Fijos </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctBajasActivo", "BajasPorAnio")">
+                            <a asp-action="BajasPorAnio" asp-controller="ctBajasActivo" class="nav-link @Html.IsSelected("ctBajasActivo", "BajasPorAnio")"> Bajas por Año </a>
+                        </li>
                     </ul>
                 </li>
             }

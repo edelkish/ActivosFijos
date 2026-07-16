@@ -389,6 +389,89 @@ namespace ActivosFijos.Migrations
                     b.ToTable("PlanMuestreoAnual");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MotivoBaja", b =>
+                {
+                    b.Property<int>("IdMotivoBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMotivoBaja"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("IdMotivoBaja");
+
+                    b.ToTable("MotivoBaja");
+
+                    b.HasData(
+                        new
+                        {
+                            IdMotivoBaja = 1,
+                            Nombre = "Baja Pendiente Materias Primas"
+                        },
+                        new
+                        {
+                            IdMotivoBaja = 2,
+                            Nombre = "Traslado"
+                        },
+                        new
+                        {
+                            IdMotivoBaja = 3,
+                            Nombre = "Baja (Destino Final)"
+                        });
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
+                {
+                    b.Property<int>("IdBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBaja"));
+
+                    b.Property<bool>("EsBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<DateTime>("FechaSubmayor")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("MotivoBajaId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("NoInventario")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("IdBaja");
+
+                    b.HasIndex("MotivoBajaId");
+
+                    b.HasIndex("NoInventario", "SubNumero", "FechaSubmayor");
+
+                    b.ToTable("BajaActivo");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
                 {
                     b.Property<Guid>("IdResponsable")
@@ -591,6 +674,18 @@ namespace ActivosFijos.Migrations
                     b.HasIndex("IdPermiso");
 
                     b.ToTable("PermisosUsuarios", (string)null);
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
+                {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.MotivoBaja", "MotivoBajaNavigation")
+                        .WithMany()
+                        .HasForeignKey("MotivoBajaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BajaActivo_MotivoBaja");
+
+                    b.Navigation("MotivoBajaNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.ActFijo", b =>

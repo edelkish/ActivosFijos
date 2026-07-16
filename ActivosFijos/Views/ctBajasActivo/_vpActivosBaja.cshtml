@@ -1,0 +1,101 @@
+@using ActivosFijos.Models.Auxiliar
+@using ActivosFijos.Models.EntidadesBD
+
+@model List<mdBajaActivoItem>
+
+@{
+    var motivos = ViewBag.MotivosBaja as List<MotivoBaja> ?? new List<MotivoBaja>();
+}
+
+@if (Model.Any())
+{
+    <div class="row" style="margin-bottom: 15px;">
+        <div class="col-md-12">
+            <strong>Total de activos encontrados: @Model.Count</strong>
+            <span class="label label-success" style="margin-left:15px; margin-right:5px; color:#000;">■</span> Ya registrado
+            <span class="label label-danger" style="margin-left:10px; margin-right:5px; color:#000;">■</span> Pendiente
+        </div>
+    </div>
+
+    <table class="table table-striped table-bordered table-hover" id="tablaBajas">
+        <thead style="background-color: #444d58 !important; color: #ced5de">
+            <tr>
+                <th style="width: 30px;">
+                    <input type="checkbox" id="chkTodos" onchange="seleccionarTodos(this)" />
+                </th>
+                <th style="min-width:80px;">No. Inventario</th>
+                <th style="min-width:200px;">Descripción</th>
+                <th style="min-width:150px;">Responsable</th>
+                <th style="min-width:120px;">Área</th>
+                <th style="min-width:100px; text-align:right;">Valor Contable</th>
+                <th style="min-width:100px; text-align:right;">Valor Adquisición</th>
+                <th style="min-width:150px;">Motivo Baja</th>
+                <th style="min-width:150px;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var item = Model[i];
+                <tr>
+                    <td>
+                        <input type="checkbox" class="chkSeleccion" @(item.Seleccionado ? "checked" : "") />
+                    </td>
+                    <td>
+                        <span class="label @(item.Seleccionado ? "label-success" : "label-danger")" style="color:#000;">
+                            @item.NoInventario
+                        </span>
+                        <input type="hidden" class="hdNoInventario" value="@item.NoInventario" />
+                    </td>
+                    <td>
+                        @item.SubNumero
+                        <input type="hidden" class="hdSubNumero" value="@item.SubNumero" />
+                        <input type="hidden" class="hdFechaSubmayor" value="@item.FechaSubmayor.ToString("yyyy-MM-dd")" />
+                    </td>
+                    <td>@item.Descripcion</td>
+                    <td>@item.Responsable</td>
+                    <td>@item.Area</td>
+                    <td style="text-align:right;">@(item.ValorContable?.ToString("N2") ?? "0.00")</td>
+                    <td style="text-align:right;">@(item.ValorAdquisicion?.ToString("N2") ?? "0.00")</td>
+                    <td>
+                        <select class="form-control ddlMotivo" style="width:100%;">
+                            <option value="0">-- Seleccionar --</option>
+                            @foreach (var motivo in motivos)
+                            {
+                                if (item.MotivoBajaId == motivo.IdMotivoBaja)
+                                {
+                                    <option value="@motivo.IdMotivoBaja" selected="selected">
+                                        @motivo.Nombre
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@motivo.IdMotivoBaja">
+                                        @motivo.Nombre
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control txtObservaciones" value="@item.Observaciones" style="width:100%;" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="row" style="margin-top: 15px;">
+        <div class="col-md-12">
+            <button type="button" class="btn green" onclick="guardarBajas()">
+                <i class="fa fa-save"></i> Guardar Bajas Seleccionadas
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i> No se encontraron activos que hayan sido dados de baja entre los períodos seleccionados.
+    </div>
+}

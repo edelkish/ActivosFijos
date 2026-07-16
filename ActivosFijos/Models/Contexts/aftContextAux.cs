@@ -28,6 +28,7 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<ClasificadoresTotales> ClasificadoresTotales { get; set; } = null!;
         public virtual DbSet<UTHConMovimientos> UTHConMovimientos { get; set; } = null!;
         public virtual DbSet<UTHConMovimientosParcial> UTHConMovimientosParcial { get; set; } = null!;
+        public virtual DbSet<ActivosBaja> ActivosBajas { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -87,6 +88,11 @@ namespace ActivosFijos.Models.Contexts
             });
 
             modelBuilder.Entity<UTHConMovimientosParcial>(entity =>
+            {
+                entity.HasNoKey();
+            });
+
+            modelBuilder.Entity<ActivosBaja>(entity =>
             {
                 entity.HasNoKey();
             });

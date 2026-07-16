@@ -2641,6 +2641,8 @@ namespace ActivosFijos.Controllers
 
                     ExcelWorksheet ws = package.Workbook.Worksheets.Copy(templateSheetName, sheetName);
 
+                    ws.Cells["F2"].Value = "MINEM";
+                    ws.Cells["F3"].Value = "Empresa de Tecnologías de la Información y Automática";
                     ws.Cells["F5"].Value = areaNombre;
                     ws.Cells["AA4"].Value = new DateTime(anio, mes, 1);
                     ws.Cells["AA5"].Value = ++areaIndex;

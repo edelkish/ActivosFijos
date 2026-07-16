@@ -1,0 +1,222 @@
+@using ActivosFijos.Clases
+
+@{
+    ViewData["Title"] = "Bajas por Año";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@functions
+{
+    public string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+
+@section PluginsCSS{
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+    </environment>
+}
+
+@section Styles{
+    <style type="text/css">
+        .mt-checkbox-list, .mt-radio-list {
+            padding: 0 0;
+        }
+    </style>
+}
+
+<div class="page-head">
+    <input type="hidden" id="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+    <div class="container-fluid">
+        <div class="page-title">
+            <h1>
+                Activos Fijos | Bajas por Año
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+    <div class="container-fluid">
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Activos Fijos</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Bajas por Año</span>
+            </li>
+        </ul>
+
+        <div class="page-content-inner util-btn-margin-bottom-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Selección de Año
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="control-label">A&ntilde;o:</label>
+                                        <div class='input-group date' id='datetimepickerBajas'>
+                                            <input type='text' class="form-control" id="anioSeleccionado" value="@ViewBag.AnioSeleccionado" />
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4" style="padding-top:25px">
+                                    <button type="button" class="btn blue" id="btnBuscar" onclick="buscarBajasPorAnio()">
+                                        <i class="fa fa-search"></i> Buscar
+                                    </button>
+                                    <button type="button" class="btn green" id="btnExportar" onclick="exportarExcel()" style="display:none;">
+                                        <i class="fa fa-file-excel-o"></i> Exportar Excel
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p class="help-block">
+                                        Compara <strong>Diciembre del año seleccionado - 1</strong> con <strong>Diciembre del año seleccionado</strong>.
+                                        Los activos que no aparezcan en el período destino serán considerados como bajas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" id="divResultados" style="display:none;">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption" id="tituloResultados">
+                                Activos que no existen en el período destino
+                            </div>
+                        </div>
+                        <div class="portlet-body" id="divTablaResultados">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+    <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+    <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+    <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
+    <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
+    <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        var tablaResultados = null;
+
+        function buscarBajasPorAnio() {
+            var anio = $('#anioSeleccionado').val();
+
+            $.ajax({
+                url: '@Url.Action("BuscarBajasPorAnio", "ctBajasActivo")',
+                type: 'POST',
+                data: { anio: anio },
+                headers: { 'XSRF-TOKEN': $('#RequestVerificationToken').val() },
+                success: function (data) {
+                    $('#divTablaResultados').html(data);
+                    $('#divResultados').show();
+                    $('#btnExportar').show();
+
+                    var anioSel = $('#anioSeleccionado').val();
+                    $('#tituloResultados').text('Bajas de ' + anioSel + ' - Comparación Dic ' + (parseInt(anioSel) - 1) + ' vs Dic ' + anioSel);
+
+                    if (tablaResultados) {
+                        tablaResultados.destroy();
+                    }
+
+                    tablaResultados = $('#tablaBajas').DataTable({
+                        "language": {
+                            "url": "~/global/plugins/datatables/plugins/i18n/Spanish.json"
+                        },
+                        "pageLength": 25,
+                        "order": [[0, "asc"]]
+                    });
+                },
+                error: function () {
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error al consultar los datos.");
+                }
+            });
+        }
+
+        function exportarExcel() {
+            var anio = $('#anioSeleccionado').val();
+            window.location.href = '@Url.Action("ExportarExcelPorAnio", "ctBajasActivo")' + '?anio=' + anio;
+        }
+
+        function seleccionarTodos(checkbox) {
+            var rows = tablaResultados.rows().nodes();
+            $('.chkSeleccion', rows).prop('checked', checkbox.checked);
+        }
+
+        function guardarBajasPorAnio() {
+            var bajas = [];
+            var anio = $('#anioSeleccionado').val();
+
+            $('#tablaBajas tbody tr').each(function () {
+                var row = $(this);
+                var chk = row.find('.chkSeleccion');
+                if (chk.is(':checked')) {
+                    bajas.push({
+                        NoInventario: row.find('.hdNoInventario').val(),
+                        SubNumero: row.find('.hdSubNumero').val(),
+                        FechaSubmayor: row.find('.hdFechaSubmayor').val(),
+                        MotivoBajaId: row.find('.ddlMotivo').val(),
+                        Observaciones: row.find('.txtObservaciones').val(),
+                        Seleccionado: true
+                    });
+                }
+            });
+
+            if (bajas.length === 0) {
+                MiApp.Mensajes.mostrarNotificacion("warning", "Debe seleccionar al menos un activo.");
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("RegistrarBajas", "ctBajasActivo")',
+                type: 'POST',
+                data: { bajas: bajas, anio: anio },
+                headers: { 'XSRF-TOKEN': $('#RequestVerificationToken').val() },
+                success: function (response) {
+                    MiApp.Mensajes.mostrarNotificacion("success", "Bajas registradas satisfactoriamente.");
+                    buscarBajasPorAnio();
+                },
+                error: function () {
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error al guardar las bajas.");
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            $('#datetimepickerBajas').datetimepicker({
+                format: 'YYYY',
+                locale: 'es',
+                viewMode: 'years'
+            });
+
+            buscarBajasPorAnio();
+        });
+    </script>
+}

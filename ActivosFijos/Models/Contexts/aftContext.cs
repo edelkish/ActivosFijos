@@ -32,6 +32,8 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<UtilesHerramienta> UtilesHerramientas { get; set; } = null!;
         public virtual DbSet<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = null!;
         public virtual DbSet<PlanMuestreoAnual> PlanMuestreoAnuals { get; set; } = null!;
+        public virtual DbSet<BajaActivo> BajaActivos { get; set; } = null!;
+        public virtual DbSet<MotivoBaja> MotivoBajas { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -229,6 +231,19 @@ namespace ActivosFijos.Models.Contexts
                     .HasName("PK_PlanMuestreoAnual");
 
                 entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
+            });
+
+            modelBuilder.Entity<BajaActivo>(entity =>
+            {
+                entity.HasKey(e => e.IdBaja);
+
+                entity.Property(e => e.EsBaja).HasDefaultValue(false);
+                entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
+            });
+
+            modelBuilder.Entity<MotivoBaja>(entity =>
+            {
+                entity.HasKey(e => e.IdMotivoBaja);
             });
 
             OnModelCreatingPartial(modelBuilder);
