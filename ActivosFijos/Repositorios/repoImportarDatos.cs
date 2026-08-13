@@ -805,6 +805,48 @@ namespace ActivosFijos.Repositorios
                         }
                     }
 
+                    HashSet<(long NoInventario, int SubNumero)> clavesArchivo = new HashSet<(long, int)>();
+                    foreach (DataRow row in datos.Rows)
+                    {
+                        string[] noInvParts = row["NoInventario"].ToString().Trim().Split('-');
+                        long noInventario = long.Parse(noInvParts[0].Trim());
+                        int subNumero = noInvParts.Length > 1 ? int.Parse(noInvParts[1].Trim()) : 0;
+                        clavesArchivo.Add((noInventario, subNumero));
+                    }
+
+                    List<ActFijo> existentesMes = _context.ActFijos
+                        .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month)
+                        .ToList();
+
+                    List<ActFijo> aEliminar = existentesMes
+                        .Where(act => !clavesArchivo.Contains((act.NoInventario, act.SubNumero)))
+                        .ToList();
+
+                    if (aEliminar.Count > 0)
+                    {
+                        var muestreoMes = _context.MuestreoMensualDiezPorCientos
+                            .Where(m => m.FechaSubmayor.Year == fecha.Year && m.FechaSubmayor.Month == fecha.Month)
+                            .ToList();
+
+                        HashSet<(long, int)> clavesReferenciadas = new HashSet<(long, int)>();
+                        foreach (var m in muestreoMes)
+                        {
+                            clavesReferenciadas.Add((m.NoInventario, m.SubNumero));
+                        }
+
+                        var aEliminarConMuestreo = aEliminar
+                            .Where(act => clavesReferenciadas.Contains((act.NoInventario, act.SubNumero)))
+                            .ToList();
+
+                        if (aEliminarConMuestreo.Count > 0)
+                        {
+                            _context.Database.RollbackTransaction();
+                            return new clResponse<bool>() { Mensaje = $"No se pudo importar el submayor: {aEliminarConMuestreo.Count} activo(s) que ya no están en el archivo están referenciados por el Muestreo del 10% del mes. Elimine primero el muestreo del mes y reintente la importación.", Resultado = false, SiSatisfactorio = false };
+                        }
+
+                        _context.ActFijos.RemoveRange(aEliminar);
+                    }
+
                     foreach (var actFijo in actFijos)
                     {
                         if (actFijo.SiNuevo)
