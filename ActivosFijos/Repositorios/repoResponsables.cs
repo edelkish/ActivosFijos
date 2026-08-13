@@ -567,7 +567,7 @@ namespace ActivosFijos.Repositorios
         }
         public async Task<Responsable> ObtenerInfoEncargadoEconomia()
         {
-            return await _context.Responsables.Include(res => res.CargoNavigation).SingleOrDefaultAsync(c => c.ResponsableDeEconomia);
+            return await _context.Responsables.Include(res => res.CargoNavigation).OrderBy(c => c.Nombre).FirstOrDefaultAsync(c => c.ResponsableDeEconomia);
         }
         public async Task<Responsable> SeleccionarResponsablePorArea(Guid area, Guid resp)
         {
