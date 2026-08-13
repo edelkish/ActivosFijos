@@ -313,7 +313,28 @@ namespace ActivosFijos.Controllers
                     ws.Row(row).CustomHeight = false;
                 }
 
-                ws.Cells[9, 1, 9 + filtrados.Count - 1, 31].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+                int lastDataRow = 9 + filtrados.Count - 1;
+                var thin = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+
+                var cantRange = ws.Cells[9, 14, lastDataRow, 14];
+                cantRange.Style.Border.Left.Style = thin;
+                cantRange.Style.Border.Right.Style = thin;
+                cantRange.Style.Border.Top.Style = thin;
+                cantRange.Style.Border.Bottom.Style = thin;
+
+                var siRange = ws.Cells[9, 16, lastDataRow, 17];
+                siRange.Style.Border.Left.Style = thin;
+                siRange.Style.Border.Right.Style = thin;
+                siRange.Style.Border.Top.Style = thin;
+                siRange.Style.Border.Bottom.Style = thin;
+
+                var noRange = ws.Cells[9, 20, lastDataRow, 21];
+                noRange.Style.Border.Left.Style = thin;
+                noRange.Style.Border.Right.Style = thin;
+                noRange.Style.Border.Top.Style = thin;
+                noRange.Style.Border.Bottom.Style = thin;
+
+                ws.Cells[9, 1, lastDataRow, 31].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
 
                 int subTotalRow = 9 + filtrados.Count;
                 int totalRow = 10 + filtrados.Count;

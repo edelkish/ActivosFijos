@@ -122,6 +122,7 @@
     <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
     <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
     <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+    <script src="~/global/paginas/cargandoFiles.js" type="text/javascript"></script>
 
     <script type="text/javascript">
         var tablaResultados = null;
@@ -174,8 +175,8 @@
             var bajas = [];
             var anio = $('#anioSeleccionado').val();
 
-            $('#tablaBajas tbody tr').each(function () {
-                var row = $(this);
+            tablaResultados.rows().every(function () {
+                var row = $(this.node());
                 var chk = row.find('.chkSeleccion');
                 if (chk.is(':checked')) {
                     bajas.push({
@@ -194,6 +195,8 @@
                 return;
             }
 
+            mostrarLoadingPanel("divTablaResultados", "Guardando bajas, por favor espere...");
+
             $.ajax({
                 url: '@Url.Action("RegistrarBajas", "ctBajasActivo")',
                 type: 'POST',
@@ -205,6 +208,9 @@
                 },
                 error: function () {
                     MiApp.Mensajes.mostrarNotificacion("error", "Error al guardar las bajas.");
+                },
+                complete: function () {
+                    ocultarLoadingPanel("divTablaResultados");
                 }
             });
         }
