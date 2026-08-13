@@ -296,38 +296,36 @@ namespace ActivosFijos.Repositorios
             {
                 string fechaMov = fecha.ToString("yyyy-MM-dd");
                 List<ExistenciaMovimientoUTH> query = new List<ExistenciaMovimientoUTH>();
-                query = await _contextAux.ExistenciaMovimientosUTH.FromSqlRaw($@"DECLARE @fecha DATETIME = CONVERT(DATETIME, '{fechaMov}')
+                query = await _contextAux.ExistenciaMovimientosUTH.FromSqlRaw($@"DECLARE @fecha DATETIME = CONVERT(DATETIME, '{fechaMov}'), @fechaAnterior DATETIME = DATEADD(MONTH, -1, CONVERT(DATETIME, '{fechaMov}'))
 
                                                                                 SELECT Tabla.codigo AS [Codigo],
-                                                                                        CONCAT(Tabla.codigo, '|', Tabla.responsable, '|', Tabla.centroCosto, '|', Tabla.areaResponsabilidad) AS [Discriminante],
-                                                                                        COUNT(*) AS [Cantidad]
+                                                                                        Tabla.Discriminante,
+                                                                                        MAX(Tabla.Cantidad) AS [Cantidad]
                                                                                 FROM
                                                                                 (
                                                                                     SELECT codigo,
-                                                                                            descripcion,
-                                                                                            responsable,
-                                                                                            centroCosto,
-                                                                                            areaResponsabilidad
+                                                                                            CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
+                                                                                            COUNT(*) AS [CantidadAnterior],
+                                                                                            0 AS [Cantidad]
                                                                                     FROM dbo.UtilesHerramientas
-                                                                                    WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
-                                                                                            AND MONTH(fechaListadoUTH) = MONTH(DATEADD(MONTH, -1, @fecha))
+                                                                                    WHERE YEAR(fechaListadoUTH) = YEAR(@fechaAnterior)
+                                                                                            AND MONTH(fechaListadoUTH) = MONTH(@fechaAnterior)
+                                                                                    GROUP BY codigo,
+                                                                                            CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
                                                                                     UNION ALL
                                                                                     SELECT codigo,
-                                                                                            descripcion,
-                                                                                            responsable,
-                                                                                            centroCosto,
-                                                                                            areaResponsabilidad
+                                                                                            CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
+                                                                                            0 AS [CantidadAnterior],
+                                                                                            COUNT(*) AS [Cantidad]
                                                                                     FROM dbo.UtilesHerramientas
                                                                                     WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
                                                                                             AND MONTH(fechaListadoUTH) = MONTH(@fecha)
+                                                                                    GROUP BY codigo,
+                                                                                            CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
                                                                                 ) AS Tabla
                                                                                 GROUP BY Tabla.codigo,
-                                                                                            Tabla.descripcion,
-                                                                                            Tabla.responsable,
-                                                                                            Tabla.centroCosto,
-                                                                                            Tabla.areaResponsabilidad,
-                                                                                            CONCAT(Tabla.codigo, '|', Tabla.responsable, '|', Tabla.centroCosto, '|', Tabla.areaResponsabilidad)
-                                                                                HAVING COUNT(*) = 1;").ToListAsync();
+                                                                                        Tabla.Discriminante
+                                                                                HAVING MAX(Tabla.CantidadAnterior) <> MAX(Tabla.Cantidad);").ToListAsync();
                 
                 return query;
             }
@@ -349,119 +347,52 @@ namespace ActivosFijos.Repositorios
 
                                                                                     SET @fechaAnterior = DATEADD(MONTH, -1, @fecha);
 
-                                                                                    DECLARE @tablaDeMovimientos TABLE
-                                                                                    (
-                                                                                        Codigo VARCHAR(100),
-                                                                                        Descripcion VARCHAR(2000),
-                                                                                        Responsable UNIQUEIDENTIFIER,
-                                                                                        CentroCosto UNIQUEIDENTIFIER,
-                                                                                        Area UNIQUEIDENTIFIER,
-                                                                                        Discriminante VARCHAR(500)
-                                                                                    );
-
-                                                                                    INSERT @tablaDeMovimientos
-                                                                                    SELECT UTH.Codigo,
-                                                                                           UTH.Descripcion,
-                                                                                           UTH.Responsable,
-                                                                                           UTH.CentroCosto,
-                                                                                           UTH.Area,
-                                                                                           UTH.Discriminante
+                                                                                    SELECT codigo,
+                                                                                           MAX(descripcion) AS descripcion,
+                                                                                           responsable,
+                                                                                           centroCosto,
+                                                                                           areaResponsabilidad AS [area],
+                                                                                           CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
+                                                                                           MAX(CantidadAnterior) AS [CantidadAnterior],
+                                                                                           MAX(Cantidad) AS [Cantidad]
                                                                                     FROM
                                                                                     (
                                                                                         SELECT codigo,
-                                                                                               descripcion,
-                                                                                               responsable,
-                                                                                               centroCosto,
-                                                                                               areaResponsabilidad AS [Area],
-                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante]
-                                                                                        FROM dbo.UtilesHerramientas
-                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fechaAnterior)
-                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fechaAnterior)
-                                                                                        GROUP BY codigo,
-                                                                                                 descripcion,
-                                                                                                 responsable,
-                                                                                                 centroCosto,
-                                                                                                 areaResponsabilidad,
-                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
-                                                                                        UNION ALL
-                                                                                        SELECT codigo,
-                                                                                               descripcion,
-                                                                                               responsable,
-                                                                                               centroCosto,
-                                                                                               areaResponsabilidad AS [Area],
-                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
-                                                                                        FROM dbo.UtilesHerramientas
-                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
-                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fecha)
-                                                                                        GROUP BY codigo,
-                                                                                                 descripcion,
-                                                                                                 responsable,
-                                                                                                 centroCosto,
-                                                                                                 areaResponsabilidad,
-                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
-                                                                                    ) UTH
-                                                                                    GROUP BY UTH.Codigo,
-                                                                                             UTH.Descripcion,
-                                                                                             UTH.Responsable,
-                                                                                             UTH.CentroCosto,
-                                                                                             UTH.Area,
-                                                                                             UTH.Discriminante
-                                                                                    HAVING COUNT(*) = 1;
-
-                                                                                    SELECT MOV.codigo,
-                                                                                           MOV.descripcion,
-                                                                                           MOV.responsable,
-                                                                                           MOV.centroCosto,
-                                                                                           MOV.areaResponsabilidad as [area],
-                                                                                           MOV.Discriminante,
-                                                                                           MOV.CantidadAnterior,
-                                                                                           MOV.Cantidad
-                                                                                    FROM
-                                                                                    (
-                                                                                        SELECT codigo,
-                                                                                               descripcion,
+                                                                                               MAX(descripcion) AS descripcion,
                                                                                                responsable,
                                                                                                centroCosto,
                                                                                                areaResponsabilidad,
-                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
-                                                                                               0 AS [CantidadAnterior],
-                                                                                               COUNT(*) AS [Cantidad]
-                                                                                        FROM dbo.UtilesHerramientas
-                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
-                                                                                              AND (MONTH(fechaListadoUTH) = MONTH(@fecha))
-                                                                                              AND codigo IN
-                                                                                                  (
-                                                                                                      SELECT DISTINCT Codigo FROM @tablaDeMovimientos
-                                                                                                  )
-                                                                                        GROUP BY codigo,
-                                                                                                 descripcion,
-                                                                                                 responsable,
-                                                                                                 centroCosto,
-                                                                                                 areaResponsabilidad,
-                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
-                                                                                        UNION
-                                                                                        SELECT codigo,
-                                                                                               descripcion,
-                                                                                               responsable,
-                                                                                               centroCosto,
-                                                                                               areaResponsabilidad,
-                                                                                               CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad) AS [Discriminante],
                                                                                                COUNT(*) AS [CantidadAnterior],
                                                                                                0 AS [Cantidad]
                                                                                         FROM dbo.UtilesHerramientas
                                                                                         WHERE YEAR(fechaListadoUTH) = YEAR(@fechaAnterior)
-                                                                                              AND (MONTH(fechaListadoUTH) = MONTH(@fechaAnterior))
-                                                                                              AND codigo IN
-                                                                                                  (
-                                                                                                      SELECT DISTINCT Codigo FROM @tablaDeMovimientos
-                                                                                                  )
+                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fechaAnterior)
                                                                                         GROUP BY codigo,
-                                                                                                 descripcion,
                                                                                                  responsable,
                                                                                                  centroCosto,
-                                                                                                 areaResponsabilidad,
-                                                                                                 CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
-                                                                                    ) MOV;").ToListAsync();
+                                                                                                 areaResponsabilidad
+                                                                                        UNION ALL
+                                                                                        SELECT codigo,
+                                                                                               MAX(descripcion) AS descripcion,
+                                                                                               responsable,
+                                                                                               centroCosto,
+                                                                                               areaResponsabilidad,
+                                                                                               0 AS [CantidadAnterior],
+                                                                                               COUNT(*) AS [Cantidad]
+                                                                                        FROM dbo.UtilesHerramientas
+                                                                                        WHERE YEAR(fechaListadoUTH) = YEAR(@fecha)
+                                                                                              AND MONTH(fechaListadoUTH) = MONTH(@fecha)
+                                                                                        GROUP BY codigo,
+                                                                                                 responsable,
+                                                                                                 centroCosto,
+                                                                                                 areaResponsabilidad
+                                                                                    ) AS MOV
+                                                                                    GROUP BY codigo,
+                                                                                             responsable,
+                                                                                             centroCosto,
+                                                                                             areaResponsabilidad,
+                                                                                             CONCAT(codigo, '|', responsable, '|', centroCosto, '|', areaResponsabilidad)
+                                                                                    HAVING MAX(CantidadAnterior) <> MAX(Cantidad);").ToListAsync();
 
                 return query;
             }

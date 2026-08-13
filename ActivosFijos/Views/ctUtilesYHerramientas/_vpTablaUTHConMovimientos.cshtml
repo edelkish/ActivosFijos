@@ -20,6 +20,9 @@
             <th scope="col" colspan="2" style="text-align:center;min-width:65px" width="70px">
                 Meses
             </th>
+            <th scope="col" rowspan="2" style="text-align:center;min-width:100px" width="100px">
+                Movimiento
+            </th>
         </tr>
         <tr>
             <th scope="col" style="text-align:center">
@@ -51,7 +54,17 @@
                 </td>
                 <td style="text-align:center">
                     @Html.DisplayFor(modelItem => item.Cantidad)
-                </td>   
+                </td>
+                <td style="text-align:center">
+                    @if (item.Cantidad > 0)
+                    {
+                        <span class="label label-success">ALTA</span>
+                    }
+                    else
+                    {
+                        <span class="label label-danger">BAJA</span>
+                    }
+                </td>
             </tr>
         }
     </tbody>
