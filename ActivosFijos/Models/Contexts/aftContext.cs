@@ -32,6 +32,8 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<UtilesHerramienta> UtilesHerramientas { get; set; } = null!;
         public virtual DbSet<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = null!;
         public virtual DbSet<PlanMuestreoAnual> PlanMuestreoAnuals { get; set; } = null!;
+        public virtual DbSet<MuestreoMensualDiezPorCientoUTH> MuestreoMensualDiezPorCientoUTHs { get; set; } = null!;
+        public virtual DbSet<PlanMuestreoAnualUTH> PlanMuestreoAnualUTHs { get; set; } = null!;
         public virtual DbSet<BajaActivo> BajaActivos { get; set; } = null!;
         public virtual DbSet<MotivoBaja> MotivoBajas { get; set; } = null!;
 
@@ -229,6 +231,28 @@ namespace ActivosFijos.Models.Contexts
             {
                 entity.HasKey(e => new { e.Anno, e.CentroCosto, e.AreaResponsabilidad })
                     .HasName("PK_PlanMuestreoAnual");
+
+                entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
+            });
+
+            modelBuilder.Entity<MuestreoMensualDiezPorCientoUTH>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("PK_MuestreoMensualDiezPorCientoUTH");
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+                entity.HasIndex(e => new { e.Anno, e.Mes, e.IdUth })
+                    .IsUnique()
+                    .HasDatabaseName("UQ_MuestreoMensualDiezPorCientoUTH_IdUth");
+
+                entity.Property(e => e.FechaMuestreo).HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.SiExiste).HasDefaultValueSql("((0))");
+                entity.Property(e => e.Observaciones).HasColumnType("nvarchar(max)");
+            });
+
+            modelBuilder.Entity<PlanMuestreoAnualUTH>(entity =>
+            {
+                entity.HasKey(e => new { e.Anno, e.CentroCosto, e.AreaResponsabilidad })
+                    .HasName("PK_PlanMuestreoAnualUTH");
 
                 entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
             });

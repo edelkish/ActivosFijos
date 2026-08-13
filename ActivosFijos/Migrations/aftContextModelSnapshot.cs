@@ -115,6 +115,51 @@ namespace ActivosFijos.Migrations
                     b.ToTable("AreaDeResponsabilidad");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
+                {
+                    b.Property<int>("IdBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBaja"));
+
+                    b.Property<bool>("EsBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<DateTime>("FechaSubmayor")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("MotivoBajaId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("NoInventario")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("IdBaja");
+
+                    b.HasIndex("MotivoBajaId");
+
+                    b.ToTable("BajaActivo");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cargo", b =>
                 {
                     b.Property<Guid>("IdCargo")
@@ -257,6 +302,25 @@ namespace ActivosFijos.Migrations
                     b.ToTable("Locales");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MotivoBaja", b =>
+                {
+                    b.Property<int>("IdMotivoBaja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMotivoBaja"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("IdMotivoBaja");
+
+                    b.ToTable("MotivoBaja");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MuestreoMensualDiezPorCiento", b =>
                 {
                     b.Property<int>("Anno")
@@ -304,6 +368,69 @@ namespace ActivosFijos.Migrations
                     b.HasIndex("NoInventario", "SubNumero", "FechaSubmayor");
 
                     b.ToTable("MuestreoMensualDiezPorCiento");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MuestreoMensualDiezPorCientoUTH", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Anno")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("AreaResponsabilidad")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CentroCosto")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(2000)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<DateTime>("FechaMuestreo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("IdUth")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("Responsable")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("SiExiste")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValueSql("((0))");
+
+                    b.Property<decimal?>("Valor")
+                        .HasColumnType("money");
+
+                    b.HasKey("Id")
+                        .HasName("PK_MuestreoMensualDiezPorCientoUTH");
+
+                    b.HasIndex("Anno", "Mes", "IdUth")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_MuestreoMensualDiezPorCientoUTH_IdUth");
+
+                    b.ToTable("MuestreoMensualDiezPorCientoUTH");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Permiso", b =>
@@ -389,87 +516,65 @@ namespace ActivosFijos.Migrations
                     b.ToTable("PlanMuestreoAnual");
                 });
 
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MotivoBaja", b =>
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.PlanMuestreoAnualUTH", b =>
                 {
-                    b.Property<int>("IdMotivoBaja")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("Anno")
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMotivoBaja"));
+                    b.Property<Guid>("CentroCosto")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(200)");
+                    b.Property<Guid>("AreaResponsabilidad")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("IdMotivoBaja");
-
-                    b.ToTable("MotivoBaja");
-
-                    b.HasData(
-                        new
-                        {
-                            IdMotivoBaja = 1,
-                            Nombre = "Baja Pendiente Materias Primas"
-                        },
-                        new
-                        {
-                            IdMotivoBaja = 2,
-                            Nombre = "Traslado"
-                        },
-                        new
-                        {
-                            IdMotivoBaja = 3,
-                            Nombre = "Baja (Destino Final)"
-                        });
-                });
-
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
-                {
-                    b.Property<int>("IdBaja")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("Abr")
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdBaja"));
+                    b.Property<int>("Ago")
+                        .HasColumnType("int");
 
-                    b.Property<bool>("EsBaja")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                    b.Property<int>("Dic")
+                        .HasColumnType("int");
 
-                    b.Property<DateTime>("FechaRegistro")
+                    b.Property<int>("Ene")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Feb")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaCreacion")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<DateTime>("FechaSubmayor")
-                        .HasColumnType("datetime");
-
-                    b.Property<int>("MotivoBajaId")
+                    b.Property<int>("Jul")
                         .HasColumnType("int");
 
-                    b.Property<long>("NoInventario")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Observaciones")
-                        .HasMaxLength(500)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(500)");
-
-                    b.Property<int>("SubNumero")
+                    b.Property<int>("Jun")
                         .HasColumnType("int");
 
-                    b.Property<int>("UsuarioId")
+                    b.Property<int>("Mar")
                         .HasColumnType("int");
 
-                    b.HasKey("IdBaja");
+                    b.Property<int>("May")
+                        .HasColumnType("int");
 
-                    b.HasIndex("MotivoBajaId");
+                    b.Property<int>("Nov")
+                        .HasColumnType("int");
 
-                    b.HasIndex("NoInventario", "SubNumero", "FechaSubmayor");
+                    b.Property<int>("Oct")
+                        .HasColumnType("int");
 
-                    b.ToTable("BajaActivo");
+                    b.Property<int>("Sep")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalUtiles")
+                        .HasColumnType("int");
+
+                    b.HasKey("Anno", "CentroCosto", "AreaResponsabilidad")
+                        .HasName("PK_PlanMuestreoAnualUTH");
+
+                    b.ToTable("PlanMuestreoAnualUTH");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
@@ -676,18 +781,6 @@ namespace ActivosFijos.Migrations
                     b.ToTable("PermisosUsuarios", (string)null);
                 });
 
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
-                {
-                    b.HasOne("ActivosFijos.Models.EntidadesBD.MotivoBaja", "MotivoBajaNavigation")
-                        .WithMany()
-                        .HasForeignKey("MotivoBajaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_BajaActivo_MotivoBaja");
-
-                    b.Navigation("MotivoBajaNavigation");
-                });
-
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.ActFijo", b =>
                 {
                     b.HasOne("ActivosFijos.Models.EntidadesBD.AreaDeResponsabilidad", "AreaResponsabilidadNavigation")
@@ -727,6 +820,17 @@ namespace ActivosFijos.Migrations
                     b.Navigation("CubiculoNavigation");
 
                     b.Navigation("ResponsableNavigation");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.BajaActivo", b =>
+                {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.MotivoBaja", "MotivoBajaNavigation")
+                        .WithMany()
+                        .HasForeignKey("MotivoBajaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MotivoBajaNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>

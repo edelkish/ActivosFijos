@@ -146,7 +146,16 @@
                                     <a asp-action="DetallesDeMovimientosUTHs" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "DetallesDeMovimientosUTHs")"> Movimientos Mensuales </a>
                                 </li>
                             </ul>
-                        </li>                        
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "MuestreoDiezPorCientoUTH")">
+                            <a asp-action="MuestreoDiezPorCientoUTH" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "MuestreoDiezPorCientoUTH")"> Muestreo 10% </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "ConsultaMuestreoDiezPorCientoUTH")">
+                            <a asp-action="ConsultaMuestreoDiezPorCientoUTH" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "ConsultaMuestreoDiezPorCientoUTH")"> Consulta Muestreo 10% </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctUtilesYHerramientas", "PlanMuestreoAnualUTH")">
+                            <a asp-action="PlanMuestreoAnualUTH" asp-controller="ctUtilesYHerramientas" class="nav-link @Html.IsSelected("ctUtilesYHerramientas", "PlanMuestreoAnualUTH")"> Planificación Muestreo Anual </a>
+                        </li>
                     </ul>
                 </li>
             }

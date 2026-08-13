@@ -1,0 +1,339 @@
+@using ActivosFijos.Clases
+@using ActivosFijos.Models.Auxiliar
+@model List<mdMuestreoPendienteItemUTH>
+@{
+    ViewData["Title"] = "Muestreo 10%";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Selección aleatoria del 10% de los útiles y herramientas";
+    clResponse<List<mdMuestreoPendienteItemUTH>> respuesta = new clResponse<List<mdMuestreoPendienteItemUTH>>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+
+    bool yaExisteMuestreo = ViewBag.yaExisteMuestreo == true;
+    int totalItemsDistintos = ViewBag.totalItemsDistintos ?? 0;
+    int limiteMuestra = ViewBag.limiteMuestra ?? 0;
+    int totalAreas = ViewBag.totalAreas ?? 0;
+    int areasCubiertas = ViewBag.areasCubiertas ?? 0;
+    var resumenAreas = ViewBag.resumenAreas as List<mdMuestreoResumenArea> ?? new List<mdMuestreoResumenArea>();
+    int mesMuestreo = ViewBag.mesMuestreo ?? 0;
+    int anioMuestreo = ViewBag.anioMuestreo ?? 0;
+    bool muestraPendiente = ViewBag.muestraPendiente == true;
+    bool yaExisteConfirmado = ViewBag.yaExisteConfirmado == true;
+}
+
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@functions
+{
+    public string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+
+@section PluginsCSS{
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
+        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+    </environment>
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <div class="page-title">
+            <h1>
+                Útiles y Herramientas | Muestreo 10%
+            </h1>
+        </div>
+    </div>
+</div>
+<div class="page-content">
+    <div class="container-fluid">
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Útiles y Herramientas</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Muestreo 10%</span>
+            </li>
+        </ul>
+        <div class="page-content-inner util-btn-margin-bottom-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Muestreo Mensual 10%
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"></a>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            @if (!yaExisteConfirmado)
+                            {
+                                <form id="formMuestreo" asp-action="EjecutarMuestreoUTH" asp-controller="ctUtilesYHerramientas" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="form-actions">
+                                        <div class="btn-set pull-left">
+                                            <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="btnEjecutarMuestreo"><i class="fa fa-random"></i> Ejecutar Muestreo 10%</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            }
+                            @if (yaExisteMuestreo)
+                            {
+                                <div class="pull-right">
+                                    <button type="button" class="btn green btn-outline sbold uppercase" id="btnConfirmarMuestreo" style="margin-left:5px"><i class="fa fa-check"></i> Confirmar Muestreo</button>
+                                </div>
+                            }
+                            <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+                            <input type="hidden" id="hdnAnno" value="@anioMuestreo" />
+                            <input type="hidden" id="hdnMes" value="@mesMuestreo" />
+                            <hr />
+
+                            @if (muestraPendiente)
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="fa fa-clock-o"></i> <strong>Muestreo pendiente de confirmar</strong> Revise los datos y haga clic en "Confirmar Muestreo" para guardar los resultados.
+                                </div>
+                            }
+
+                            @if (yaExisteMuestreo)
+                            {
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@totalItemsDistintos</h4>
+                                                    <small>Total Ítems</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@limiteMuestra</h4>
+                                                    <small>Muestra 10%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@totalAreas</h4>
+                                                    <small>Total Áreas</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@areasCubiertas</h4>
+                                                    <small>Áreas Cubiertas</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="portlet box blue-hoki">
+                                            <div class="portlet-title">
+                                                <div class="caption">
+                                                    Áreas cubiertas en la muestra
+                                                </div>
+                                                <div class="tools">
+                                                    <a href="" class="fullscreen"></a>
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                <table class="table table-striped table-bordered table-hover" id="tablaResumenAreas">
+                                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                                        <tr>
+                                                            <th>Área</th>
+                                                            <th>Cantidad</th>
+                                                            <th>No. Códigos</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var area in resumenAreas)
+                                                        {
+                                                            <tr>
+                                                                <td>@area.AreaNombre</td>
+                                                                <td>@area.Cantidad</td>
+                                                                <td>@area.Inventarios</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="portlet box blue-hoki">
+                                            <div class="portlet-title">
+                                                <div class="caption">
+                                                    Detalle de útiles y herramientas muestreados
+                                                </div>
+                                                <div class="tools">
+                                                    <a href="" class="fullscreen"></a>
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                <table class="table table-striped table-bordered table-hover" id="tablaMuestreo">
+                                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                                        <tr>
+                                                            <th>Código</th>
+                                                            <th>Descripción</th>
+                                                            <th>Área</th>
+                                                            <th>Responsable</th>
+                                                            <th>Centro de Costo</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var item in Model)
+                                                        {
+                                                            <tr>
+                                                                <td>@item.Codigo</td>
+                                                                <td>@item.Descripcion</td>
+                                                                <td>@item.AreaNombre</td>
+                                                                <td>@(item.NombreResponsable != null ? item.NombreResponsable + " " + item.ApellidosResponsable : "-")</td>
+                                                                <td>@(item.NombreCentroCosto ?? "-")</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (yaExisteConfirmado)
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="fa fa-info-circle"></i> <strong>Muestreo confirmado</strong> Ya existe un muestreo confirmado para @mesMuestreo/@anioMuestreo. No es posible ejecutar uno nuevo.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info">
+                                    <strong>Sin muestreo</strong> No se ha ejecutado el muestreo para el período @mesMuestreo/@anioMuestreo. Haga clic en "Ejecutar Muestreo 10%" para generar la muestra aleatoria.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PluginsJS {
+    <environment names="Development,Staging,Production">
+        <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+        <script src="~/global/plugins/notifications/noty.min.js"></script>
+        <script src="~/global/plugins/jquery-confirm/js/jquery-confirm.js"></script>
+    </environment>
+}
+
+@section Scripts {
+    <script src="~/global/paginas/cargandoFiles.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        var baseUrl = $('base').attr('href');
+
+        var siSatisfactorio = '@respuesta.SiSatisfactorio';
+        var mensaje = '@respuesta.Mensaje';
+
+        if ((siSatisfactorio == "True") && (mensaje != "")) {
+            MiApp.Mensajes.mostrarNotificacion("success", mensaje);
+        } else if ((siSatisfactorio == "False") && (mensaje != "")) {
+            MiApp.Mensajes.mostrarNotificacion("error", mensaje);
+        } else if ('@yaExisteMuestreo'.toLowerCase() == 'true') {
+            MiApp.Mensajes.mostrarNotificacion("warning", "El muestreo de @(mesMuestreo)/@(anioMuestreo) ya fue ejecutado. No se puede ejecutar nuevamente para este per\u00edodo.");
+        }
+
+        var tablaMuestreo = $('#tablaMuestreo').DataTable({
+            language: {
+                url: baseUrl + 'global/plugins/datatables/Spanish.json'
+            },
+            order: [[0, 'asc']],
+            pageLength: 25
+        });
+
+        $('#btnEjecutarMuestreo').on('click', function () {
+            $.confirm({
+                title: 'Confirmar',
+                content: '¿Está seguro de ejecutar el muestreo del 10%?<br/>Se seleccionarán aleatoriamente útiles y herramientas para el período actual.',
+                type: 'blue',
+                buttons: {
+                    confirmar: {
+                        text: 'Ejecutar',
+                        btnClass: 'btn-blue',
+                        action: function () {
+                            $('#formMuestreo').submit();
+                        }
+                    },
+                    cancelar: {
+                        text: 'Cancelar',
+                        btnClass: 'btn-default'
+                    }
+                }
+            });
+        });
+
+        function recolectarItems() {
+            return [{
+                anno: parseInt($('#hdnAnno').val()),
+                mes: parseInt($('#hdnMes').val())
+            }];
+        }
+
+        function enviarConfirmacion(items) {
+            $.ajax({
+                url: '@Url.Action("ConfirmarMuestreoUTH", "ctUtilesYHerramientas")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(items),
+                headers: {
+                    'XSRF-TOKEN': $('#RequestVerificationToken').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        MiApp.Mensajes.mostrarNotificacion("success", response.mensaje);
+                        setTimeout(function () { location.reload(); }, 1500);
+                    } else {
+                        MiApp.Mensajes.mostrarNotificacion("error", response.mensaje);
+                    }
+                },
+                error: function () {
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error de conexión al confirmar el muestreo.");
+                }
+            });
+        }
+
+        $('#btnConfirmarMuestreo').on('click', function () {
+            enviarConfirmacion(recolectarItems());
+        });
+    </script>
+}

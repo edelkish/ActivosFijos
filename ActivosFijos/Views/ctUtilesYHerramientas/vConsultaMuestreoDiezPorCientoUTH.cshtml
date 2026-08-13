@@ -1,0 +1,397 @@
+@using ActivosFijos.Models.Auxiliar
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@model List<mdMuestreoPendienteItemUTH>
+@{
+    ViewData["Title"] = "Consulta Muestreo 10%";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Consulta del muestreo aleatorio del 10% de los útiles y herramientas";
+
+    bool yaExisteMuestreo = ViewBag.yaExisteMuestreo == true;
+    bool editable = ViewBag.editable == true;
+    int totalItemsDistintos = ViewBag.totalItemsDistintos ?? 0;
+    int limiteMuestra = ViewBag.limiteMuestra ?? 0;
+    int totalAreas = ViewBag.totalAreas ?? 0;
+    int areasCubiertas = ViewBag.areasCubiertas ?? 0;
+    var resumenAreas = ViewBag.resumenAreas as List<mdMuestreoResumenArea> ?? new List<mdMuestreoResumenArea>();
+    int mesMuestreo = ViewBag.mesMuestreo ?? 0;
+    int anioMuestreo = ViewBag.anioMuestreo ?? 0;
+    string fechaActual = mesMuestreo > 0 ? $"{mesMuestreo:D2}/{anioMuestreo}" : "";
+    string GetAntiXsrfRequestToken() => Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
+
+@section PluginsCSS{
+    <environment names="Development,Staging,Production">
+        <link href="~/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+        <link href="~/global/plugins/bootstrap-editable/bootstrap-editable/css/bootstrap-editable.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
+    </environment>
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <div class="page-title">
+            <h1>
+                Útiles y Herramientas | Consulta Muestreo 10%
+            </h1>
+        </div>
+    </div>
+</div>
+<div class="page-content">
+    <div class="container-fluid">
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Útiles y Herramientas</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Consulta Muestreo 10%</span>
+            </li>
+        </ul>
+        <div class="page-content-inner util-btn-margin-bottom-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Consulta de Muestreo Mensual 10%
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"></a>
+                            </div>
+                        </div>
+                        <div class="portlet-body">
+                            <form method="get" asp-action="ConsultaMuestreoDiezPorCientoUTH" asp-controller="ctUtilesYHerramientas">
+                                <div class="form-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="control-label">Mes y A&ntilde;o:</label>
+                                                <div class='input-group date' id='datetimepickerConsulta'>
+                                                    <input type='text' class="form-control" name="fecha" id="Fecha" value="@fechaActual" />
+                                                    <span class="input-group-addon">
+                                                        <span class="glyphicon glyphicon-calendar"></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2" style="padding-top:25px">
+                                            <button type="submit" class="btn blue-hoki btn-outline sbold uppercase" id="btnMostrar"><i class="fa fa-search"></i> Mostrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            @if (yaExisteMuestreo)
+                            {
+                                <div class="row">
+                                    <div class="col-md-12 text-right" style="padding-top:5px">
+                                        <form asp-action="ExportarActaMuestreoUTH" asp-controller="ctUtilesYHerramientas" method="post" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Acta</button>
+                                        </form>
+                                        <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken" value="@GetAntiXsrfRequestToken()">
+                                    </div>
+                                </div>
+                            }
+
+                            <hr />
+
+                            @if (yaExisteMuestreo)
+                            {
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@totalItemsDistintos</h4>
+                                                    <small>Total Ítems</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@limiteMuestra</h4>
+                                                    <small>Muestra 10%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@totalAreas</h4>
+                                                    <small>Total Áreas</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="portlet light bordered">
+                                            <div class="portlet-body">
+                                                <div>
+                                                    <h4>@areasCubiertas</h4>
+                                                    <small>Áreas Cubiertas</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="portlet box blue-hoki">
+                                            <div class="portlet-title">
+                                                <div class="caption">
+                                                    Áreas cubiertas en la muestra
+                                                </div>
+                                                <div class="tools">
+                                                    <a href="" class="fullscreen"></a>
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                <table class="table table-striped table-bordered table-hover" id="tablaResumenAreas">
+                                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                                        <tr>
+                                                            <th>Área</th>
+                                                            <th>Cantidad</th>
+                                                            <th>No. Códigos</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var area in resumenAreas)
+                                                        {
+                                                            <tr>
+                                                                <td>@area.AreaNombre</td>
+                                                                <td>@area.Cantidad</td>
+                                                                <td>@area.Inventarios</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="portlet box blue-hoki">
+                                            <div class="portlet-title">
+                                                <div class="caption">
+                                                    Detalle de útiles y herramientas muestreados
+                                                </div>
+                                                <div class="tools">
+                                                    <a href="" class="fullscreen"></a>
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                <table class="table table-striped table-bordered table-hover" id="tablaMuestreo">
+                                                    <thead style="background-color: #444d58 !important; color: #ced5de">
+                                                        <tr>
+                                                            <th>Código</th>
+                                                            <th>Descripción</th>
+                                                            <th>Área</th>
+                                                            <th>Responsable</th>
+                                                            <th>Centro de Costo</th>
+                                                            <th class="text-center">¿Existe?</th>
+                                                            <th>Observaciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var item in Model)
+                                                        {
+                                                            <tr>
+                                                                <td>@item.Codigo</td>
+                                                                <td>@item.Descripcion</td>
+                                                                <td>@item.AreaNombre</td>
+                                                                <td>@(item.NombreResponsable != null ? item.NombreResponsable + " " + item.ApellidosResponsable : "-")</td>
+                                                                <td>@(item.NombreCentroCosto ?? "-")</td>
+                                                                <td class="text-center">
+                                                                    @if (editable)
+                                                                    {
+                                                                        <a href="#" class="editable-si-existe"
+                                                                           data-type="select"
+                                                                           data-pk="@item.Codigo"
+                                                                           data-source='[{"value":"true","text":"Sí"},{"value":"false","text":"No"}]'
+                                                                           data-value="@item.SiExiste.ToString().ToLower()"
+                                                                           data-anno="@anioMuestreo"
+                                                                           data-mes="@mesMuestreo"
+                                                                           data-uth="@item.IdUth">
+                                                                            @(item.SiExiste ? "Sí" : "No")
+                                                                        </a>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        @if (item.SiExiste)
+                                                                        {
+                                                                            <span class="badge badge-success" style="background-color:#26a69a">Sí</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge badge-danger" style="background-color:#ef5350">No</span>
+                                                                        }
+                                                                    }
+                                                                </td>
+                                                                <td>@(item.SiExiste ? "—" : item.Observaciones)</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (mesMuestreo > 0)
+                            {
+                                <div class="alert alert-warning">
+                                    <strong>Sin resultados</strong> No se encontró muestreo para el período @mesMuestreo/@anioMuestreo.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section PluginsJS {
+    <environment names="Development,Staging,Production">
+        <script src="~/global/scripts/datatable.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+        <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
+        <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
+        <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/bootstrap-editable/bootstrap-editable/js/bootstrap-editable.min.js" type="text/javascript"></script>
+        <script src="~/global/plugins/jquery-confirm/js/jquery-confirm.js" type="text/javascript"></script>
+    </environment>
+}
+
+@section Scripts {
+    <script type="text/javascript">
+        var baseUrl = $('base').attr('href');
+
+        @if (fechaActual != "")
+        {
+            <text>
+        var f = moment("@fechaActual", "MM/YYYY");
+        document.getElementById('Fecha').value = f.format("MM/YYYY");
+        </text>
+        }
+
+        $('#datetimepickerConsulta').datetimepicker({
+            format: 'MM/YYYY',
+            locale: 'es',
+            viewMode: 'months'
+        });
+
+        var tablaMuestreo = $('#tablaMuestreo').DataTable({
+            language: {
+                url: baseUrl + 'global/plugins/datatables/Spanish.json'
+            },
+            order: [[0, 'asc']],
+            pageLength: 25
+        });
+
+        var tablaResumenAreas = $('#tablaResumenAreas').DataTable({
+            language: {
+                url: baseUrl + 'global/plugins/datatables/Spanish.json'
+            },
+            order: [[0, 'asc']],
+            pageLength: 25
+        });
+
+        @if (editable)
+        {
+            <text>
+        $.fn.editable.defaults.mode = 'popup';
+        $('.editable-si-existe').editable({
+            display: function (value, sourceData) {
+                var isTrue = value === true || value === 'true' || value === 1 || value === '1';
+                $(this).text(isTrue ? 'Sí' : 'No');
+            }
+        });
+
+        $('.editable-si-existe').on('shown.editable', function () {
+            $(this).data('orig-val', $(this).text() === 'Sí' ? 'true' : 'false');
+        });
+
+        $('.editable-si-existe').on('save.editable', function (e, params) {
+            var el = $(this);
+            var tr = el.closest('tr');
+            var isTrue = params.newValue === true || params.newValue === 'true' || params.newValue === 1 || params.newValue === '1';
+
+            if (isTrue) {
+                guardarSiExiste(el, true, null, tr);
+            } else {
+                $.confirm({
+                    title: 'Motivo',
+                    content: '<textarea id="txtMotivo" class="form-control" rows="3" placeholder="Indique el motivo por el que no existe el ítem..."></textarea>',
+                    type: 'blue',
+                    buttons: {
+                        confirmar: {
+                            text: 'Guardar',
+                            btnClass: 'btn-blue',
+                            action: function () {
+                                var motivo = this.$content.find('#txtMotivo').val().trim();
+                                if (motivo === '') {
+                                    $.alert({ title: 'Error', content: 'Debe especificar el motivo.', type: 'red' });
+                                    return false;
+                                }
+                                guardarSiExiste(el, false, motivo, tr);
+                            }
+                        },
+                        cancelar: {
+                            text: 'Cancelar',
+                            btnClass: 'btn-default',
+                            action: function () {
+                                el.editable('setValue', el.data('orig-val'), false);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        function guardarSiExiste(el, siExiste, observaciones, tr) {
+            var data = {
+                anno: +el.data('anno'),
+                mes: +el.data('mes'),
+                idUth: el.data('uth'),
+                siExiste: siExiste,
+                observaciones: observaciones
+            };
+
+            $.ajax({
+                url: '@Url.Action("ActualizarSiExisteUTH", "ctUtilesYHerramientas")',
+                type: 'POST',
+                data: data,
+                headers: { 'XSRF-TOKEN': $('#RequestVerificationToken').val() },
+                success: function (resp) {
+                    if (resp.success) {
+                        tr.find('td:last').text(siExiste ? '\u2014' : (resp.observaciones || observaciones || ''));
+                    } else {
+                        el.editable('setValue', el.data('orig-val'), false);
+                        MiApp.Mensajes.mostrarNotificacion("error", "Error al actualizar. Intente de nuevo.");
+                    }
+                },
+                error: function () {
+                    el.editable('setValue', el.data('orig-val'), false);
+                    MiApp.Mensajes.mostrarNotificacion("error", "Error de conexi\u00f3n.");
+                }
+            });
+        }
+        </text>
+        }
+    </script>
+}
