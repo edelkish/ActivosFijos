@@ -2526,7 +2526,7 @@ namespace ActivosFijos.Controllers
             using var package = new ExcelPackage();
             var ws = package.Workbook.Worksheets.Add("PlanMuestreo");
 
-            ws.Cells[1, 1].Value = "Planificación Muestreo Anual - " + anio;
+            ws.Cells[1, 1].Value = "Planificación de Conteo Anual de Útiles y Herramientas - " + anio;
             ws.Cells[1, 1, 1, 15].Merge = true;
             ws.Cells[1, 1].Style.Font.Bold = true;
             ws.Cells[1, 1].Style.Font.Size = 14;
