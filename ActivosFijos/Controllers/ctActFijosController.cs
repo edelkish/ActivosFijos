@@ -2765,6 +2765,168 @@ namespace ActivosFijos.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExportarListadoCompletoAFT(DateTime fecha, string area, string responsable)
+        {
+            List<ActFijo> actFijosList = await _repoActivosFijos.ListadoActivosFijos(fecha, Guid.Parse(area), Guid.Parse(responsable));
+
+            if (!actFijosList.Any())
+            {
+                TempData["Mensaje"] = "No hay datos para exportar.";
+                return RedirectToAction(nameof(ActivosFijosImportados), new { fecha });
+            }
+
+            string templatePath = System.IO.Path.Combine(_env.WebRootPath, "plantillas", "PlantillaActaMuestreo.xlsx");
+
+            var grupos = actFijosList
+                .Where(a => a.CentroCosto != null)
+                .GroupBy(a => a.CentroCosto.Value)
+                .OrderBy(g => g.First().CentroCostoNavigation?.Nombre ?? "ZZZ")
+                .ToList();
+
+            if (!grupos.Any())
+            {
+                TempData["Mensaje"] = "No hay centros de costo asociados al listado.";
+                return RedirectToAction(nameof(ActivosFijosImportados), new { fecha });
+            }
+
+            using (var package = new ExcelPackage(new FileInfo(templatePath)))
+            {
+                var templateSheet = package.Workbook.Worksheets[0];
+                string templateSheetName = templateSheet.Name;
+
+                int areaIndex = 0;
+                foreach (var grupo in grupos)
+                {
+                    var items = grupo.ToList();
+                    string areaNombre = items.First().CentroCostoNavigation?.Nombre ?? "SIN ÁREA";
+                    string sheetName = areaNombre.Length > 31 ? areaNombre[..31] : areaNombre;
+
+                    ExcelWorksheet ws = package.Workbook.Worksheets.Copy(templateSheetName, sheetName);
+
+                    ws.Cells["F2"].Value = "MINEM";
+                    ws.Cells["F3"].Value = "Empresa de Tecnologías de la Información y Automática";
+                    ws.Cells["F5"].Value = areaNombre;
+                    ws.Cells["AA4"].Value = new DateTime(fecha.Year, fecha.Month, 1);
+                    ws.Cells["AA5"].Value = ++areaIndex;
+                    ws.Cells["AB6"].Value = 1;
+                    ws.Column(4).Width = 20;
+
+                    if (items.Count > 1)
+                        ws.InsertRow(10, items.Count - 1, 9);
+
+                    for (int i = ws.MergedCells.Count - 1; i >= 0; i--)
+                    {
+                        var addr = ws.MergedCells[i];
+                        if (addr != null && new ExcelAddress(addr).Start.Row >= 9)
+                            ws.Cells[addr].Merge = false;
+                    }
+
+                    decimal totalCup = 0;
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        int row = 9 + i;
+                        var item = items[i];
+
+                        string noInv = item.SubNumero > 0
+                            ? $"{item.NoInventario}-{item.SubNumero}"
+                            : item.NoInventario.ToString();
+
+                        ws.Cells[row, 2, row, 3].Merge = true;
+                        ws.Cells[row, 2].Value = noInv;
+
+                        ws.Cells[row, 4, row, 7].Merge = true;
+                        ws.Cells[row, 4].Value = item.Descripcion;
+
+                        ws.Cells[row, 8].Value = item.NoInventario;
+
+                        decimal cup = item.ValorAdquisicion ?? 0;
+                        ws.Cells[row, 9, row, 10].Merge = true;
+                        ws.Cells[row, 9].Value = cup;
+                        totalCup += cup;
+
+                        ws.Cells[row, 11, row, 13].Merge = true;
+                        ws.Cells[row, 11].Value = 0;
+                        ws.Cells[row, 14].Value = 1;
+                        ws.Cells[row, 16, row, 17].Merge = true;
+                        ws.Cells[row, 20, row, 21].Merge = true;
+                        ws.Cells[row, 25, row, 30].Merge = true;
+
+                        ws.Row(row).CustomHeight = false;
+                    }
+
+                    ws.Cells[9, 1, 9 + items.Count - 1, 31].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+
+                    int subTotalRow = 9 + items.Count;
+                    ws.Cells[subTotalRow, 9, subTotalRow, 11].Merge = true;
+                    ws.Cells[subTotalRow, 12, subTotalRow, 17].Merge = true;
+                    ws.Cells[subTotalRow, 19, subTotalRow, 25].Merge = true;
+                    ws.Cells[subTotalRow, 9].Value = "SUB-TOTAL:";
+                    ws.Cells[subTotalRow, 12].Value = totalCup;
+                    ws.Cells[subTotalRow, 19].Value = 0;
+                    ws.Cells[subTotalRow, 28].Value = items.Count;
+
+                    int totalRow = 10 + items.Count;
+                    ws.Cells[totalRow, 9, totalRow, 11].Merge = true;
+                    ws.Cells[totalRow, 12, totalRow, 17].Merge = true;
+                    ws.Cells[totalRow, 19, totalRow, 25].Merge = true;
+                    ws.Cells[totalRow, 9].Value = "TOTAL:";
+                    ws.Cells[totalRow, 12].Value = totalCup;
+                    ws.Cells[totalRow, 19].Value = 0;
+                    ws.Cells[totalRow, 28].Value = items.Count;
+
+                    ws.Cells[9, 1, totalRow, 31].Style.Font.Size = 8;
+                    ws.Cells[9, 4, totalRow, 7].Style.WrapText = true;
+
+                    int footerStart = 11 + items.Count;
+
+                    double cm = 1 / 2.54;
+                    ws.PrinterSettings.TopMargin = 1.91 * cm;
+                    ws.PrinterSettings.BottomMargin = 1.91 * cm;
+                    ws.PrinterSettings.LeftMargin = 0.64 * cm;
+                    ws.PrinterSettings.RightMargin = 0.64 * cm;
+                    ws.PrinterSettings.HeaderMargin = 0.76 * cm;
+                    ws.PrinterSettings.FooterMargin = 0.76 * cm;
+                    double pageH = 792 - (1.91 * cm * 72) * 2 - 99;
+                    double page1 = pageH - 99;
+                    double pageN = pageH;
+                    double contentH = items.Count * 10 + 81;
+                    int blankRows = 0;
+                    if (contentH <= page1)
+                        blankRows = (int)Math.Floor((page1 - contentH) / 10);
+                    else if (contentH > page1)
+                    {
+                        double lastPg = (contentH - page1) % pageN;
+                        if (lastPg > 0)
+                            blankRows = (int)Math.Floor((pageN - lastPg) / 10);
+                    }
+                    if (blankRows > 0)
+                    {
+                        ws.InsertRow(footerStart, blankRows);
+                        for (int j = 0; j < blankRows; j++)
+                            ws.Row(footerStart + j).Height = 10;
+                        footerStart += blankRows;
+                    }
+
+                    for (int f = 0; f < 4; f++)
+                    {
+                        ws.Cells[footerStart + f, 3, footerStart + f, 4].Merge = true;
+                        ws.Cells[footerStart + f, 13, footerStart + f, 24].Merge = true;
+                    }
+                }
+
+                package.Workbook.Worksheets.Delete(templateSheetName);
+
+                var ms = new MemoryStream();
+                package.SaveAs(ms);
+                ms.Position = 0;
+
+                string fileName = $"ListadoCompletoAFT_{fecha.Year}_{fecha.Month:D2}.xlsx";
+                return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmarMuestreo([FromBody] List<Models.Auxiliar.mdMuestreoConfirmacion> items)
         {
             if (items == null || items.Count == 0)
