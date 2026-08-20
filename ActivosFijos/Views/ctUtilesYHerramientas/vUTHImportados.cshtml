@@ -139,6 +139,13 @@
                                 <p>
                                     <button type="button" id="editar" class="btn grey-mint btn-outline sbold uppercase" disabled><i class="fa fa-pencil"></i> Editar</button>
                                     <button type="button" id="refrescar" class="btn grey-mint btn-outline sbold uppercase"><i class="fa fa-refresh"></i> Refrescar</button>
+                                    <form id="formExportarCompleto" asp-action="ExportarListadoCompletoUTH" asp-controller="ctUtilesYHerramientas" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="fecha" id="exportFecha" />
+                                        <input type="hidden" name="area" id="exportArea" />
+                                        <input type="hidden" name="responsable" id="exportResponsable" />
+                                        <button type="button" id="exportarCompleto" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-file-excel-o"></i> Exportar Excel</button>
+                                    </form>
                                 </p>
                             </div>
                             <input type="hidden" id="RequestVerificationToken" name="RequestVerificationToken"
@@ -269,6 +276,16 @@
         $('#mostrar').on('click', function () {
             var valueFecha = $('#Fecha').val();
             CargarTablaUTHImportados(valueFecha);
+        });
+
+        $('#exportarCompleto').on('click', function () {
+            var valueFecha = $('#Fecha').val();
+            var valueArea = $('#Area').val();
+            var valueResponsable = $('#Responsable').val();
+            $('#exportFecha').val(valueFecha);
+            $('#exportArea').val(valueArea);
+            $('#exportResponsable').val(valueResponsable);
+            $('#formExportarCompleto').submit();
         });
 
         $('#crear').on('click', function () {
