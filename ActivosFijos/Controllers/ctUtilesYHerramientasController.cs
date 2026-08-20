@@ -2305,6 +2305,9 @@ namespace ActivosFijos.Controllers
                         ws.Cells[row, 16, row, 17].Merge = true;
                         ws.Cells[row, 20, row, 21].Merge = true;
                         ws.Cells[row, 25, row, 30].Merge = true;
+                        ws.Cells[row, 25].Value = item.ResponsableNavigation != null
+                            ? $"{item.ResponsableNavigation.Nombre} {item.ResponsableNavigation.Apellidos}"
+                            : "<<S/R>>";
 
                         ws.Row(row).CustomHeight = false;
                     }
