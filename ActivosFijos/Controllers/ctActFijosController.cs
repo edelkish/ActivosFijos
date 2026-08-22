@@ -2839,7 +2839,7 @@ namespace ActivosFijos.Controllers
 
                         ws.Cells[row, 8].Value = item.NoInventario;
 
-                        decimal cup = item.ValorAdquisicion ?? 0;
+                        decimal cup = item.ValorContable ?? 0;
                         ws.Cells[row, 9, row, 10].Merge = true;
                         ws.Cells[row, 9].Value = cup;
                         totalCup += cup;
