@@ -38,6 +38,10 @@
                             <a asp-action="Locales" asp-controller="ctLocales" class="nav-link "> Locales </a>
                         </li>
 
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctPuestosTrabajo", "PuestosTrabajo")">
+                            <a asp-action="PuestosTrabajo" asp-controller="ctPuestosTrabajo" class="nav-link @Html.IsSelected("ctPuestosTrabajo", "PuestosTrabajo")"> Puestos de Trabajo </a>
+                        </li>
+
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctResponsables", "Responsables")">
                             <a asp-action="Responsables" asp-controller="ctResponsables" class="nav-link @Html.IsSelected("ctResponsables", "Responsables")"> Responsables </a>
                         </li>
@@ -61,6 +65,9 @@
                         </li>
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctActFijos", "ClasificacionAFT")">
                             <a asp-action="ClasificacionAFT" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctActFijos", "ClasificacionAFT")"> Clasificar </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctUbicaciones", "Gestion")">
+                            <a asp-action="Gestion" asp-controller="ctUbicaciones" class="nav-link @Html.IsSelected("ctUbicaciones", "Gestion")"> Gesti&oacute;n de Ubicaciones </a>
                         </li>
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctActFijos", "ExportarAFTClasificados")">
                             <a asp-action="ExportarAFTClasificados" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctActFijos", "ExportarAFTClasificados")"> Exportar Clasificados </a>
