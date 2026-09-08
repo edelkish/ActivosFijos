@@ -38,7 +38,8 @@ namespace ActivosFijos.Models.EntidadesBD
         public DateTime FechaSubmayor { get; set; }
         [Column("clasificador")]
         public Guid? Clasificador { get; set; }
-        public Guid? Cubiculo { get; set; }
+        public Guid? Local { get; set; }
+        public Guid? PuestoTrabajo { get; set; }
 
         [ForeignKey(nameof(AreaResponsabilidad))]
         [InverseProperty(nameof(AreaDeResponsabilidad.ActFijos))]
@@ -53,9 +54,16 @@ namespace ActivosFijos.Models.EntidadesBD
         [InverseProperty("ActFijos")]
         public virtual Responsable? ResponsableNavigation { get; set; }
 
-        [ForeignKey("Cubiculo")]
+        [ForeignKey(nameof(Local))]
+        [InverseProperty("ActFijosLocales")]
+        public virtual Locale? LocalNavigation { get; set; }
+
+        [ForeignKey(nameof(PuestoTrabajo))]
         [InverseProperty("ActFijos")]
-        public virtual Cubiculo? CubiculoNavigation { get; set; }
+        public virtual PuestoTrabajo? PuestoTrabajoNavigation { get; set; }
+
+        [InverseProperty(nameof(HistorialUbicacionAFT.ActFijoNavigation))]
+        public virtual ICollection<HistorialUbicacionAFT> HistorialUbicacionAFTs { get; set; } = new List<HistorialUbicacionAFT>();
 
         [InverseProperty(nameof(MuestreoMensualDiezPorCiento.ActFijoNavigation))]
         public virtual ICollection<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = new List<MuestreoMensualDiezPorCiento>();

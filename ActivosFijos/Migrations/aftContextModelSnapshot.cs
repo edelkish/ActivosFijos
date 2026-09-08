@@ -49,9 +49,6 @@ namespace ActivosFijos.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("clasificador");
 
-                    b.Property<Guid?>("Cubiculo")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal?>("DepreciacionAcum")
                         .HasColumnType("money")
                         .HasColumnName("depreciacionAcum");
@@ -61,6 +58,12 @@ namespace ActivosFijos.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(2000)")
                         .HasColumnName("descripcion");
+
+                    b.Property<Guid?>("Local")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PuestoTrabajo")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("Responsable")
                         .HasColumnType("uniqueidentifier")
@@ -86,7 +89,9 @@ namespace ActivosFijos.Migrations
 
                     b.HasIndex("Clasificador");
 
-                    b.HasIndex("Cubiculo");
+                    b.HasIndex("Local");
+
+                    b.HasIndex("PuestoTrabajo");
 
                     b.HasIndex("Responsable");
 
@@ -276,6 +281,60 @@ namespace ActivosFijos.Migrations
                     b.ToTable("Cubiculos");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.HistorialUbicacionAFT", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<DateTime>("FechaMovimiento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<DateTime>("FechaSubmayor")
+                        .HasColumnType("datetime")
+                        .HasColumnName("fechaSubmayor");
+
+                    b.Property<Guid?>("LocalDestino")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("LocalOrigen")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("NoInventario")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("PuestoDestino")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PuestoOrigen")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioRegistra")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocalDestino");
+
+                    b.HasIndex("LocalOrigen");
+
+                    b.HasIndex("PuestoDestino");
+
+                    b.HasIndex("PuestoOrigen");
+
+                    b.HasIndex("NoInventario", "SubNumero", "FechaSubmayor");
+
+                    b.ToTable("HistorialUbicacionAFT");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
                 {
                     b.Property<Guid>("IdLocal")
@@ -403,11 +462,11 @@ namespace ActivosFijos.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<int>("Mes")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("IdUth")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("int");
 
                     b.Property<string>("Observaciones")
                         .HasColumnType("nvarchar(max)");
@@ -575,6 +634,32 @@ namespace ActivosFijos.Migrations
                         .HasName("PK_PlanMuestreoAnualUTH");
 
                     b.ToTable("PlanMuestreoAnualUTH");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", b =>
+                {
+                    b.Property<Guid>("IdPuesto")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<Guid>("IdLocal")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.HasKey("IdPuesto");
+
+                    b.HasIndex("IdLocal");
+
+                    b.ToTable("PuestosTrabajo");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
@@ -800,10 +885,17 @@ namespace ActivosFijos.Migrations
                         .HasForeignKey("Clasificador")
                         .HasConstraintName("FK_ActFijo_Clasificador");
 
-                    b.HasOne("ActivosFijos.Models.EntidadesBD.Cubiculo", "CubiculoNavigation")
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.Locale", "LocalNavigation")
+                        .WithMany("ActFijosLocales")
+                        .HasForeignKey("Local")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_ActFijo_Locales");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", "PuestoTrabajoNavigation")
                         .WithMany("ActFijos")
-                        .HasForeignKey("Cubiculo")
-                        .HasConstraintName("FK_ActFijo_Cubiculos");
+                        .HasForeignKey("PuestoTrabajo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_ActFijo_PuestosTrabajo");
 
                     b.HasOne("ActivosFijos.Models.EntidadesBD.Responsable", "ResponsableNavigation")
                         .WithMany("ActFijos")
@@ -817,7 +909,9 @@ namespace ActivosFijos.Migrations
 
                     b.Navigation("ClasificadorNavigation");
 
-                    b.Navigation("CubiculoNavigation");
+                    b.Navigation("LocalNavigation");
+
+                    b.Navigation("PuestoTrabajoNavigation");
 
                     b.Navigation("ResponsableNavigation");
                 });
@@ -831,6 +925,50 @@ namespace ActivosFijos.Migrations
                         .IsRequired();
 
                     b.Navigation("MotivoBajaNavigation");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.HistorialUbicacionAFT", b =>
+                {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.Locale", "LocalDestinoNavigation")
+                        .WithMany("HistorialDestino")
+                        .HasForeignKey("LocalDestino")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_HistorialUbicacionAFT_LocalDestino");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.Locale", "LocalOrigenNavigation")
+                        .WithMany("HistorialOrigen")
+                        .HasForeignKey("LocalOrigen")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_HistorialUbicacionAFT_LocalOrigen");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", "PuestoDestinoNavigation")
+                        .WithMany("HistorialDestino")
+                        .HasForeignKey("PuestoDestino")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_HistorialUbicacionAFT_PuestoDestino");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", "PuestoOrigenNavigation")
+                        .WithMany("HistorialOrigen")
+                        .HasForeignKey("PuestoOrigen")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_HistorialUbicacionAFT_PuestoOrigen");
+
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.ActFijo", "ActFijoNavigation")
+                        .WithMany("HistorialUbicacionAFTs")
+                        .HasForeignKey("NoInventario", "SubNumero", "FechaSubmayor")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_HistorialUbicacionAFT_ActFijo");
+
+                    b.Navigation("ActFijoNavigation");
+
+                    b.Navigation("LocalDestinoNavigation");
+
+                    b.Navigation("LocalOrigenNavigation");
+
+                    b.Navigation("PuestoDestinoNavigation");
+
+                    b.Navigation("PuestoOrigenNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
@@ -861,6 +999,18 @@ namespace ActivosFijos.Migrations
                     b.Navigation("ActFijoNavigation");
 
                     b.Navigation("CentroCostoNavigation");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", b =>
+                {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.Locale", "LocalNavigation")
+                        .WithMany("PuestosTrabajo")
+                        .HasForeignKey("IdLocal")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_PuestosTrabajo_Locales");
+
+                    b.Navigation("LocalNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>
@@ -935,6 +1085,8 @@ namespace ActivosFijos.Migrations
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.ActFijo", b =>
                 {
+                    b.Navigation("HistorialUbicacionAFTs");
+
                     b.Navigation("MuestreoMensualDiezPorCientos");
                 });
 
@@ -968,9 +1120,27 @@ namespace ActivosFijos.Migrations
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cubiculo", b =>
                 {
+                    b.Navigation("Locales");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
+                {
+                    b.Navigation("ActFijosLocales");
+
+                    b.Navigation("HistorialDestino");
+
+                    b.Navigation("HistorialOrigen");
+
+                    b.Navigation("PuestosTrabajo");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.PuestoTrabajo", b =>
+                {
                     b.Navigation("ActFijos");
 
-                    b.Navigation("Locales");
+                    b.Navigation("HistorialDestino");
+
+                    b.Navigation("HistorialOrigen");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Responsable", b =>

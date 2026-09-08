@@ -25,6 +25,8 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<Configuracion> Configuracions { get; set; } = null!;
         public virtual DbSet<Cubiculo> Cubiculos { get; set; }
         public virtual DbSet<Locale> Locales { get; set; }
+        public virtual DbSet<PuestoTrabajo> PuestosTrabajo { get; set; } = null!;
+        public virtual DbSet<HistorialUbicacionAFT> HistorialUbicacionAFTs { get; set; } = null!;
         public virtual DbSet<Permiso> Permisos { get; set; } = null!;
         public virtual DbSet<Responsable> Responsables { get; set; } = null!;
         public virtual DbSet<TrasladosAft> TrasladosAfts { get; set; } = null!;
@@ -77,9 +79,17 @@ namespace ActivosFijos.Models.Contexts
                     .OnDelete(DeleteBehavior.SetNull)
                     .HasConstraintName("FK_ActFijo_Responsable");
 
-                entity.HasOne(d => d.CubiculoNavigation)
+                entity.HasOne(d => d.LocalNavigation)
+                    .WithMany(p => p.ActFijosLocales)
+                    .HasForeignKey(d => d.Local)
+                    .HasConstraintName("FK_ActFijo_Locales")
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.PuestoTrabajoNavigation)
                     .WithMany(p => p.ActFijos)
-                    .HasConstraintName("FK_ActFijo_Cubiculos");
+                    .HasForeignKey(d => d.PuestoTrabajo)
+                    .HasConstraintName("FK_ActFijo_PuestosTrabajo")
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<AreaDeResponsabilidad>(entity =>
@@ -129,6 +139,53 @@ namespace ActivosFijos.Models.Contexts
                 entity.Property(e => e.IdLocal).ValueGeneratedNever();
 
                 entity.HasOne(d => d.CubiculoNavigation).WithMany(p => p.Locales).HasConstraintName("FK_Locales_Cubiculos");
+            });
+
+            modelBuilder.Entity<PuestoTrabajo>(entity =>
+            {
+                entity.Property(e => e.IdPuesto).ValueGeneratedNever();
+
+                entity.HasOne(d => d.LocalNavigation)
+                    .WithMany(p => p.PuestosTrabajo)
+                    .HasForeignKey(d => d.IdLocal)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_PuestosTrabajo_Locales");
+            });
+
+            modelBuilder.Entity<HistorialUbicacionAFT>(entity =>
+            {
+                entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+                entity.Property(e => e.FechaMovimiento).HasDefaultValueSql("(getdate())");
+
+                entity.HasOne(d => d.ActFijoNavigation)
+                    .WithMany(p => p.HistorialUbicacionAFTs)
+                    .HasForeignKey(d => new { d.NoInventario, d.SubNumero, d.FechaSubmayor })
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_HistorialUbicacionAFT_ActFijo");
+
+                entity.HasOne(d => d.LocalOrigenNavigation)
+                    .WithMany(p => p.HistorialOrigen)
+                    .HasForeignKey(d => d.LocalOrigen)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_HistorialUbicacionAFT_LocalOrigen");
+
+                entity.HasOne(d => d.PuestoOrigenNavigation)
+                    .WithMany(p => p.HistorialOrigen)
+                    .HasForeignKey(d => d.PuestoOrigen)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_HistorialUbicacionAFT_PuestoOrigen");
+
+                entity.HasOne(d => d.LocalDestinoNavigation)
+                    .WithMany(p => p.HistorialDestino)
+                    .HasForeignKey(d => d.LocalDestino)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_HistorialUbicacionAFT_LocalDestino");
+
+                entity.HasOne(d => d.PuestoDestinoNavigation)
+                    .WithMany(p => p.HistorialDestino)
+                    .HasForeignKey(d => d.PuestoDestino)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_HistorialUbicacionAFT_PuestoDestino");
             });
 
             modelBuilder.Entity<Permiso>(entity =>

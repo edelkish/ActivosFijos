@@ -24,8 +24,5 @@ public partial class Cubiculo
     public string? Descripcion { get; set; }
 
     [InverseProperty("CubiculoNavigation")]
-    public virtual ICollection<ActFijo> ActFijos { get; set; } = new List<ActFijo>();
-
-    [InverseProperty("CubiculoNavigation")]
     public virtual ICollection<Locale> Locales { get; set; } = new List<Locale>();
 }

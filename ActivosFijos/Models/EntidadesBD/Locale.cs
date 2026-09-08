@@ -24,4 +24,16 @@ public partial class Locale
     [ForeignKey("Cubiculo")]
     [InverseProperty("Locales")]
     public virtual Cubiculo? CubiculoNavigation { get; set; }
+
+    [InverseProperty("LocalNavigation")]
+    public virtual ICollection<PuestoTrabajo> PuestosTrabajo { get; set; } = new List<PuestoTrabajo>();
+
+    [InverseProperty("LocalOrigenNavigation")]
+    public virtual ICollection<HistorialUbicacionAFT> HistorialOrigen { get; set; } = new List<HistorialUbicacionAFT>();
+
+    [InverseProperty("LocalDestinoNavigation")]
+    public virtual ICollection<HistorialUbicacionAFT> HistorialDestino { get; set; } = new List<HistorialUbicacionAFT>();
+
+    [InverseProperty("LocalNavigation")]
+    public virtual ICollection<ActFijo> ActFijosLocales { get; set; } = new List<ActFijo>();
 }
