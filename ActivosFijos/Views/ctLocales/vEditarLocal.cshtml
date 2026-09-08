@@ -1,0 +1,116 @@
+@using ActivosFijos.Clases;
+@using ActivosFijos.Models.EntidadesBD;
+
+@model Locale;
+
+@{
+    ViewData["Title"] = "Editar local";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Formulario para la modificaci\u00f3n de un Local";
+
+    clResponse<Locale> respuesta = new clResponse<Locale>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE TITLE -->
+        <div class="page-title">
+            <h1>
+                Gesti&oacute;n de locales | Editar
+            </h1>
+        </div>
+        <!-- END PAGE TITLE -->
+    </div>
+</div>
+<!-- BEGIN PAGE CONTENT BODY -->
+<div class="page-content">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE BREADCRUMBS -->
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Nomencladores</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <a asp-action="Locales" asp-controller="ctLocales">Locales</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Edici&oacute;n de un local</span>
+            </li>
+        </ul>
+        <!-- END PAGE BREADCRUMBS -->
+        <!-- BEGIN PAGE CONTENT INNER -->
+        <div class="page-content-inner">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Formulario a llenar
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body form">
+                            <!-- BEGIN FORM-->
+                            <form asp-action="ModificarLocal" asp-controller="ctLocales" id="modificarLocal">
+                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                <div class="form-body">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" asp-for="IdLocal" />
+                                    <div class="form-group">
+                                        <label asp-for="Cubiculo" class="control-label">Cub&iacute;culo <span class="required"> (*) </span></label>
+                                        <select asp-for="Cubiculo" class="form-control" asp-items="ViewBag.IdCubiculo">
+                                            <option value="">-- Seleccione un cub&iacute;culo --</option>
+                                        </select>
+                                        <span asp-validation-for="Cubiculo" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label asp-for="Nombre" class="control-label">Nombre <span class="required"> (*) </span></label>
+                                        <input asp-for="Nombre" type="text" class="form-control" placeholder="Nombre del local" autocomplete="off">
+                                        <span asp-validation-for="Nombre" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Descripci&oacute;n</label>
+                                        <textarea asp-for="Descripcion" class="form-control" rows="4"></textarea>
+                                        <span asp-validation-for="Descripcion" class="text-danger"></span>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <div class="btn-set pull-left">
+                                        <a asp-action="Locales" asp-controller="ctLocales" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-close"></i> Cancelar</a>
+                                    </div>
+                                    <div class="btn-set pull-right">
+                                        <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-check"></i> Guardar cambios</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <!-- END FORM-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END PAGE CONTENT INNER -->
+    </div>
+</div>
+<!-- END PAGE CONTENT BODY -->
+@section Scripts {
+    <script type="text/javascript">
+        var siSatisfactorio = '@respuesta.SiSatisfactorio';
+        var mensaje = '@respuesta.Mensaje';
+    </script>
+    <script type="text/javascript" src="~/global/scripts/toastr.js"></script>
+}

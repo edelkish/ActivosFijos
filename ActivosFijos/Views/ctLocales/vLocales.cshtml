@@ -41,18 +41,18 @@
                 <i class="fa fa-circle"></i>
             </li>
             <li>
-                <a asp-action="Cargos" asp-controller="ctCargo">Locales</a>
+                <a asp-action="Locales" asp-controller="ctLocales">Locales</a>
                 <i class="fa fa-circle"></i>
             </li>
             <li>
-                <span>Gestión de los locales</span>
+                <span>Gesti&oacute;n de los locales</span>
             </li>
         </ul>
         <!-- END PAGE BREADCRUMBS -->
         <!-- BEGIN PAGE CONTENT INNER -->
         <div class="page-content-inner">
             <div class="note note-info">
-                <p> A black page template with a minimal dependency assets to use as a base for any custom page you create </p>
+                <p> Los locales representan los espacios f&iacute;sicos dentro de la empresa donde se encuentran los activos fijos. Cada local debe estar asociado a un cub&iacute;culo. </p>
             </div>
         </div>
         <!-- BEGIN PAGE CONTENT INNER -->
@@ -137,29 +137,29 @@
         var baseUrl = $('base').attr('href'), idFilaSeleccionada = -1;
     </script>
 
-    <script src="~/global/paginas/tablaCargos.js" type="text/javascript"></script>
+    <script src="~/global/paginas/tablaLocales.js" type="text/javascript"></script>
 
     <script type="text/javascript">
         $('#refrescar').on('click', function () {
-            CargarTablaCargos;
+            CargarTablaLocales();
         });
 
         $('#crear').on('click', function () {
-            var link = '@Html.Raw(Url.Action("CrearCargo", "ctCargos"))';
+            var link = '@Html.Raw(Url.Action("CrearLocal", "ctLocales"))';
             window.location.href = link;
         });
 
         $('#editar').on('click', function () {
-            var link = '@Html.Raw(Url.Action("EditarCargo", "ctCargos", new { id = "idArea" }))';
-            link = link.replace("idArea", idFilaSeleccionada);
+            var link = '@Html.Raw(Url.Action("EditarLocal", "ctLocales", new { id = "idLocal" }))';
+            link = link.replace("idLocal", idFilaSeleccionada);
             window.location.href = link;
         });
 
         $('#eliminar').on('click', function () {
             if (idFilaSeleccionada != null) {
                     $.confirm({
-                        title: '!Advertencia de eliminación!',
-                        content: '¿Está seguro de que desea eliminar la fila seleccionada?',
+                        title: '!Advertencia de eliminaci&oacute;n!',
+                        content: '&iquest;Est&aacute; seguro de que desea eliminar el local seleccionado?',
                         icon: 'fa fa-warning',
                         type: 'red',
                         theme: 'light',
@@ -171,7 +171,7 @@
                                 btnClass: 'btn-red',
                                 action: function () {
                                     $.ajax({
-                                        url: baseUrl + 'ctCargos/EliminarCargo',
+                                        url: baseUrl + 'ctLocales/EliminarLocal',
                                         method: "POST",
                                         data: { id: idFilaSeleccionada },
                                         beforeSend: function (xhr) {
@@ -180,7 +180,7 @@
                                         success: function (data) {
                                             if (data.siNo) {
                                                 MiApp.Mensajes.mostrarNotificacion("success", data.objMensaje);
-                                                CargarTablaCargos();
+                                                CargarTablaLocales();
                                             } else {
                                                 MiApp.Mensajes.mostrarNotificacion("error", data.objMensaje);
                                             }
@@ -198,11 +198,11 @@
                     });
                 } else {
                     $.confirm({
-                        title: '!Operación incorrecta!',
-                        content: 'Debe seleccionar una fila para que la operación sea válida.',
+                        title: '!Operaci&oacute;n incorrecta!',
+                        content: 'Debe seleccionar un local para que la operaci&oacute;n sea v&aacute;lida.',
                         icon: 'fa fa-warning',
                         type: 'red',
-                        theme: 'supervan', //light
+                        theme: 'supervan',
                         animation: 'news',
                         closeAnimation: 'news',
                         buttons: {
@@ -216,4 +216,3 @@
         });
     </script>
 }
-

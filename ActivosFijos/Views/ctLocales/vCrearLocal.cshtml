@@ -1,4 +1,4 @@
-﻿﻿@using ActivosFijos.Clases;
+﻿@using ActivosFijos.Clases;
 @using ActivosFijos.Models.EntidadesBD;
 
 @model Locale;
@@ -8,7 +8,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 
     ViewBag.tituloDelContenido = ViewData["Title"];
-    ViewBag.subTituloDelContenido = "Formulario a llenar para la creación de Locales";
+    ViewBag.subTituloDelContenido = "Formulario a llenar para la creaci\u00f3n de Locales";
 
     clResponse<Locale> respuesta = new clResponse<Locale>();
     if (ViewBag.respuesta != null)
@@ -65,14 +65,15 @@
                         </div>
                         <div class="portlet-body form">
                             <!-- BEGIN FORM-->
-                            <form asp-action="GuardarCubiculo" asp-controller="ctCubiculos" id="guardarCubiculo">
+                            <form asp-action="GuardarLocal" asp-controller="ctLocales" id="guardarLocal">
                                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                                 <div class="form-body">
                                     @Html.AntiForgeryToken()
-
                                     <div class="form-group">
                                         <label class="control-label">Cub&iacute;culo <span class="required"> (*) </span></label>
-                                        <input asp-for="Cubiculo" type="text" class="form-control" placeholder="Nombre del local" autocomplete="off">
+                                        <select asp-for="Cubiculo" class="form-control" asp-items="ViewBag.IdCubiculo">
+                                            <option value="">-- Seleccione un cub&iacute;culo --</option>
+                                        </select>
                                         <span asp-validation-for="Cubiculo" class="required"></span>
                                     </div>
                                     <div class="form-group">
@@ -88,7 +89,7 @@
                                 </div>
                                 <div class="form-actions">
                                     <div class="btn-set pull-left">
-                                        <a asp-action="Cubiculos" asp-controller="ctCubiculos" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-close"></i> Cancelar</a>
+                                        <a asp-action="Locales" asp-controller="ctLocales" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-close"></i> Cancelar</a>
                                     </div>
                                     <div class="btn-set pull-right">
                                         <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-check"></i> Guardar cambios</button>
@@ -105,12 +106,6 @@
     </div>
 </div>
 <!-- END PAGE CONTENT BODY -->
-@section PluginsJS {
-    <environment names="Development,Staging,Production">
-        <script src="~/global/plugins/bootstrap-touchspin/bootstrap.touchspin.js"></script>
-    </environment>
-}
-
 @section Scripts {
     <script type="text/javascript">
         var siSatisfactorio = '@respuesta.SiSatisfactorio';

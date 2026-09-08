@@ -113,5 +113,19 @@ namespace ActivosFijos.Repositorios
             bool siExiste = _context.Locales.Any(e => e.IdLocal == id);
             return siExiste;
         }
+        public async Task<bool> SiTieneDependencias(Guid id)
+        {
+            bool tienePuestos = await _context.PuestosTrabajo.AnyAsync(p => p.IdLocal == id).ConfigureAwait(false);
+            if (tienePuestos) return true;
+
+            bool tieneAFT = await _context.ActFijos.AnyAsync(a => a.Local == id).ConfigureAwait(false);
+            if (tieneAFT) return true;
+
+            bool tieneHistorial = await _context.HistorialUbicacionAFTs
+                .AnyAsync(h => h.LocalOrigen == id || h.LocalDestino == id).ConfigureAwait(false);
+            if (tieneHistorial) return true;
+
+            return false;
+        }
     }
 }

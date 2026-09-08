@@ -5,6 +5,7 @@ using ActivosFijos.Repositorios;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace ActivosFijos.Controllers
@@ -32,60 +33,55 @@ namespace ActivosFijos.Controllers
         public async Task<IActionResult> ListadoDeLocales()
         {
             List<Locale> localesList = await localRepositorio.ObtenerListadoLocales().ConfigureAwait(false);
-            
             return PartialView("_vpTablaLocales", localesList);
         }
-
-        public async Task<IActionResult> DetallesLocal(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-            var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
-            if (local == null)
-            {
-                return NotFound();
-            }
-            return View(local);
-        }
-
-        public IActionResult CrearLocal()
+        public async Task<IActionResult> CrearLocal()
         {
             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
             ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
+            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
             return View("vCrearLocal");
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GuardarCargo([Bind("Nombre,Descripcion,IdLocal")] Locale local)
+        public async Task<IActionResult> GuardarLocal([Bind("Nombre,Descripcion,Cubiculo")] Locale local)
         {
-            var respuesta = new clResponse<bool> { SiSatisfactorio = false, Mensaje = string.Empty };
             if (local != null)
             {
-                var iDictionaryIntegrantes = validacionesRepositorio.EspaciosEnBlanco(local.Nombre, "Nombre");
-                if (iDictionaryIntegrantes.Count > 0)
+                var iDictionaryModel = validacionesRepositorio.EspaciosEnBlanco(local.Nombre, "Nombre");
+                if (iDictionaryModel.Count == 0)
                 {
-                    foreach (var item in iDictionaryIntegrantes)
+                    if (localRepositorio.SiExisteNombreDelLocal(local.Nombre))
+                    {
+                        ModelState.AddModelError("Nombre", "El Nombre del local a insertar ya existe.");
+                    }
+                }
+                else
+                {
+                    foreach (var item in iDictionaryModel)
                         ModelState.AddModelError(item.Key, item.Value);
                 }
-                else if (localRepositorio.SiExisteNombreDelLocal(local.Nombre))
+
+                if (local.Cubiculo == null)
                 {
-                    ModelState.AddModelError("Nombre", "El Nombre a insertar ya existe.");
+                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo es obligatorio.");
                 }
+                else if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo.Value))
+                {
+                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo seleccionado no existe.");
+                }
+
                 if (ModelState.IsValid)
                 {
-                    var mensaje = string.Empty;
                     try
                     {
                         local.IdLocal = Guid.NewGuid();
                         var resultadoLocal = await localRepositorio.InsertarLocal(local).ConfigureAwait(false);
                         if (resultadoLocal.SiSatisfactorio)
                         {
-                            mensaje = $"{clMensaje.SuccessMsg}|{clMensaje.Satisfactorio}";
+                            var mensaje = $"{clMensaje.SuccessMsg}|{clMensaje.Satisfactorio}";
                             if (!String.IsNullOrEmpty(mensaje))
                                 this.TempData["Mensaje"] = mensaje;
                             clGlobal.siNo = true;
@@ -94,49 +90,50 @@ namespace ActivosFijos.Controllers
                         }
                         else
                         {
-                            mensaje = $"{clMensaje.ErrorMsg}|{(!ModelState.IsValid ? clMensaje.ModeloInvalido : resultadoLocal.Mensaje)}";
-                            if (!String.IsNullOrEmpty(mensaje))
-                                this.TempData["Mensaje"] = mensaje;
                             ViewData["respuesta"] = resultadoLocal;
                             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
+                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                             return View("vCrearLocal", local);
                         }
                     }
                     catch (Exception ex)
                     {
-                        ViewData["respuesta"] = new clResponse<bool> { SiSatisfactorio = false, Mensaje = ex.Message };
+                        ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = ex.Message };
                         ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
+                        ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                         return View("vCrearLocal", local);
                     }
                 }
             }
             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a insertar." };
             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
+            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local?.Cubiculo);
             return View("vCrearLocal", local);
         }
-
         public async Task<IActionResult> EditarLocal(Guid? id)
         {
             if ((id == null) || (id == Guid.Empty))
             {
                 ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
                 ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = false, Mensaje = "El objeto Local que se quiere editar es incorrecto o no existe." };
-                return View("vEditarLocal", new Cargo() { IdCargo = Guid.Empty });
+                ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
+                return View("vEditarLocal", new Locale() { IdLocal = Guid.Empty });
             }
             var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
             if (local == null)
             {
                 ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-                ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = false, Mensaje = "El objeto Local se quiere editar no existe." };
+                ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = false, Mensaje = "El objeto Local que se quiere editar no existe." };
+                ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
                 return View("vEditarLocal", new Locale() { IdLocal = Guid.Empty });
             }
-            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Cargo");
-            ViewData["respuesta"] = new clResponse<Cargo>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
+            ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+            ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-            return View("vEditarCargo", local);
+            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+            return View("vEditarLocal", local);
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ModificarLocal(Guid IdLocal, [Bind("IdLocal,Nombre,Descripcion,Cubiculo")] Locale local)
@@ -147,6 +144,7 @@ namespace ActivosFijos.Controllers
                 {
                     ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
                     ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                    ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                     return View("vEditarLocal", local);
                 }
                 var iDictionaryError = validacionesRepositorio.EspaciosEnBlanco(local.Nombre, "Nombre");
@@ -157,30 +155,34 @@ namespace ActivosFijos.Controllers
                 }
                 else if (localRepositorio.SiExisteNombreDelLocalAModificar(local.Nombre, local.IdLocal))
                 {
-                    ModelState.AddModelError("Nombre", "El Nombre a insertar como modificación ya existe.");
+                    ModelState.AddModelError("Nombre", "El Nombre del local a modificar ya existe.");
                 }
 
-                if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo??Guid.Empty))
+                if (local.Cubiculo == null)
                 {
-                    ModelState.AddModelError("Cubiculo", "El Cubículo seleccionado para el local a insertar como modificación no existe.");
+                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo es obligatorio.");
+                }
+                else if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo.Value))
+                {
+                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo seleccionado no existe.");
                 }
 
                 if (ModelState.IsValid)
                 {
                     try
                     {
-                        var mensaje = string.Empty;
-                        var resultadoCargo = await localRepositorio.ModificarLocal(local).ConfigureAwait(false);
-                        if (resultadoCargo.SiSatisfactorio)
+                        var resultadoLocal = await localRepositorio.ModificarLocal(local).ConfigureAwait(false);
+                        if (resultadoLocal.SiSatisfactorio)
                         {
-                            clGlobal.siNo = resultadoCargo.SiSatisfactorio;
-                            clGlobal.objMensaje = resultadoCargo.Mensaje;
+                            clGlobal.siNo = resultadoLocal.SiSatisfactorio;
+                            clGlobal.objMensaje = resultadoLocal.Mensaje;
                             return RedirectToAction(nameof(EditarLocal), new { id = local.IdLocal });
                         }
                         else
                         {
-                            ViewData["respuesta"] = resultadoCargo;
+                            ViewData["respuesta"] = resultadoLocal;
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                             return View("vEditarLocal", local);
                         }
                     }
@@ -190,12 +192,14 @@ namespace ActivosFijos.Controllers
                         {
                             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "El Local a editar no existe." };
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                             return View("vEditarLocal", local);
                         }
                         else
                         {
                             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = ex.Message };
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
                             return View("vEditarLocal", local);
                         }
                     }
@@ -203,21 +207,8 @@ namespace ActivosFijos.Controllers
             }
             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
+            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local?.Cubiculo);
             return View("vEditarLocal", local);
-        }
-        // GET: CCargos/Delete/5
-        public async Task<IActionResult> EliminarLocal(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-            var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
-            if (local == null)
-            {
-                return NotFound();
-            }
-            return View(local);
         }
         [HttpPost, ActionName("EliminarLocal")]
         public async Task<JsonResult> ConfirmarEliminarLocal(Guid id)
@@ -225,22 +216,22 @@ namespace ActivosFijos.Controllers
             try
             {
                 var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
-                var resultadoLocal = await localRepositorio.EliminarLocal(local).ConfigureAwait(false);
-                var result = new
+                if (local == null)
                 {
-                    siNo = resultadoLocal.SiSatisfactorio,
-                    objMensaje = resultadoLocal.Mensaje
-                };
-                return Json(result);
+                    return Json(new { siNo = false, objMensaje = "El Local a eliminar no existe." });
+                }
+
+                if (await localRepositorio.SiTieneDependencias(id).ConfigureAwait(false))
+                {
+                    return Json(new { siNo = false, objMensaje = "No se puede eliminar el Local porque tiene puestos, activos fijos o historial asociado. Desasigne primero los elementos dependientes." });
+                }
+
+                var resultadoLocal = await localRepositorio.EliminarLocal(local).ConfigureAwait(false);
+                return Json(new { siNo = resultadoLocal.SiSatisfactorio, objMensaje = resultadoLocal.Mensaje });
             }
             catch (Exception ex)
             {
-                var result = new
-                {
-                    siNo = false,
-                    objMensaje = ex.Message
-                };
-                return Json(result);
+                return Json(new { siNo = false, objMensaje = ex.Message });
             }
         }
         private List<clBreadCumb> LlenarBreadsCumbs(string titulo)
@@ -249,7 +240,7 @@ namespace ActivosFijos.Controllers
             clBreadCumb objBreadsCumbs = new clBreadCumb()
             {
                 nombre = "Locales",
-                ruta = new List<string>() { "Locales", "ctLocal" }
+                ruta = new List<string>() { "Locales", "ctLocales" }
             };
             prueba.Add(objBreadsCumbs);
             objBreadsCumbs = new clBreadCumb()
