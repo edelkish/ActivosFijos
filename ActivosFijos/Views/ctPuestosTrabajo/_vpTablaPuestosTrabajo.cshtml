@@ -1,0 +1,33 @@
+@model IEnumerable<ActivosFijos.Models.EntidadesBD.PuestoTrabajo>
+
+<table class="table table-bordered table-hover table-condensed" id="tablaPuestosTrabajo">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th scope="col" style="text-align:justify">
+                Nombre
+            </th>
+            <th scope="col" style="text-align:justify">
+                Descripci&oacute;n
+            </th>
+            <th scope="col" style="text-align:justify">
+                Local
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdPuesto">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>
+                <td style="text-align:justify">
+                    @(item.LocalNavigation != null ? item.LocalNavigation.Nombre : "<<S/D>>")
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
