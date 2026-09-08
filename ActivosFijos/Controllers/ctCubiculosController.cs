@@ -51,19 +51,12 @@ namespace ActivosFijos.Controllers
                 var iDictionaryModel = validacionesRepositorio.EspaciosEnBlanco(cubiculo.Nombre, "Nombre");
                 if (iDictionaryModel.Count == 0)
                 {
-                    iDictionaryModel = validacionesRepositorio.ConEspacio(cubiculo.Nombre, "Nombre");
-                    if (iDictionaryModel.Count == 0)
+                    if (cubiculoRepositorio.SiExisteNombreDelCubiculo(cubiculo.Nombre))
                     {
-                        if (cubiculoRepositorio.SiExisteNombreDelCubiculo(cubiculo.Nombre))
-                        {
-                            ModelState.AddModelError("Nombre", "El Nombre a insertar ya existe.");
-                        }
-                    } else
-                    {
-                        foreach (var item in iDictionaryModel)
-                            ModelState.AddModelError(item.Key, item.Value);
+                        ModelState.AddModelError("Nombre", "El Nombre a insertar ya existe.");
                     }
-                } else
+                }
+                else
                 {
                     foreach (var item in iDictionaryModel)
                         ModelState.AddModelError(item.Key, item.Value);
@@ -74,18 +67,9 @@ namespace ActivosFijos.Controllers
                 iDictionaryModel = validacionesRepositorio.EspaciosEnBlanco(cubiculo.Apodo, "Apodo");
                 if (iDictionaryModel.Count == 0)
                 {
-                    iDictionaryModel = validacionesRepositorio.ConEspacio(cubiculo.Apodo, "Apodo");
-                    if (iDictionaryModel.Count == 0)
+                    if (cubiculoRepositorio.SiExisteApodoDelCubiculo(cubiculo.Apodo))
                     {
-                        if (cubiculoRepositorio.SiExisteApodoDelCubiculo(cubiculo.Apodo))
-                        {
-                            ModelState.AddModelError("Apodo", "El apodo del cubículo a insertar ya existe.");
-                        }
-                    }
-                    else
-                    {
-                        foreach (var item in iDictionaryModel)
-                            ModelState.AddModelError(item.Key, item.Value);
+                        ModelState.AddModelError("Apodo", "El apodo del cubículo a insertar ya existe.");
                     }
                 }
                 else
