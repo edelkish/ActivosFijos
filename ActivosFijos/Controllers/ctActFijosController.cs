@@ -22,6 +22,7 @@ using ActivosFijos.Models.Auxiliar;
 using System.Net;
 using System.IO.Compression;
 using System.Drawing;
+using System.Security.Claims;
 using ActivosFijos.Models.AuxBD;
 using DocumentFormat.OpenXml.Vml;
 using OfficeOpenXml;
@@ -40,6 +41,8 @@ namespace ActivosFijos.Controllers
         private readonly repoValidaciones _repoValidaciones;
         private readonly repoServcioActas _repoServcioActas;
         private readonly repoClasificador _repoClasificador;
+        private readonly repoTipoMovimiento _repoTipoMovimiento;
+        private readonly repoParametro _repoParametro;
         private readonly IWebHostEnvironment _env;
 
         private class SelectListResponsable
@@ -57,6 +60,7 @@ namespace ActivosFijos.Controllers
 
         public ctActFijosController(aftContext context, repoActivosFijos repoActivosFijos, repoAreasDeResponsabilidad repoAreas, repoResponsables repoResponsables,
             repoCentrosDeCosto repoCentroDeCostos, repoValidaciones repoValidaciones, repoServcioActas repoServcioActas, repoClasificador repoClasificador,
+            repoTipoMovimiento repoTipoMovimiento, repoParametro repoParametro,
             IWebHostEnvironment env)
         {
             _context = context;
@@ -67,6 +71,8 @@ namespace ActivosFijos.Controllers
             _repoValidaciones = repoValidaciones;
             _repoServcioActas = repoServcioActas;
             _repoClasificador = repoClasificador;
+            _repoTipoMovimiento = repoTipoMovimiento;
+            _repoParametro = repoParametro;
             _env = env;
         }
 
@@ -1487,11 +1493,92 @@ namespace ActivosFijos.Controllers
 
             ViewData["breadsC"] = LlenarBreadsCumbs("Listado de Movimientos");
 
+            ViewData["tiposMovimiento"] = (await _repoTipoMovimiento.ObtenerListadoDeTiposMovimientoActivos()).Select(t => new SelectListItem() { Text = t.Nombre, Value = t.Nombre, Selected = t.Nombre == "Traslado Interno" }).ToList();
+            ViewData["usuarios"] = (await _context.Usuarios.ToListAsync()).Select(u => new SelectListItem() { Text = (u.Nombre ?? "") + " " + (u.Apellidos ?? ""), Value = (u.Nombre ?? "") + " " + (u.Apellidos ?? "") }).ToList();
+            ViewData["cargos"] = (await _context.Cargos.ToListAsync()).Select(c => new SelectListItem() { Text = c.Nombre ?? "", Value = c.Nombre ?? "" }).ToList();
+
             ViewData["respuesta"] = new clResponse<mdActas>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
             return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today.AddMonths(-1) : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarAnexosMovimientos(mdActas model, string tipoMovimiento, string fundamentacion, string informeTecnico, string nombreTecnico, string cargoTecnico, string comprobante)
+        {
+            try
+            {
+                string nombreMes = repoServcioActas.GetNameMonth(model.Fecha.Month, model.Fecha.Year);
+
+                List<ActivosFijosAnexo3> movimientos = await _repoActivosFijos.ListadoActivosFijosAnexo3(model.Fecha);
+
+                if (model.Area != Guid.Empty)
+                    movimientos = movimientos.Where(m => m.idAreaAnterior.Equals(model.Area) || m.idAreaActual.Equals(model.Area)).ToList();
+                if (model.Responsable != Guid.Empty)
+                    movimientos = movimientos.Where(m => m.idResponsableAnterior.Equals(model.Responsable) || m.idResponsableActual.Equals(model.Responsable)).ToList();
+
+                if (movimientos.Count == 0)
+                {
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = "No existen movimientos en la fecha seleccionada.";
+                    return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
+                }
+
+                mdAnexo3 datos = new mdAnexo3
+                {
+                    TipoMovimiento = string.IsNullOrEmpty(tipoMovimiento) ? "Traslado Interno" : tipoMovimiento,
+                    Fundamentacion = fundamentacion ?? string.Empty,
+                    InformeTecnico = informeTecnico ?? string.Empty,
+                    NombreTecnico = nombreTecnico ?? string.Empty,
+                    CargoTecnico = cargoTecnico ?? string.Empty,
+                    Comprobante = comprobante ?? string.Empty,
+                    HechoPor = User.Identity.IsAuthenticated ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value ?? string.Empty : string.Empty
+                };
+
+                Parametro paramEntidad = await _repoParametro.SeleccionarParametroPorNombre("Entidad");
+                Parametro paramDireccion = await _repoParametro.SeleccionarParametroPorNombre("Dirección");
+                Parametro paramUEB = await _repoParametro.SeleccionarParametroPorNombre("UEB");
+                Parametro paramDireccionUEB = await _repoParametro.SeleccionarParametroPorNombre("Dirección UEB");
+
+                datos.Entidad = paramEntidad?.Valor ?? string.Empty;
+                datos.Direccion = paramDireccion?.Valor ?? string.Empty;
+                datos.UEB = paramUEB?.Valor ?? string.Empty;
+                datos.DireccionUEB = paramDireccionUEB?.Valor ?? string.Empty;
+
+                Responsable director = await _repoResponsables.ObtenerInfoDirector();
+                Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
+                datos.AprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>";
+                datos.AutorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>";
+
+                MemoryStream msZIP = new MemoryStream();
+                using (var zip = new ZipArchive(msZIP, ZipArchiveMode.Create, true))
+                {
+                    foreach (var mv in movimientos)
+                    {
+                        byte[] docx = _repoServcioActas.ExportarAnexo3(out bool result, out string msg, mv, model.Fecha, datos);
+                        if (docx == null)
+                            continue;
+
+                        string tituloDoc = "Anexo3 - " + (mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString()) + " (" + nombreMes.Replace('/', '-') + ").docx";
+                        var entry = zip.CreateEntry(tituloDoc);
+                        using (var fileStream = new MemoryStream(docx))
+                        using (var entryStream = entry.Open())
+                        {
+                            fileStream.CopyTo(entryStream);
+                        }
+                    }
+                }
+
+                return File(msZIP.ToArray(), "application/zip", $"Anexos Movimientos ({nombreMes.Replace('/', '-')}).zip");
+            }
+            catch (Exception ex)
+            {
+                clGlobal.siNo = false;
+                clGlobal.objMensaje = $"Ocurrió el siguiente error: {ex.Message}";
+                return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
+            }
         }
 
         [HttpPost]

@@ -480,6 +480,46 @@ namespace ActivosFijos.Repositorios
                 return new List<ActivosFijosConMovimientos>();
             }
         }
+        public async Task<List<ActivosFijosAnexo3>> ListadoActivosFijosAnexo3(DateTime fecha)
+        {
+            try
+            {
+                List<ActivosFijosConMovimientos> movimientos = await ListadoActivosFijosConMovimientos(fecha).ConfigureAwait(false);
+
+                List<ActFijo> actFijosDelMes = await _context.ActFijos
+                    .Where(act => act.FechaSubmayor.Year == fecha.Year && act.FechaSubmayor.Month == fecha.Month)
+                    .ToListAsync().ConfigureAwait(false);
+
+                List<ActivosFijosAnexo3> query = movimientos.Select(mv =>
+                {
+                    ActFijo activo = actFijosDelMes.FirstOrDefault(a => a.NoInventario == mv.NoInventario && a.SubNumero == mv.SubNumero);
+                    return new ActivosFijosAnexo3
+                    {
+                        NoInventario = mv.NoInventario,
+                        SubNumero = mv.SubNumero,
+                        Descripcion = mv.Descripcion,
+                        idAreaAnterior = mv.idAreaAnterior,
+                        AreaAnterior = mv.AreaAnterior,
+                        idAreaActual = mv.idAreaActual,
+                        AreaActual = mv.AreaActual,
+                        idResponsableAnterior = mv.idResponsableAnterior,
+                        ResponsableAnterior = mv.ResponsableAnterior,
+                        idResponsableActual = mv.idResponsableActual,
+                        ResponsableActual = mv.ResponsableActual,
+                        ValorContable = activo?.ValorContable,
+                        ValorAdquisicion = activo?.ValorAdquisicion,
+                        DepreciacionAcum = activo?.DepreciacionAcum,
+                        FechaSubmayor = activo != null ? activo.FechaSubmayor : fecha
+                    };
+                }).ToList();
+
+                return query;
+            }
+            catch (Exception ex)
+            {
+                return new List<ActivosFijosAnexo3>();
+            }
+        }
         public async Task<List<ActivosFijosMovimientos>> ListadoActivosFijosMovimientos(long noInventario)
         {
             try
