@@ -281,14 +281,23 @@ function AplicarVisibilidadColumnas() {
     }
 }
 
-function ObtenerNoInventariosSeleccionados() {
+function ObtenerFilasSeleccionadas() {
     var rowsindexes = $('#jqxGridAFTUbicacion').jqxGrid('getselectedrowindexes');
-    var cadena = [];
+    var filas = [];
     $.each(rowsindexes, function (i, idx) {
         var fila = $('#jqxGridAFTUbicacion').jqxGrid('getrowdata', idx);
         if (fila) {
-            cadena.push(fila.noInventario);
+            filas.push(fila);
         }
+    });
+    return filas;
+}
+
+function ObtenerNoInventariosSeleccionados() {
+    var filas = ObtenerFilasSeleccionadas();
+    var cadena = [];
+    $.each(filas, function (i, fila) {
+        cadena.push(fila.noInventario);
     });
     return cadena;
 }
@@ -380,8 +389,44 @@ function ejecutarAsignacion(noInventarios, local, puesto) {
     });
 }
 
+function ActualizarContadoresArbol() {
+    $.ajax({
+        url: baseUrl + 'ctUbicaciones/ObtenerCubiculos',
+        method: 'POST',
+        data: {},
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+        },
+        success: function (data) {
+            var contadores = {};
+            if (data.contadores) {
+                $.each(data.contadores, function (i, c) {
+                    contadores[c.id] = c.contador;
+                });
+            }
+
+            $('#arbolUbicaciones .gu-sinibli .gu-badge').text(data.sinUbicacion || 0);
+
+            $('#arbolUbicaciones .gu-nodo').each(function () {
+                var id = $(this).data('id');
+                if (id) {
+                    var valor = contadores[id] != null ? contadores[id] : 0;
+                    $(this).find('.gu-badge').first().text(valor);
+                }
+            });
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+}
+
 function RecargarArbolYGrid() {
-    CargarArbolRaiz();
+    if ($('#arbolUbicaciones').children().length > 0) {
+        ActualizarContadoresArbol();
+    } else {
+        CargarArbolRaiz();
+    }
     if (nodoSeleccionado) {
         SeleccionarNodo(nodoSeleccionado);
     }
@@ -477,6 +522,16 @@ function InicializarArrastreAFT() {
         });
         if (!fila) return;
 
+        var seleccionadas = ObtenerFilasSeleccionadas();
+        var filaEnSeleccion = false;
+        $.each(seleccionadas, function (i, f) {
+            if (String(f.noInventario) === String(noInventario)) {
+                filaEnSeleccion = true;
+                return false;
+            }
+        });
+        var filasAArrastrar = filaEnSeleccion ? seleccionadas : [fila];
+
         var inicioX = e.clientX, inicioY = e.clientY;
         var arrastrando = false;
 
@@ -484,7 +539,7 @@ function InicializarArrastreAFT() {
             if (!arrastrando) {
                 if (Math.abs(me.clientX - inicioX) > 5 || Math.abs(me.clientY - inicioY) > 5) {
                     arrastrando = true;
-                    IniciarArrastre(fila);
+                    IniciarArrastre(filasAArrastrar);
                 }
             }
             if (arrastrando) {
@@ -496,7 +551,7 @@ function InicializarArrastreAFT() {
             $(document).off('mousemove', move);
             $(document).off('mouseup', up);
             if (arrastrando) {
-                FinalizarArrastre(ue.clientX, ue.clientY, fila);
+                FinalizarArrastre(ue.clientX, ue.clientY, filasAArrastrar);
             }
         };
 
@@ -505,12 +560,16 @@ function InicializarArrastreAFT() {
     });
 }
 
-function IniciarArrastre(fila) {
-    arrastreActivo = fila;
+function IniciarArrastre(filas) {
+    arrastreActivo = filas;
     $('body').addClass('gu-arrastrando');
     $('#jqxGridAFTUbicacion').jqxGrid('clearselection');
 
-    $('<div id="guDragGhost" class="gu-drag-ghost">AFT No. ' + fila.noInventario + '</div>')
+    var etiqueta = filas.length > 1
+        ? filas.length + ' AFT seleccionados'
+        : 'AFT No. ' + filas[0].noInventario;
+
+    $('<div id="guDragGhost" class="gu-drag-ghost">' + etiqueta + '</div>')
         .appendTo('body');
 
     $('.gu-nodo-linea').addClass('gu-drop-objetivo');
@@ -526,7 +585,7 @@ function MoverArrastre(x, y) {
     }
 }
 
-function FinalizarArrastre(x, y, fila) {
+function FinalizarArrastre(x, y, filas) {
     $('#guDragGhost').remove();
     $('body').removeClass('gu-arrastrando');
     $('.gu-nodo-linea').removeClass('gu-drop-objetivo').removeClass('gu-drop-sobre');
@@ -543,10 +602,16 @@ function FinalizarArrastre(x, y, fila) {
     arrastreActivo = null;
 
     var tipoTexto = nodo.tipo === 'puesto' ? 'puesto de trabajo' : 'local';
+    var contenido = filas.length > 1
+        ? '&iquest;Est&aacute; seguro de que desea asignar los <b>' + filas.length +
+            '</b> AFT seleccionados (' + filas.map(function (f) { return f.noInventario; }).join(', ') +
+            ') al ' + tipoTexto + ' <b>' + nodo.nombre + '</b>?'
+        : '&iquest;Est&aacute; seguro de que desea asignar el AFT No. <b>' + filas[0].noInventario +
+            '</b> al ' + tipoTexto + ' <b>' + nodo.nombre + '</b>?';
+
     $.confirm({
         title: '!Confirmar asignaci&oacute;n!',
-        content: '&iquest;Est&aacute; seguro de que desea asignar el AFT No. <b>' + fila.noInventario +
-            '</b> al ' + tipoTexto + ' <b>' + nodo.nombre + '</b>?',
+        content: contenido,
         icon: 'fa fa-exchange',
         type: 'blue',
         theme: 'light',
@@ -557,10 +622,11 @@ function FinalizarArrastre(x, y, fila) {
                 text: 'Asignar',
                 btnClass: 'btn-blue',
                 action: function () {
+                    var cadena = filas.map(function (f) { return f.noInventario; }).join('|');
                     if (nodo.tipo === 'local') {
-                        ejecutarAsignacion(String(fila.noInventario), nodo.id, null);
+                        ejecutarAsignacion(cadena, nodo.id, null);
                     } else {
-                        ejecutarAsignacion(String(fila.noInventario), null, nodo.id);
+                        ejecutarAsignacion(cadena, null, nodo.id);
                     }
                 }
             },
