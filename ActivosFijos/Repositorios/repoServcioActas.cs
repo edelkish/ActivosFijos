@@ -1,10 +1,13 @@
 ﻿using ActivosFijos.Clases;
+using ActivosFijos.Models.AuxBD;
 using ActivosFijos.Models.Auxiliar;
 using ActivosFijos.Models.EntidadesBD;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Data;
+using System.Globalization;
+using System.Text;
 
 namespace ActivosFijos.Repositorios
 {
@@ -1658,6 +1661,221 @@ namespace ActivosFijos.Repositorios
             }
 
             return nomMesAnno;
+        }
+
+        public byte[] ExportarAnexo3(out bool result, out string msg, ActivosFijosAnexo3 mv, DateTime fecha, mdAnexo3 datos)
+        {
+            result = true;
+            msg = "";
+            MemoryStream ms = new MemoryStream();
+
+            try
+            {
+                string webRootPath = _webHostEnvironment.WebRootPath;
+                string path = Path.Combine(webRootPath, "plantillas\\Plantilla Anexo 3 Modelo de Mov de AFT. MODELO.docx");
+
+                byte[] templateBytes = System.IO.File.ReadAllBytes(path);
+                new MemoryStream(templateBytes).CopyTo(ms);
+                using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
+                {
+                    Dictionary<string, string> reemplazos = new Dictionary<string, string>
+                    {
+                        { "ENTIDAD_", datos.Entidad },
+                        { "DIRECCION_", datos.Direccion },
+                        { "AREA_", string.IsNullOrEmpty(mv.AreaAnterior) ? "<<S/D>>" : mv.AreaAnterior },
+                        { "DESCRIPCION_", mv.Descripcion },
+                        { "NOINVENTARIO_", mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString() },
+                        { "UEB_", datos.UEB },
+                        { "DIRECCION_UEB_", datos.DireccionUEB },
+                        { "AREARECEP_", string.IsNullOrEmpty(mv.AreaActual) ? "<<S/D>>" : mv.AreaActual },
+                        { "NOMBRERECEP_", string.IsNullOrEmpty(mv.ResponsableActual) ? "<<S/D>>" : mv.ResponsableActual },
+                        { "FUNDAMENTACIONOPE_", datos.Fundamentacion },
+                        { "INFORMETECNICO_", datos.InformeTecnico },
+                        { "NOMBRE_", datos.NombreTecnico },
+                        { "CARGO_", datos.CargoTecnico },
+                        { "HECHOPOR_", datos.HechoPor },
+                        { "APROBADOPOR_", datos.AprobadoPor },
+                        { "AUTORIZADOPOR_", datos.AutorizadoPor }
+                    };
+
+                    ReemplazarMarcadores(doc, reemplazos);
+                    MarcarTipoMovimiento(doc, datos.TipoMovimiento);
+                    LlenarCeldaDelAnexo(doc, "Valor $", (mv.ValorContable ?? 0).ToString("#,##0.00"), true);
+                    LlenarCeldaDelAnexo(doc, "Comprobante de operaciones No.", datos.Comprobante, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                result = false;
+                msg = ex.Message;
+            }
+
+            if (result)
+            {
+                return ms.ToArray();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private void ReemplazarMarcadores(WordprocessingDocument doc, Dictionary<string, string> reemplazos)
+        {
+            var parrafos = doc.MainDocumentPart.Document.Descendants<Paragraph>().ToList();
+
+            foreach (var p in parrafos)
+            {
+                var runs = p.Elements<Run>().ToList();
+                if (runs.Count == 0)
+                    continue;
+
+                string texto = string.Concat(runs.Select(r => r.InnerText));
+                if (!reemplazos.Keys.Any(k => texto.Contains(k, StringComparison.Ordinal)))
+                    continue;
+
+                string nuevo = texto;
+                foreach (var kv in reemplazos.OrderByDescending(k => k.Key.Length))
+                {
+                    nuevo = nuevo.Replace(kv.Key, kv.Value ?? string.Empty, StringComparison.Ordinal);
+                }
+
+                if (nuevo == texto)
+                    continue;
+
+                EscribirTextoEnLaListaDeRuns(runs, nuevo);
+            }
+        }
+
+        private void MarcarTipoMovimiento(WordprocessingDocument doc, string tipo)
+        {
+            string claveObjetivo = Normalizar(tipo);
+
+            foreach (var p in doc.MainDocumentPart.Document.Descendants<Paragraph>())
+            {
+                var runs = p.Elements<Run>().ToList();
+                if (runs.Count == 0)
+                    continue;
+
+                string texto = string.Concat(runs.Select(r => r.InnerText));
+                if (texto.Length == 0 || (texto[0] != 'O' && texto[0] != 'X'))
+                    continue;
+
+                if (!TiposMovimientoDeLaPlantilla.Any(t => Normalizar(texto).Contains(Normalizar(t))))
+                    continue;
+
+                char marca = Normalizar(texto).Contains(claveObjetivo) ? 'X' : 'O';
+                string restoTexo = texto.Length > 1 ? texto.Substring(1) : string.Empty;
+
+                EscribirTextoEnLaListaDeRuns(runs, marca + restoTexo);
+            }
+        }
+
+        private static readonly string[] TiposMovimientoDeLaPlantilla = new string[]
+        {
+            "Compra AFT Nuevo",
+            "Compra AFT de Uso",
+            "Traspaso recibido",
+            "Ajuste Inv. Alta",
+            "Venta",
+            "Traslado Interno",
+            "Activo-Ocioso",
+            "Retiro",
+            "Pérdida",
+            "Traspaso efect.",
+            "Ajuste Baja",
+            "Enviado a reparar",
+            "Ocioso Activo"
+        };
+
+        private void LlenarCeldaDelAnexo(WordprocessingDocument doc, string textoEtiqueta, string valor, bool llenarLaPrimeraVacia = true)
+        {
+            if (string.IsNullOrEmpty(valor))
+                return;
+
+            string claveEtiqueta = Normalizar(textoEtiqueta);
+
+            foreach (var celda in doc.MainDocumentPart.Document.Descendants<TableCell>())
+            {
+                string textoCelda = string.Concat(celda.Descendants<Text>().Select(t => t.Text));
+                if (!Normalizar(textoCelda).Contains(claveEtiqueta))
+                    continue;
+
+                TableRow fila = celda.Parent as TableRow;
+                if (fila == null)
+                    continue;
+
+                var celdas = fila.Elements<TableCell>().ToList();
+                if (celdas.Count == 0)
+                    continue;
+
+                TableCell destino = llenarLaPrimeraVacia
+                    ? celdas.FirstOrDefault(c => c != celda && string.IsNullOrWhiteSpace(string.Concat(c.Descendants<Text>().Select(t => t.Text))))
+                    : celdas.FirstOrDefault(c => c != celda);
+
+                if (destino == null)
+                    return;
+
+                EscribirTextoEnCelda(destino, valor);
+                return;
+            }
+        }
+
+        private void EscribirTextoEnLaListaDeRuns(List<Run> runs, string texto)
+        {
+            Run primerRun = runs[0];
+            Text textElement = primerRun.GetFirstChild<Text>() ?? new Text();
+            textElement.Text = texto;
+            textElement.Space = SpaceProcessingModeValues.Preserve;
+            if (primerRun.GetFirstChild<Text>() == null)
+                primerRun.PrependChild(textElement);
+
+            for (int i = 1; i < runs.Count; i++)
+            {
+                Text t = runs[i].GetFirstChild<Text>();
+                if (t != null)
+                    t.Text = string.Empty;
+            }
+        }
+
+        private void EscribirTextoEnCelda(TableCell celda, string texto)
+        {
+            Paragraph p = celda.Descendants<Paragraph>().FirstOrDefault();
+            if (p == null)
+                return;
+
+            var runs = p.Elements<Run>().ToList();
+            Run run = runs.FirstOrDefault();
+            if (run == null)
+            {
+                run = new Run();
+                p.Append(run);
+            }
+
+            Text textElement = run.GetFirstChild<Text>() ?? new Text();
+            textElement.Text = texto;
+            textElement.Space = SpaceProcessingModeValues.Preserve;
+            if (run.GetFirstChild<Text>() == null)
+                run.Append(textElement);
+
+            foreach (var extra in runs.Skip(1))
+            {
+                Text t = extra.GetFirstChild<Text>();
+                if (t != null)
+                    t.Text = string.Empty;
+            }
+        }
+
+        private string Normalizar(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return string.Empty;
+
+            string n = s.Trim().ToLowerInvariant();
+            n = new string(n.Normalize(NormalizationForm.FormD)
+                .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                .ToArray());
+            return n.Replace(".", string.Empty).Replace("-", " ").Trim();
         }
     }
 }
