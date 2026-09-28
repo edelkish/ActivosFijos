@@ -1,4 +1,5 @@
 ﻿@using ActivosFijos.Clases
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Detalles de los Movimientos";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -105,6 +106,7 @@
                                 <div class="form-actions">
                                     <div class="btn-set pull-left">
                                         <button type="submit" class="btn blue-hoki btn-outline sbold uppercase" id="generarActa"><i class="fa fa-file"></i> Generar Acta</button>
+                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="generarAnexo3"><i class="fa fa-file-text-o"></i> Generar Anexo 3</button>
                                     </div>
                                     <div class="btn-set pull-right">
                                         <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="mostrar"><i class="fa fa-search"></i> Mostrar Movimientos</button>
@@ -180,6 +182,83 @@
                         </div>
                     </div>
                     <!-- END Portlet PORTLET-->
+                </div>
+            </div>
+        </div>
+
+        <div id="modalAnexo3" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form asp-action="GenerarAnexosMovimientos" asp-controller="ctActFijos" method="post" id="formGenerarAnexo3">
+                        @Html.AntiForgeryToken()
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                            <h4 class="modal-title">Generar Anexo 3 (SC-1-01)</h4>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="Fecha" id="modalAnexo3Fecha" />
+                            <input type="hidden" name="Area" id="modalAnexo3Area" />
+                            <input type="hidden" name="Responsable" id="modalAnexo3Responsable" />
+                            <div class="form-group">
+                                <label class="control-label">Tipo de Movimiento:</label>
+                                <select class="form-control select2me" id="tipoMovimiento" name="tipoMovimiento">
+                                    @foreach (SelectListItem tm in (List<SelectListItem>)ViewData["tiposMovimiento"])
+                                    {
+                                        if (tm.Selected)
+                                        {
+                                            <option value="@tm.Value" selected="selected">@tm.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@tm.Value">@tm.Text</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label">Fundamentaci&oacute;n:</label>
+                                <textarea class="form-control" name="fundamentacion" rows="2" autocomplete="off"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label">Informe T&eacute;cnico:</label>
+                                <textarea class="form-control" name="informeTecnico" rows="2" autocomplete="off"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Nombre:</label>
+                                        <select class="form-control select2me" id="NombreTecnico" name="nombreTecnico">
+                                            <option value="">Seleccione el nombre</option>
+                                            @foreach (SelectListItem usr in (List<SelectListItem>)ViewData["usuarios"])
+                                            {
+                                                <option value="@usr.Value">@usr.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Cargo:</label>
+                                        <select class="form-control select2me" id="CargoTecnico" name="cargoTecnico">
+                                            <option value="">Seleccione el cargo</option>
+                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargos"])
+                                            {
+                                                <option value="@cargo.Value">@cargo.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label">Comprobante No.:</label>
+                                <input type="text" class="form-control" name="comprobante" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn default" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn blue-hoki">Generar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -380,6 +459,40 @@
 
             });
         }
+    </script>
+
+    <script type="text/javascript">
+        $('#generarAnexo3').on('click', function () {
+            var valueFecha = $('#Fecha').val();
+            var partes = valueFecha.split('/');
+            var año = partes[1], mes = partes[0];
+
+            $('#modalAnexo3Fecha').val(año + '-' + mes + '-01');
+            $('#modalAnexo3Area').val(($('#Area').val() != null) ? $('#Area').val() : '');
+            $('#modalAnexo3Responsable').val(($('#Responsable').val() != null) ? $('#Responsable').val() : '');
+
+            $('#modalAnexo3').modal('show');
+        });
+
+        $('#modalAnexo3').on('shown.bs.modal', function () {
+            $('#tipoMovimiento').select2({
+                theme: "bootstrap",
+                placeholder: "Seleccione el tipo",
+                width: null
+            });
+
+            $('#NombreTecnico').select2({
+                theme: "bootstrap",
+                placeholder: "Seleccione el nombre",
+                width: null
+            });
+
+            $('#CargoTecnico').select2({
+                theme: "bootstrap",
+                placeholder: "Seleccione el cargo",
+                width: null
+            });
+        });
     </script>
 }
 
