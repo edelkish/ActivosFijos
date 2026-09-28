@@ -38,6 +38,8 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<PlanMuestreoAnualUTH> PlanMuestreoAnualUTHs { get; set; } = null!;
         public virtual DbSet<BajaActivo> BajaActivos { get; set; } = null!;
         public virtual DbSet<MotivoBaja> MotivoBajas { get; set; } = null!;
+        public virtual DbSet<TipoMovimientoAFT> TipoMovimientoAFTs { get; set; } = null!;
+        public virtual DbSet<Parametro> Parametros { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -325,6 +327,16 @@ namespace ActivosFijos.Models.Contexts
             modelBuilder.Entity<MotivoBaja>(entity =>
             {
                 entity.HasKey(e => e.IdMotivoBaja);
+            });
+
+            modelBuilder.Entity<TipoMovimientoAFT>(entity =>
+            {
+                entity.Property(e => e.IdTipoMovimientoAFT).HasDefaultValueSql("(newid())");
+            });
+
+            modelBuilder.Entity<Parametro>(entity =>
+            {
+                entity.Property(e => e.IdParametro).HasDefaultValueSql("(newid())");
             });
 
             OnModelCreatingPartial(modelBuilder);

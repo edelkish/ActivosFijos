@@ -492,6 +492,35 @@ namespace ActivosFijos.Migrations
                     b.ToTable("MuestreoMensualDiezPorCientoUTH");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Parametro", b =>
+                {
+                    b.Property<Guid>("IdParametro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("idParametro")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<string>("Grupo")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Valor")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
+
+                    b.HasKey("IdParametro");
+
+                    b.ToTable("Parametro");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Permiso", b =>
                 {
                     b.Property<Guid>("IdPermiso")
@@ -703,6 +732,36 @@ namespace ActivosFijos.Migrations
                     b.HasIndex("Cargo");
 
                     b.ToTable("Responsable");
+                });
+
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.TipoMovimientoAFT", b =>
+                {
+                    b.Property<Guid>("IdTipoMovimientoAFT")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("idTipoMovimientoAFT")
+                        .HasDefaultValueSql("(newid())");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SiActivo")
+                        .HasColumnType("bit");
+
+                    b.HasKey("IdTipoMovimientoAFT");
+
+                    b.ToTable("TipoMovimientoAFT");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.TrasladosAft", b =>
