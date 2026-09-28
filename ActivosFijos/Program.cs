@@ -81,6 +81,8 @@ builder.Services.AddScoped<repoLocales>();
 builder.Services.AddScoped<repoBajasActivo>();
 builder.Services.AddScoped<repoPuestosTrabajo>();
 builder.Services.AddScoped<repoUbicacionesAFT>();
+builder.Services.AddScoped<repoTipoMovimiento>();
+builder.Services.AddScoped<repoParametro>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

@@ -13,7 +13,7 @@
         @{
             if (User.IsInRole("gest_nom") || User.IsInRole("admin_web"))
             {
-                <li aria-haspopup="true" class="menu-dropdown classic-menu-dropdown @Html.IsSelected(new List<string> { "ctAreasDeResponsabilidad", "ctCargos", "ctCentroCosto", "ctResponsables" })">
+                <li aria-haspopup="true" class="menu-dropdown classic-menu-dropdown @Html.IsSelected(new List<string> { "ctAreasDeResponsabilidad", "ctCargos", "ctCentroCosto", "ctResponsables", "ctTipoMovimiento" })">
                     <a href="javascript:;">
                         Nomencladores
                         <span class="arrow"></span>
@@ -44,6 +44,9 @@
 
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctResponsables", "Responsables")">
                             <a asp-action="Responsables" asp-controller="ctResponsables" class="nav-link @Html.IsSelected("ctResponsables", "Responsables")"> Responsables </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctTipoMovimiento", "TiposDeMovimientos")">
+                            <a asp-action="TiposDeMovimientos" asp-controller="ctTipoMovimiento" class="nav-link @Html.IsSelected("ctTipoMovimiento", "TiposDeMovimientos")"> Tipos de Movimiento </a>
                         </li>
                     </ul>
                 </li>
@@ -169,7 +172,7 @@
 
             if (User.IsInRole("gest_config") || User.IsInRole("admin_web"))
             {
-                <li aria-haspopup="true" class="menu-dropdown classic-menu-dropdown @Html.IsSelected(new List<string> { "ctConfiguracion" })">
+                <li aria-haspopup="true" class="menu-dropdown classic-menu-dropdown @Html.IsSelected(new List<string> { "ctConfiguracion", "ctParametro" })">
                     <a href="javascript:;">
                         Configuraci&oacute;n
                         <span class="arrow"></span>
@@ -177,6 +180,9 @@
                     <ul class="dropdown-menu pull-left">
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctConfiguracion", "Configuraciones")">
                             <a asp-action="Configuraciones" asp-controller="ctConfiguracion" class="nav-link @Html.IsSelected("ctConfiguracion", "Configuraciones")"> Datos a Importar </a>
+                        </li>
+                        <li aria-haspopup="true" class=" @Html.IsSelected("ctParametro", "Parametros")">
+                            <a asp-action="Parametros" asp-controller="ctParametro" class="nav-link @Html.IsSelected("ctParametro", "Parametros")"> Par&aacute;metros </a>
                         </li>
 
                     </ul>

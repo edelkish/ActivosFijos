@@ -1,0 +1,129 @@
+@using ActivosFijos.Clases;
+@using ActivosFijos.Models.EntidadesBD;
+@using ActivosFijos.Models.Vistas;
+
+@model ActivosFijos.Models.EntidadesBD.TipoMovimientoAFT
+
+@{
+    ViewData["Title"] = "Crear Tipo de Movimiento";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewBag.tituloDelContenido = ViewData["Title"];
+    ViewBag.subTituloDelContenido = "Formulario a llenar para la creación de Tipos de Movimiento";
+    clResponse<TipoMovimientoAFT> respuesta = new clResponse<TipoMovimientoAFT>();
+    if (ViewBag.respuesta != null)
+    {
+        respuesta = ViewBag.respuesta;
+    }
+}
+
+<div class="page-head">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE TITLE -->
+        <div class="page-title">
+            <h1>
+                Tipos de Movimiento | Crear
+            </h1>
+        </div>
+        <!-- END PAGE TITLE -->
+    </div>
+</div>
+
+<!-- BEGIN PAGE CONTENT BODY -->
+<div class="page-content">
+    <div class="container-fluid">
+        <!-- BEGIN PAGE BREADCRUMBS -->
+        <ul class="page-breadcrumb breadcrumb">
+            <li>
+                <a asp-action="Inicio" asp-controller="ctInicio">Inicio</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Nomencladores</span>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <a asp-action="TiposDeMovimientos" asp-controller="ctTipoMovimiento">Tipos de Movimiento</a>
+                <i class="fa fa-circle"></i>
+            </li>
+            <li>
+                <span>Creaci&oacute;n de nuevos tipos de movimiento</span>
+            </li>
+        </ul>
+        <!-- END PAGE BREADCRUMBS -->
+        <!-- BEGIN PAGE CONTENT INNER -->
+        <div class="page-content-inner">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet box blue-hoki">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                Formulario a llenar
+                            </div>
+                            <div class="tools">
+                                <a href="" class="fullscreen"> </a>
+                            </div>
+                        </div>
+                        <div class="portlet-body form">
+                            <!-- BEGIN FORM-->
+                            <form asp-action="GuardarTipoMovimiento" asp-controller="ctTipoMovimiento" id="guardarTipoMovimiento">
+                                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                <div class="form-body">
+                                    @Html.AntiForgeryToken()
+                                    <div class="form-group">
+                                        <label class="control-label">Nombre <span class="required"> (*) </span></label>
+                                        <input asp-for="Nombre" type="text" class="form-control" placeholder="Nombre del tipo de movimiento" autocomplete="off">
+                                        <span asp-validation-for="Nombre" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label">Descripci&oacute;n</label>
+                                        <textarea asp-for="Descripcion" class="form-control" placeholder="Descripci&oacute;n del tipo de movimiento" autocomplete="off"></textarea>
+                                        <span asp-validation-for="Descripcion" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Orden <span class="required"> (*) </span></label>
+                                        <input type="text" asp-for="Orden" class="form-control" placeholder="Orden de aparici&oacute;n" autocomplete="off">
+                                        <span asp-validation-for="Orden" class="required"></span>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="checkbox-list">
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" asp-for="SiActivo" /> Activo
+                                            </label>
+                                        </div>
+                                        <span asp-validation-for="SiActivo" class="required"></span>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <div class="btn-set pull-left">
+                                        <a asp-action="TiposDeMovimientos" asp-controller="ctTipoMovimiento" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-close"></i> Cancelar</a>
+                                    </div>
+                                    <div class="btn-set pull-right">
+                                        <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-check"></i> Guardar cambios</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <!-- END FORM-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END PAGE CONTENT INNER -->
+    </div>
+</div>
+<!-- END PAGE CONTENT BODY -->
+@section Scripts{
+<script type="text/javascript">
+    var siSatisfactorio = '@respuesta.SiSatisfactorio';
+    var mensaje = '@respuesta.Mensaje';
+
+    if (siSatisfactorio == "True") {
+        toastr["success"](mensaje, "Registro exitoso");
+    } else if (mensaje != "" && mensaje != null) {
+        toastr["error"](mensaje, "Operación fallida");
+    }
+</script>
+
+<script type="text/javascript" src="~/global/scripts/toastr.js"></script>
+}

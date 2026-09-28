@@ -1,0 +1,32 @@
+@model IEnumerable<ActivosFijos.Models.EntidadesBD.Parametro>
+<table class="table table-bordered table-hover table-condensed" id="tablaParametros">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+            <th style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Valor)
+            </th>
+            <th style="text-align:justify" width="150px">
+                @Html.DisplayNameFor(model => model.Grupo)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdParametro">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Valor)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Grupo)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

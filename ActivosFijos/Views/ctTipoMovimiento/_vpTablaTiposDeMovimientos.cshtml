@@ -1,0 +1,45 @@
+@model IEnumerable<ActivosFijos.Models.EntidadesBD.TipoMovimientoAFT>
+<table class="table table-bordered table-hover table-condensed" id="tablaTiposDeMovimientos">
+    <thead style="background-color: #444d58 !important; color: #ced5de">
+        <tr>
+            <th style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+            <th style="text-align:justify">
+                @Html.DisplayNameFor(model => model.Descripcion)
+            </th>
+            <th style="text-align:center" width="100px">
+                @Html.DisplayNameFor(model => model.Orden)
+            </th>
+            <th style="text-align:center" width="100px">
+                @Html.DisplayNameFor(model => model.SiActivo)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-info="@item.IdTipoMovimientoAFT">
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Nombre)
+                </td>
+                <td style="text-align:justify">
+                    @Html.DisplayFor(modelItem => item.Descripcion)
+                </td>
+                <td style="text-align:center">
+                    @Html.DisplayFor(modelItem => item.Orden)
+                </td>
+                <td style="text-align:center">
+                    @if (item.SiActivo)
+                    {
+                        <span class="label label-sm label-success">S&iacute;</span>
+                    }
+                    else
+                    {
+                        <span class="label label-sm label-danger">No</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
