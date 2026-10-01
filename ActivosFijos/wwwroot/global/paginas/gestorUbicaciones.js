@@ -48,7 +48,7 @@ function CargarArbolRaiz() {
 
                     $('<span class="gu-toggle"><i class="fa fa-chevron-right"></i></span>').appendTo($div);
                     $('<span class="gu-icono gu-icono-centrocosto"><i class="fa fa-building"></i></span>').appendTo($div);
-                    $('<span class="gu-nombre"></span>').text(centroCosto.nombre).appendTo($div);
+                    $('<span class="gu-nombre"></span>').text(centroCosto.nombre).attr('title', centroCosto.nombre).appendTo($div);
                     var total = contadores[centroCosto.id] != null ? contadores[centroCosto.id] : 0;
                     $('<span class="gu-badge"></span>').text(total).appendTo($div);
                 });
@@ -143,7 +143,7 @@ function CargarHijos($li) {
                     $('<span class="gu-icono gu-icono-puesto"><i class="fa fa-desktop"></i></span>').appendTo($div);
                 }
 
-                $('<span class="gu-nombre"></span>').text(item.nombre).appendTo($div);
+                $('<span class="gu-nombre"></span>').text(item.nombre).attr('title', item.nombre).appendTo($div);
 
                 var contador = contadores[item.id] != null ? contadores[item.id] : item.contador;
                 $('<span class="gu-badge"></span>').text(contador || 0).appendTo($div);
