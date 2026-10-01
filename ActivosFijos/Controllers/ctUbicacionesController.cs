@@ -1,4 +1,5 @@
-using ActivosFijos.Models.Auxiliar;
+﻿using ActivosFijos.Models.Auxiliar;
+using ActivosFijos.Models.EntidadesBD;
 using ActivosFijos.Repositorios;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -12,34 +13,36 @@ namespace ActivosFijos.Controllers
         private readonly repoUbicacionesAFT ubicacionesRepositorio;
         private readonly repoLocales localRepositorio;
         private readonly repoPuestosTrabajo puestoTrabajoRepositorio;
-        public ctUbicacionesController(repoUbicacionesAFT ubicacionesRepositorio, repoLocales localRepositorio, repoPuestosTrabajo puestoTrabajoRepositorio)
+        private readonly repoCentrosDeCosto centroCostoRepositorio;
+        public ctUbicacionesController(repoUbicacionesAFT ubicacionesRepositorio, repoLocales localRepositorio, repoPuestosTrabajo puestoTrabajoRepositorio, repoCentrosDeCosto centroCostoRepositorio)
         {
             this.ubicacionesRepositorio = ubicacionesRepositorio;
             this.localRepositorio = localRepositorio;
             this.puestoTrabajoRepositorio = puestoTrabajoRepositorio;
+            this.centroCostoRepositorio = centroCostoRepositorio;
         }
         public IActionResult Gestion()
         {
-            ViewData["breadsC"] = LlenarBreadsCumbs("Gestión de ubicaciones");
+            ViewData["breadsC"] = LlenarBreadsCumbs("GestiÃ³n de ubicaciones");
             return View("vGestionUbicaciones");
         }
         [HttpPost]
-        public async Task<JsonResult> ObtenerCubiculos()
+        public async Task<JsonResult> ObtenerCentroCostos()
         {
-            var cubos = await ubicacionesRepositorio.ObtenerCubiculosArbol().ConfigureAwait(false);
+            var centrosCosto = await ubicacionesRepositorio.ObtenerCentroCostosArbol().ConfigureAwait(false);
             var contadores = await ubicacionesRepositorio.ObtenerContadoresGeneral().ConfigureAwait(false);
             var sinon = contadores.FirstOrDefault(c => c.Tipo == "sinUbicacion");
             return Json(new
             {
-                cubos,
+                centrosCosto,
                 contadores,
                 sinUbicacion = sinon != null ? sinon.Contador : 0
             });
         }
         [HttpPost]
-        public async Task<JsonResult> ObtenerLocales(Guid idCubiculo)
+        public async Task<JsonResult> ObtenerLocales(Guid idCentroCosto)
         {
-            var locales = await ubicacionesRepositorio.ObtenerLocalesDeCubiculo(idCubiculo).ConfigureAwait(false);
+            var locales = await ubicacionesRepositorio.ObtenerLocalesDeCentroCosto(idCentroCosto).ConfigureAwait(false);
             var contadores = await ubicacionesRepositorio.ObtenerContadoresGeneral().ConfigureAwait(false);
             return Json(new { locales, contadores });
         }
@@ -55,7 +58,13 @@ namespace ActivosFijos.Controllers
         {
             List<mdAFTUbicacion> lista;
             string titulo = "";
-            if (tipo == eTipoNivel.Local)
+            if (tipo == eTipoNivel.CentroCosto)
+            {
+                lista = await ubicacionesRepositorio.ObtenerAFTsPorCentroCosto(id).ConfigureAwait(false);
+                var centroCosto = await centroCostoRepositorio.EncontrarCentroCostoPorID(id).ConfigureAwait(false);
+                titulo = centroCosto?.Nombre ?? "";
+            }
+            else if (tipo == eTipoNivel.Local)
             {
                 lista = await ubicacionesRepositorio.ObtenerAFTsPorLocal(id).ConfigureAwait(false);
                 var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
@@ -70,7 +79,7 @@ namespace ActivosFijos.Controllers
             else
             {
                 lista = await ubicacionesRepositorio.ObtenerAFTsSinUbicacion().ConfigureAwait(false);
-                titulo = "Sin ubicación";
+                titulo = "Sin ubicaciÃ³n";
             }
 
             return Json(new { rows = lista, titulo });
@@ -154,6 +163,7 @@ namespace ActivosFijos.Controllers
 
     public enum eTipoNivel
     {
+        CentroCosto,
         Local,
         Puesto,
         SinUbicacion

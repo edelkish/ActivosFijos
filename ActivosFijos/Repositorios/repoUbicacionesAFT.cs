@@ -19,26 +19,27 @@ namespace ActivosFijos.Repositorios
             return await _context.ActFijos.MaxAsync(a => a.FechaSubmayor).ConfigureAwait(false);
         }
 
-        public async Task<List<mdArbolUbicacion>> ObtenerCubiculosArbol()
+        public async Task<List<mdArbolUbicacion>> ObtenerCentroCostosArbol()
         {
-            return await _context.Cubiculos
+            return await _context.CentroCostos
+                .Where(c => c.Locales.Any())
                 .OrderBy(c => c.Nombre)
                 .Select(c => new mdArbolUbicacion
                 {
-                    Id = c.IdCubiculo,
-                    Tipo = "cubiculo",
+                    Id = c.IdCentroCosto,
+                    Tipo = "centroCosto",
                     Nombre = c.Nombre ?? "",
-                    Descripcion = c.Descripcion ?? "",
+                    Descripcion = c.Locales.Count().ToString(),
                     IdPadre = null,
-                    TieneHijos = c.Locales.Any()
+                    TieneHijos = true
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
 
-        public async Task<List<mdArbolUbicacion>> ObtenerLocalesDeCubiculo(Guid idCubiculo)
+        public async Task<List<mdArbolUbicacion>> ObtenerLocalesDeCentroCosto(Guid idCentroCosto)
         {
             return await _context.Locales
-                .Where(l => l.Cubiculo == idCubiculo)
+                .Where(l => l.CentroCosto == idCentroCosto)
                 .OrderBy(l => l.Nombre)
                 .Select(l => new mdArbolUbicacion
                 {
@@ -46,7 +47,7 @@ namespace ActivosFijos.Repositorios
                     Tipo = "local",
                     Nombre = l.Nombre,
                     Descripcion = l.Descripcion ?? "",
-                    IdPadre = l.Cubiculo,
+                    IdPadre = l.CentroCosto,
                     TieneHijos = l.PuestosTrabajo.Any()
                 })
                 .ToListAsync().ConfigureAwait(false);
@@ -73,7 +74,7 @@ namespace ActivosFijos.Repositorios
         {
             DateTime fecha = await ObtenerUltimoSubmayor();
             return await _context.ActFijos
-                .Where(a => a.FechaSubmayor == fecha && a.Local == idLocal)
+                .Where(a => a.FechaSubmayor == fecha && a.Local == idLocal && a.PuestoTrabajo == null)
                 .OrderBy(a => a.NoInventario)
                 .Select(a => new mdAFTUbicacion
                 {
@@ -84,6 +85,25 @@ namespace ActivosFijos.Repositorios
                     clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
                     localActual = a.LocalNavigation != null ? a.LocalNavigation.Nombre : "",
                     puestoActual = ""
+                })
+                .ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<List<mdAFTUbicacion>> ObtenerAFTsPorCentroCosto(Guid idCentroCosto)
+        {
+            DateTime fecha = await ObtenerUltimoSubmayor();
+            return await _context.ActFijos
+                .Where(a => a.FechaSubmayor == fecha && a.LocalNavigation != null && a.LocalNavigation.CentroCosto == idCentroCosto)
+                .OrderBy(a => a.NoInventario)
+                .Select(a => new mdAFTUbicacion
+                {
+                    noInventario = a.NoInventario,
+                    subNumero = a.SubNumero,
+                    fechaSubmayor = a.FechaSubmayor,
+                    descripcion = a.Descripcion ?? "",
+                    clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
+                    localActual = a.LocalNavigation != null ? a.LocalNavigation.Nombre : "",
+                    puestoActual = a.PuestoTrabajoNavigation != null ? a.PuestoTrabajoNavigation.Nombre : ""
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
@@ -131,8 +151,14 @@ namespace ActivosFijos.Repositorios
             DateTime fecha = await ObtenerUltimoSubmayor();
             var resultado = new List<mdArbolUbicacion>();
 
+            var centrosCostoConAFT = await _context.ActFijos
+                .Where(a => a.FechaSubmayor == fecha && a.LocalNavigation != null)
+                .GroupBy(a => a.LocalNavigation!.CentroCosto)
+                .Select(g => new { Id = g.Key, Contador = g.Count() })
+                .ToListAsync().ConfigureAwait(false);
+
             var localesConAFT = await _context.ActFijos
-                .Where(a => a.FechaSubmayor == fecha && a.Local != null)
+                .Where(a => a.FechaSubmayor == fecha && a.Local != null && a.PuestoTrabajo == null)
                 .GroupBy(a => a.Local)
                 .Select(g => new { Id = g.Key, Contador = g.Count() })
                 .ToListAsync().ConfigureAwait(false);
@@ -142,6 +168,9 @@ namespace ActivosFijos.Repositorios
                 .GroupBy(a => a.PuestoTrabajo)
                 .Select(g => new { Id = g.Key, Contador = g.Count() })
                 .ToListAsync().ConfigureAwait(false);
+
+            foreach (var item in centrosCostoConAFT)
+                resultado.Add(new mdArbolUbicacion { Id = item.Id, Tipo = "centroCosto", Contador = item.Contador });
 
             foreach (var item in localesConAFT)
                 resultado.Add(new mdArbolUbicacion { Id = item.Id.Value, Tipo = "local", Contador = item.Contador });
@@ -216,8 +245,6 @@ namespace ActivosFijos.Repositorios
         {
             if (local == null && puesto == null)
                 return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "Debe indicar un Local o un Puesto de Trabajo como destino." };
-            if (local != null && puesto != null)
-                return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "Un AFT no puede estar asociado a un Local y a un Puesto a la vez." };
 
             DateTime fecha = await ObtenerUltimoSubmayor();
             var aft = await _context.ActFijos
@@ -225,19 +252,38 @@ namespace ActivosFijos.Repositorios
             if (aft == null)
                 return new clResponse<bool> { SiSatisfactorio = false, Mensaje = $"El Activo Fijo {noInventario} no existe en el último submayor." };
 
-            if (local != null && !await _context.Locales.AnyAsync(l => l.IdLocal == local)) 
-                return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "El Local seleccionado no existe." };
-            if (puesto != null && !await _context.PuestosTrabajo.AnyAsync(p => p.IdPuesto == puesto))
-                return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "El Puesto de Trabajo seleccionado no existe." };
+            Guid? localDestino;
+            Guid? puestoDestino;
+
+            if (puesto != null)
+            {
+                var localDelPuesto = await _context.PuestosTrabajo
+                    .Where(p => p.IdPuesto == puesto)
+                    .Select(p => (Guid?)p.IdLocal)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                if (localDelPuesto == null)
+                    return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "El Puesto de Trabajo seleccionado no existe." };
+
+                puestoDestino = puesto;
+                localDestino = localDelPuesto.Value;
+            }
+            else
+            {
+                if (!await _context.Locales.AnyAsync(l => l.IdLocal == local).ConfigureAwait(false))
+                    return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "El Local seleccionado no existe." };
+
+                localDestino = local;
+                puestoDestino = null;
+            }
 
             Guid? localOrigen = aft.Local;
             Guid? puestoOrigen = aft.PuestoTrabajo;
 
-            if (localOrigen == local && puestoOrigen == puesto)
+            if (localOrigen == localDestino && puestoOrigen == puestoDestino)
                 return new clResponse<bool> { SiSatisfactorio = false, Mensaje = "El AFT ya se encuentra asignado en la ubicación seleccionada." };
 
-            aft.Local = local;
-            aft.PuestoTrabajo = puesto;
+            aft.Local = localDestino;
+            aft.PuestoTrabajo = puestoDestino;
 
             var historial = new HistorialUbicacionAFT
             {
@@ -248,8 +294,8 @@ namespace ActivosFijos.Repositorios
                 FechaMovimiento = DateTime.Now,
                 LocalOrigen = localOrigen,
                 PuestoOrigen = puestoOrigen,
-                LocalDestino = local,
-                PuestoDestino = puesto,
+                LocalDestino = localDestino,
+                PuestoDestino = puestoDestino,
                 UsuarioRegistra = usuario
             };
 

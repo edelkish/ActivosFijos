@@ -33,5 +33,8 @@ namespace ActivosFijos.Models.EntidadesBD
 
         [InverseProperty(nameof(MuestreoMensualDiezPorCiento.CentroCostoNavigation))]
         public virtual ICollection<MuestreoMensualDiezPorCiento> MuestreoMensualDiezPorCientos { get; set; } = new List<MuestreoMensualDiezPorCiento>();
+
+        [InverseProperty("CentroCostoNavigation")]
+        public virtual ICollection<Locale> Locales { get; set; } = new List<Locale>();
     }
 }

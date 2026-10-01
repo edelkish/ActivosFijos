@@ -1,4 +1,4 @@
-var gridUbicacionInicializado = false;
+﻿var gridUbicacionInicializado = false;
 var filasGrid = [];
 
 $(function () {
@@ -12,11 +12,11 @@ $(function () {
     });
 });
 
-/* ==================== Árbol ==================== */
+/* ==================== Ãrbol ==================== */
 
 function CargarArbolRaiz() {
     $.ajax({
-        url: baseUrl + 'ctUbicaciones/ObtenerCubiculos',
+        url: baseUrl + 'ctUbicaciones/ObtenerCentroCostos',
         method: 'POST',
         data: {},
         beforeSend: function (xhr) {
@@ -29,22 +29,31 @@ function CargarArbolRaiz() {
             var $liSin = $('<li class="gu-nodo gu-sinibli"></li>').appendTo($ulRaiz);
             CargarNodoSinUbicacion($liSin, data.sinUbicacion || 0);
 
-            if (data.cubos && data.cubos.length) {
-                $.each(data.cubos, function (i, cubo) {
-                    var $li = $('<li class="gu-nodo" data-id="' + cubo.id + '" data-tipo="cubiculo"></li>').appendTo($ulRaiz);
-                    $li.data('nodo', cubo);
+            var contadores = {};
+            if (data.contadores) {
+                $.each(data.contadores, function (i, c) {
+                    contadores[c.id] = c.contador;
+                });
+            }
+
+            if (data.centrosCosto && data.centrosCosto.length) {
+                $.each(data.centrosCosto, function (i, centroCosto) {
+                    var $li = $('<li class="gu-nodo" data-id="' + centroCosto.id + '" data-tipo="centroCosto"></li>').appendTo($ulRaiz);
+                    $li.data('nodo', centroCosto);
                     var $div = $('<div class="gu-nodo-linea"></div>').appendTo($li)
                         .on('click', function (e) {
                             e.stopPropagation();
-                            ToggleNodo($li, cubo);
+                            ToggleNodo($li, centroCosto);
                         });
 
                     $('<span class="gu-toggle"><i class="fa fa-chevron-right"></i></span>').appendTo($div);
-                    $('<span class="gu-icono gu-icono-cubiculo"><i class="fa fa-building"></i></span>').appendTo($div);
-                    $('<span class="gu-nombre"></span>').text(cubo.nombre).appendTo($div);
+                    $('<span class="gu-icono gu-icono-centrocosto"><i class="fa fa-building"></i></span>').appendTo($div);
+                    $('<span class="gu-nombre"></span>').text(centroCosto.nombre).appendTo($div);
+                    var total = contadores[centroCosto.id] != null ? contadores[centroCosto.id] : 0;
+                    $('<span class="gu-badge"></span>').text(total).appendTo($div);
                 });
             } else {
-                $('<span class="gu-carga">Sin cub&iacute;culos registrados.</span>').appendTo($arbol);
+                $('<span class="gu-carga">Sin centros de costo registrados.</span>').appendTo($arbol);
             }
         },
         error: function (error) {
@@ -75,9 +84,9 @@ function CargarHijos($li) {
     var url = '';
     var data = {};
 
-    if (nodo.tipo === 'cubiculo') {
+    if (nodo.tipo === 'centroCosto') {
         url = baseUrl + 'ctUbicaciones/ObtenerLocales';
-        data = { idCubiculo: nodo.id };
+        data = { idCentroCosto: nodo.id };
     } else if (nodo.tipo === 'local') {
         url = baseUrl + 'ctUbicaciones/ObtenerPuestos';
         data = { idLocal: nodo.id };
@@ -95,7 +104,7 @@ function CargarHijos($li) {
         success: function (data) {
             $li.find('.gu-carga').remove();
 
-            var hijos = nodo.tipo === 'cubiculo' ? (data.locales || []) : (data.puestos || []);
+            var hijos = nodo.tipo === 'centroCosto' ? (data.locales || []) : (data.puestos || []);
             var contadores = {};
             if (data.contadores) {
                 $.each(data.contadores, function (i, c) {
@@ -163,7 +172,7 @@ function CargarNodoSinUbicacion($li, contador) {
         .on('click', function (e) {
             e.stopPropagation();
             MarcarActivo($div);
-            SeleccionarNodo({ tipo: 'sinUbicacion', id: null, nombre: 'Sin ubicación' });
+            SeleccionarNodo({ tipo: 'sinUbicacion', id: null, nombre: 'Sin ubicaciÃ³n' });
         });
 
     $('<span class="gu-toggle" style="visibility:hidden;"></span>').appendTo($div);
@@ -176,12 +185,14 @@ function SeleccionarNodo(nodo) {
     nodoSeleccionado = nodo;
 
     var data = {};
-    if (nodo.tipo === 'local') {
+    if (nodo.tipo === 'centroCosto') {
         data = { tipo: 0, id: nodo.id };
-    } else if (nodo.tipo === 'puesto') {
+    } else if (nodo.tipo === 'local') {
         data = { tipo: 1, id: nodo.id };
+    } else if (nodo.tipo === 'puesto') {
+        data = { tipo: 2, id: nodo.id };
     } else {
-        data = { tipo: 2, id: '00000000-0000-0000-0000-000000000000' };
+        data = { tipo: 3, id: '00000000-0000-0000-0000-000000000000' };
     }
 
     $.ajax({
@@ -314,7 +325,7 @@ function ActualizarBotones() {
 /* ==================== Modal Asignar / Mover ==================== */
 
 function InicializarModalAsignar() {
-    CargarSelectCubiculos('#ddlCubiculoDestino');
+    CargarSelectCentroCostos('#ddlCentroCostoDestino');
 
     $('#chkAsignarPuesto').on('change', function () {
         var activo = $(this).is(':checked');
@@ -322,12 +333,12 @@ function InicializarModalAsignar() {
         $('#ddlPuestoDestino').empty().append('<option value="">-- Seleccione --</option>');
     });
 
-    $('#ddlCubiculoDestino').on('change', function () {
-        var idCubiculo = $(this).val();
+    $('#ddlCentroCostoDestino').on('change', function () {
+        var idCentroCosto = $(this).val();
         $('#ddlLocalDestino').empty().append('<option value="">-- Seleccione --</option>');
         $('#ddlPuestoDestino').empty().append('<option value="">-- Seleccione --</option>');
-        if (idCubiculo) {
-            CargarSelectLocales(idCubiculo);
+        if (idCentroCosto) {
+            CargarSelectLocales(idCentroCosto);
         }
     });
 
@@ -377,7 +388,7 @@ function ejecutarAsignacion(noInventarios, local, puesto) {
             if (data.siNo) {
                 MiApp.Mensajes.mostrarNotificacion("success", data.objMensaje);
                 $('#modalAsignar').modal('hide');
-                $('#ddlCubiculoDestino').val('').trigger('change');
+                $('#ddlCentroCostoDestino').val('').trigger('change');
                 RecargarArbolYGrid();
             } else {
                 MiApp.Mensajes.mostrarNotificacion("error", data.objMensaje);
@@ -391,7 +402,7 @@ function ejecutarAsignacion(noInventarios, local, puesto) {
 
 function ActualizarContadoresArbol() {
     $.ajax({
-        url: baseUrl + 'ctUbicaciones/ObtenerCubiculos',
+        url: baseUrl + 'ctUbicaciones/ObtenerCentroCostos',
         method: 'POST',
         data: {},
         beforeSend: function (xhr) {
@@ -434,9 +445,9 @@ function RecargarArbolYGrid() {
 
 /* ==================== Selectores destino ==================== */
 
-function CargarSelectCubiculos($sel) {
+function CargarSelectCentroCostos($sel) {
     $.ajax({
-        url: baseUrl + 'ctUbicaciones/ObtenerCubiculos',
+        url: baseUrl + 'ctUbicaciones/ObtenerCentroCostos',
         method: 'POST',
         data: {},
         beforeSend: function (xhr) {
@@ -444,9 +455,9 @@ function CargarSelectCubiculos($sel) {
         },
         success: function (data) {
             $($sel).empty().append('<option value="">-- Seleccione --</option>');
-            if (data.cubos) {
-                $.each(data.cubos, function (i, cubo) {
-                    $($sel).append('<option value="' + cubo.id + '">' + cubo.nombre + '</option>');
+            if (data.centrosCosto) {
+                $.each(data.centrosCosto, function (i, centroCosto) {
+                    $($sel).append('<option value="' + centroCosto.id + '">' + centroCosto.nombre + '</option>');
                 });
             }
         },
@@ -456,11 +467,11 @@ function CargarSelectCubiculos($sel) {
     });
 }
 
-function CargarSelectLocales(idCubiculo) {
+function CargarSelectLocales(idCentroCosto) {
     $.ajax({
         url: baseUrl + 'ctUbicaciones/ObtenerLocales',
         method: 'POST',
-        data: { idCubiculo: idCubiculo },
+        data: { idCentroCosto: idCentroCosto },
         beforeSend: function (xhr) {
             xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
         },
@@ -500,7 +511,7 @@ function CargarSelectPuestos(idLocal) {
     });
 }
 
-/* ==================== Drag & Drop Grid -> Árbol ==================== */
+/* ==================== Drag & Drop Grid -> Ãrbol ==================== */
 
 var arrastreActivo = null;
 
@@ -705,7 +716,7 @@ function ejecutarQuitarUbicacion(noInventarios) {
 function HacerSolicitudHistorial() {
     var filas = ObtenerNoInventariosSeleccionados();
     if (filas.length !== 1) {
-        MiApp.Mensajes.mostrarNotificacion("error", "Seleccione un único AFT para ver su historial.");
+        MiApp.Mensajes.mostrarNotificacion("error", "Seleccione un Ãºnico AFT para ver su historial.");
         return;
     }
 

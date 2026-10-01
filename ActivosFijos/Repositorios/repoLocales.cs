@@ -15,7 +15,7 @@ namespace ActivosFijos.Repositorios
         }
         public async Task<List<Locale>> ObtenerListadoLocales()
         {
-            return await _context.Locales.Include(c => c.CubiculoNavigation).OrderBy(c => c.Nombre).ToListAsync().ConfigureAwait(false);
+            return await _context.Locales.Include(c => c.CentroCostoNavigation).OrderBy(c => c.Nombre).ToListAsync().ConfigureAwait(false);
         }
         public bool LocalExists(Guid id)
         {

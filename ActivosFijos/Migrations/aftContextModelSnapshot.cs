@@ -256,31 +256,6 @@ namespace ActivosFijos.Migrations
                     b.ToTable("Configuracion");
                 });
 
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cubiculo", b =>
-                {
-                    b.Property<Guid>("IdCubiculo")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Apodo")
-                        .HasMaxLength(150)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(500)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(500)");
-
-                    b.Property<string>("Nombre")
-                        .HasMaxLength(150)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(150)");
-
-                    b.HasKey("IdCubiculo");
-
-                    b.ToTable("Cubiculos");
-                });
-
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.HistorialUbicacionAFT", b =>
                 {
                     b.Property<Guid>("Id")
@@ -340,7 +315,7 @@ namespace ActivosFijos.Migrations
                     b.Property<Guid>("IdLocal")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("Cubiculo")
+                    b.Property<Guid>("CentroCosto")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Descripcion")
@@ -356,7 +331,7 @@ namespace ActivosFijos.Migrations
 
                     b.HasKey("IdLocal");
 
-                    b.HasIndex("Cubiculo");
+                    b.HasIndex("CentroCosto");
 
                     b.ToTable("Locales");
                 });
@@ -1032,12 +1007,14 @@ namespace ActivosFijos.Migrations
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>
                 {
-                    b.HasOne("ActivosFijos.Models.EntidadesBD.Cubiculo", "CubiculoNavigation")
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.CentroCosto", "CentroCostoNavigation")
                         .WithMany("Locales")
-                        .HasForeignKey("Cubiculo")
-                        .HasConstraintName("FK_Locales_Cubiculos");
+                        .HasForeignKey("CentroCosto")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Locales_CentroCosto");
 
-                    b.Navigation("CubiculoNavigation");
+                    b.Navigation("CentroCostoNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.MuestreoMensualDiezPorCiento", b =>
@@ -1167,6 +1144,8 @@ namespace ActivosFijos.Migrations
                 {
                     b.Navigation("ActFijos");
 
+                    b.Navigation("Locales");
+
                     b.Navigation("MuestreoMensualDiezPorCientos");
 
                     b.Navigation("UtilesHerramienta");
@@ -1175,11 +1154,6 @@ namespace ActivosFijos.Migrations
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Clasificador", b =>
                 {
                     b.Navigation("ActFijos");
-                });
-
-            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Cubiculo", b =>
-                {
-                    b.Navigation("Locales");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Locale", b =>

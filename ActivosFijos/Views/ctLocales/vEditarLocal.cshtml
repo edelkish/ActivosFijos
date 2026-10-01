@@ -71,11 +71,11 @@
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" asp-for="IdLocal" />
                                     <div class="form-group">
-                                        <label asp-for="Cubiculo" class="control-label">Cub&iacute;culo <span class="required"> (*) </span></label>
-                                        <select asp-for="Cubiculo" class="form-control" asp-items="ViewBag.IdCubiculo">
-                                            <option value="">-- Seleccione un cub&iacute;culo --</option>
+                                        <label asp-for="CentroCosto" class="control-label">Centro de Costo <span class="required"> (*) </span></label>
+                                        <select asp-for="CentroCosto" class="form-control" asp-items="ViewBag.IdCentroCosto">
+                                            <option value="">-- Seleccione un centro de costo --</option>
                                         </select>
-                                        <span asp-validation-for="Cubiculo" class="required"></span>
+                                        <span asp-validation-for="CentroCosto" class="required"></span>
                                     </div>
                                     <div class="form-group">
                                         <label asp-for="Nombre" class="control-label">Nombre <span class="required"> (*) </span></label>

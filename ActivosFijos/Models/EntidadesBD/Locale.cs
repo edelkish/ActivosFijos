@@ -19,11 +19,11 @@ public partial class Locale
     [Unicode(false)]
     public string? Descripcion { get; set; }
 
-    public Guid? Cubiculo { get; set; }
+    public Guid CentroCosto { get; set; }
 
-    [ForeignKey("Cubiculo")]
+    [ForeignKey("CentroCosto")]
     [InverseProperty("Locales")]
-    public virtual Cubiculo? CubiculoNavigation { get; set; }
+    public virtual CentroCosto CentroCostoNavigation { get; set; } = null!;
 
     [InverseProperty("LocalNavigation")]
     public virtual ICollection<PuestoTrabajo> PuestosTrabajo { get; set; } = new List<PuestoTrabajo>();

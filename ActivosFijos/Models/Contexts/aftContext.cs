@@ -23,7 +23,6 @@ namespace ActivosFijos.Models.Contexts
         public virtual DbSet<CentroCosto> CentroCostos { get; set; } = null!;
         public virtual DbSet<Clasificador> Clasificadors { get; set; } = null!;
         public virtual DbSet<Configuracion> Configuracions { get; set; } = null!;
-        public virtual DbSet<Cubiculo> Cubiculos { get; set; }
         public virtual DbSet<Locale> Locales { get; set; }
         public virtual DbSet<PuestoTrabajo> PuestosTrabajo { get; set; } = null!;
         public virtual DbSet<HistorialUbicacionAFT> HistorialUbicacionAFTs { get; set; } = null!;
@@ -130,17 +129,15 @@ namespace ActivosFijos.Models.Contexts
                 entity.Property(e => e.IdConfiguracion).ValueGeneratedNever();
             });
 
-            modelBuilder.Entity<Cubiculo>(entity =>
-            {
-                entity.Property(e => e.IdCubiculo).ValueGeneratedNever();
-                
-            });
-
             modelBuilder.Entity<Locale>(entity =>
             {
                 entity.Property(e => e.IdLocal).ValueGeneratedNever();
 
-                entity.HasOne(d => d.CubiculoNavigation).WithMany(p => p.Locales).HasConstraintName("FK_Locales_Cubiculos");
+                entity.HasOne(d => d.CentroCostoNavigation)
+                    .WithMany(p => p.Locales)
+                    .HasForeignKey(d => d.CentroCosto)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_Locales_CentroCosto");
             });
 
             modelBuilder.Entity<PuestoTrabajo>(entity =>

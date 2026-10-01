@@ -13,13 +13,13 @@ namespace ActivosFijos.Controllers
     [Authorize(AuthenticationSchemes = "Activos Fijos-" + CookieAuthenticationDefaults.AuthenticationScheme, Roles = "admin_web, gest_nom")]
     public class ctLocalesController : Controller
     {
-        private readonly repoCubiculos cubiculoRepositorio;
+        private readonly repoCentrosDeCosto centroCostoRepositorio;
         private readonly repoLocales localRepositorio;
         private readonly repoValidaciones validacionesRepositorio;
         private readonly aftContext _context;
-        public ctLocalesController(repoCubiculos cubiculoRepositorio, repoLocales localRepositorio, repoValidaciones validacionesRepositorio, aftContext context)
+        public ctLocalesController(repoCentrosDeCosto centroCostoRepositorio, repoLocales localRepositorio, repoValidaciones validacionesRepositorio, aftContext context)
         {
-            this.cubiculoRepositorio = cubiculoRepositorio;
+            this.centroCostoRepositorio = centroCostoRepositorio;
             this.localRepositorio = localRepositorio;
             this.validacionesRepositorio = validacionesRepositorio;
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -41,12 +41,12 @@ namespace ActivosFijos.Controllers
             ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
+            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre");
             return View("vCrearLocal");
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GuardarLocal([Bind("Nombre,Descripcion,Cubiculo")] Locale local)
+        public async Task<IActionResult> GuardarLocal([Bind("Nombre,Descripcion,CentroCosto")] Locale local)
         {
             if (local != null)
             {
@@ -64,13 +64,13 @@ namespace ActivosFijos.Controllers
                         ModelState.AddModelError(item.Key, item.Value);
                 }
 
-                if (local.Cubiculo == null)
+                if (local.CentroCosto == Guid.Empty)
                 {
-                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo es obligatorio.");
+                    ModelState.AddModelError("CentroCosto", "El Centro de Costo es obligatorio.");
                 }
-                else if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo.Value))
+                else if (!centroCostoRepositorio.SiExisteElCentroCostoConElID(local.CentroCosto))
                 {
-                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo seleccionado no existe.");
+                    ModelState.AddModelError("CentroCosto", "El Centro de Costo seleccionado no existe.");
                 }
 
                 if (ModelState.IsValid)
@@ -92,7 +92,7 @@ namespace ActivosFijos.Controllers
                         {
                             ViewData["respuesta"] = resultadoLocal;
                             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
-                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                             return View("vCrearLocal", local);
                         }
                     }
@@ -100,14 +100,14 @@ namespace ActivosFijos.Controllers
                     {
                         ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = ex.Message };
                         ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
-                        ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                        ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                         return View("vCrearLocal", local);
                     }
                 }
             }
             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a insertar." };
             ViewData["breadsC"] = LlenarBreadsCumbs("Crear Local");
-            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local?.Cubiculo);
+            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local?.CentroCosto);
             return View("vCrearLocal", local);
         }
         public async Task<IActionResult> EditarLocal(Guid? id)
@@ -116,7 +116,7 @@ namespace ActivosFijos.Controllers
             {
                 ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
                 ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = false, Mensaje = "El objeto Local que se quiere editar es incorrecto o no existe." };
-                ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
+                ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre");
                 return View("vEditarLocal", new Locale() { IdLocal = Guid.Empty });
             }
             var local = await localRepositorio.SeleccionarLocalesPorID(id).ConfigureAwait(false);
@@ -124,19 +124,19 @@ namespace ActivosFijos.Controllers
             {
                 ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
                 ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = false, Mensaje = "El objeto Local que se quiere editar no existe." };
-                ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre");
+                ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre");
                 return View("vEditarLocal", new Locale() { IdLocal = Guid.Empty });
             }
             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
             ViewData["respuesta"] = new clResponse<Locale>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
             return View("vEditarLocal", local);
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ModificarLocal(Guid IdLocal, [Bind("IdLocal,Nombre,Descripcion,Cubiculo")] Locale local)
+        public async Task<IActionResult> ModificarLocal(Guid IdLocal, [Bind("IdLocal,Nombre,Descripcion,CentroCosto")] Locale local)
         {
             if (local != null)
             {
@@ -144,7 +144,7 @@ namespace ActivosFijos.Controllers
                 {
                     ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
                     ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-                    ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                    ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                     return View("vEditarLocal", local);
                 }
                 var iDictionaryError = validacionesRepositorio.EspaciosEnBlanco(local.Nombre, "Nombre");
@@ -158,13 +158,13 @@ namespace ActivosFijos.Controllers
                     ModelState.AddModelError("Nombre", "El Nombre del local a modificar ya existe.");
                 }
 
-                if (local.Cubiculo == null)
+                if (local.CentroCosto == Guid.Empty)
                 {
-                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo es obligatorio.");
+                    ModelState.AddModelError("CentroCosto", "El Centro de Costo es obligatorio.");
                 }
-                else if (!cubiculoRepositorio.CubiculoExists(local.Cubiculo.Value))
+                else if (!centroCostoRepositorio.SiExisteElCentroCostoConElID(local.CentroCosto))
                 {
-                    ModelState.AddModelError("Cubiculo", "El Cub\u00edculo seleccionado no existe.");
+                    ModelState.AddModelError("CentroCosto", "El Centro de Costo seleccionado no existe.");
                 }
 
                 if (ModelState.IsValid)
@@ -182,7 +182,7 @@ namespace ActivosFijos.Controllers
                         {
                             ViewData["respuesta"] = resultadoLocal;
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                             return View("vEditarLocal", local);
                         }
                     }
@@ -192,14 +192,14 @@ namespace ActivosFijos.Controllers
                         {
                             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "El Local a editar no existe." };
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                             return View("vEditarLocal", local);
                         }
                         else
                         {
                             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = ex.Message };
                             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-                            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local.Cubiculo);
+                            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local.CentroCosto);
                             return View("vEditarLocal", local);
                         }
                     }
@@ -207,7 +207,7 @@ namespace ActivosFijos.Controllers
             }
             ViewData["respuesta"] = new clResponse<Locale> { SiSatisfactorio = false, Mensaje = "Persisten errores en el objeto Local a editar." };
             ViewData["breadsC"] = LlenarBreadsCumbs("Editar Local");
-            ViewData["IdCubiculo"] = new SelectList(await cubiculoRepositorio.ObtenerListadoCubiculos().ConfigureAwait(false), "IdCubiculo", "Nombre", local?.Cubiculo);
+            ViewData["IdCentroCosto"] = new SelectList(await centroCostoRepositorio.ListadoCentroDeCosto().ConfigureAwait(false), "IdCentroCosto", "Nombre", local?.CentroCosto);
             return View("vEditarLocal", local);
         }
         [HttpPost, ActionName("EliminarLocal")]
