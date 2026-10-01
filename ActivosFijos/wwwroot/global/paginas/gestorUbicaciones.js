@@ -1,4 +1,4 @@
-﻿var gridUbicacionInicializado = false;
+var gridUbicacionInicializado = false;
 var filasGrid = [];
 
 $(function () {
@@ -6,13 +6,14 @@ $(function () {
     InicializarModalAsignar();
     InicializarPanelHistorial();
     InicializarArrastreAFT();
+    InicializarModalNodo();
 
     $('#jqxGridAFTUbicacion').on('rowselect rowunselect', function () {
         ActualizarBotones();
     });
 });
 
-/* ==================== Ãrbol ==================== */
+/* ==================== Árbol ==================== */
 
 function CargarArbolRaiz() {
     $.ajax({
@@ -49,6 +50,7 @@ function CargarArbolRaiz() {
                     $('<span class="gu-toggle"><i class="fa fa-chevron-right"></i></span>').appendTo($div);
                     $('<span class="gu-icono gu-icono-centrocosto"><i class="fa fa-building"></i></span>').appendTo($div);
                     $('<span class="gu-nombre"></span>').text(centroCosto.nombre).attr('title', centroCosto.nombre).appendTo($div);
+                    CrearAccionesNodo($div, centroCosto, $li);
                     var total = contadores[centroCosto.id] != null ? contadores[centroCosto.id] : 0;
                     $('<span class="gu-badge"></span>').text(total).appendTo($div);
                 });
@@ -79,7 +81,7 @@ function ToggleNodo($li) {
     }
 }
 
-function CargarHijos($li) {
+function CargarHijos($li, alTerminar) {
     var nodo = $li.data('nodo');
     var url = '';
     var data = {};
@@ -127,15 +129,12 @@ function CargarHijos($li) {
                 var $div = $('<div class="gu-nodo-linea"></div>').appendTo($liHijo);
 
                 var permitirToggle = item.tipo === 'local' && item.tieneHijos;
-                if (permitirToggle) {
-                    $('<span class="gu-toggle"><i class="fa fa-chevron-right"></i></span>').appendTo($div)
-                        .on('click', function (e) {
-                            e.stopPropagation();
-                            ToggleNodo($liHijo);
-                        });
-                } else {
-                    $('<span class="gu-toggle" style="visibility:hidden;"></span>').appendTo($div);
-                }
+                $('<span class="gu-toggle"' + (permitirToggle ? '' : ' style="visibility:hidden;"') + '><i class="fa fa-chevron-right"></i></span>')
+                    .appendTo($div)
+                    .on('click', function (e) {
+                        e.stopPropagation();
+                        ToggleNodo($liHijo);
+                    });
 
                 if (item.tipo === 'local') {
                     $('<span class="gu-icono gu-icono-local"><i class="fa fa-map-marker"></i></span>').appendTo($div);
@@ -144,6 +143,7 @@ function CargarHijos($li) {
                 }
 
                 $('<span class="gu-nombre"></span>').text(item.nombre).attr('title', item.nombre).appendTo($div);
+                CrearAccionesNodo($div, item, $liHijo);
 
                 var contador = contadores[item.id] != null ? contadores[item.id] : item.contador;
                 $('<span class="gu-badge"></span>').text(contador || 0).appendTo($div);
@@ -154,6 +154,12 @@ function CargarHijos($li) {
                     SeleccionarNodo(item);
                 });
             });
+
+            SincronizarToggle($li);
+
+            if (alTerminar) {
+                alTerminar();
+            }
         },
         error: function (error) {
             $li.find('.gu-carga').remove();
@@ -172,13 +178,272 @@ function CargarNodoSinUbicacion($li, contador) {
         .on('click', function (e) {
             e.stopPropagation();
             MarcarActivo($div);
-            SeleccionarNodo({ tipo: 'sinUbicacion', id: null, nombre: 'Sin ubicaciÃ³n' });
+            SeleccionarNodo({ tipo: 'sinUbicacion', id: null, nombre: 'Sin ubicación' });
         });
 
     $('<span class="gu-toggle" style="visibility:hidden;"></span>').appendTo($div);
     $('<span class="gu-icono gu-icono-sinibli"><i class="fa fa-question-circle"></i></span>').appendTo($div);
     $('<span class="gu-nombre">Sin ubicaci&oacute;n</span>').appendTo($div);
     $('<span class="gu-badge"></span>').text(contador || 0).appendTo($div);
+}
+
+/* ==================== Gestión de Locales y Puestos ==================== */
+
+function CrearAccionesNodo($linea, nodo, $li) {
+    if (!nodo || (nodo.tipo !== 'centroCosto' && nodo.tipo !== 'local' && nodo.tipo !== 'puesto')) {
+        return;
+    }
+
+    var $acciones = $('<span class="gu-acciones"></span>');
+
+    var CrearBoton = function (icono, titulo, peligro, alHacerClic) {
+        $('<button type="button" class="gu-accion' + (peligro ? ' gu-accion-peligro' : '') + '"></button>')
+            .attr('title', titulo)
+            .html('<i class="fa ' + icono + '"></i>')
+            .on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (new Date().getTime() - instanteFinArrastre < 250) {
+                    return;
+                }
+                alHacerClic();
+            })
+            .appendTo($acciones);
+    };
+
+    if (nodo.tipo === 'centroCosto') {
+        CrearBoton('fa-plus', 'Crear Local en este Centro de Costo', false, function () {
+            AbrirModalNodo('local', null, $li);
+        });
+    } else if (nodo.tipo === 'local') {
+        CrearBoton('fa-plus', 'Crear Puesto de Trabajo en este Local', false, function () {
+            AbrirModalNodo('puesto', null, $li);
+        });
+        CrearBoton('fa-pencil', 'Editar Local', false, function () {
+            AbrirModalNodo('local', nodo, $li);
+        });
+        CrearBoton('fa-trash', 'Eliminar Local', true, function () {
+            ConfirmarEliminarNodo('local', nodo, $li);
+        });
+    } else {
+        CrearBoton('fa-pencil', 'Editar Puesto de Trabajo', false, function () {
+            AbrirModalNodo('puesto', nodo, $li);
+        });
+        CrearBoton('fa-trash', 'Eliminar Puesto de Trabajo', true, function () {
+            ConfirmarEliminarNodo('puesto', nodo, $li);
+        });
+    }
+
+    $acciones.appendTo($linea);
+
+    var $badge = $linea.children('.gu-badge');
+    if ($badge.length) {
+        $badge.appendTo($linea);
+    }
+}
+
+function InicializarModalNodo() {
+    $('#btnGuardarNodo').on('click', GuardarNodo);
+}
+
+function AbrirModalNodo(tipo, nodo, $li) {
+    var esLocal = tipo === 'local';
+    var titulo = esLocal
+        ? (nodo ? 'Editar Local' : 'Crear Local')
+        : (nodo ? 'Editar Puesto de Trabajo' : 'Crear Puesto de Trabajo');
+
+    var contextoNombre = '';
+    var idPadre = '';
+
+    if (nodo) {
+        var $ancestro = $li.parent().closest('.gu-nodo');
+        var padre = $ancestro.length ? $ancestro.data('nodo') : null;
+        contextoNombre = padre ? padre.nombre : '';
+    } else {
+        var nodoActual = $li.data('nodo');
+        contextoNombre = nodoActual ? nodoActual.nombre : '';
+        idPadre = nodoActual ? nodoActual.id : '';
+    }
+
+    $('#guNodoTitulo').text(titulo);
+    $('#guNodoTipo').val(tipo);
+    $('#guNodoId').val(nodo ? nodo.id : '');
+    $('#guNodoIdPadre').val(idPadre);
+    $('#guNodoEtiquetaPadre').text(esLocal ? 'Centro de Costo' : 'Local');
+    $('#guNodoContexto').text(contextoNombre);
+    $('#guNodoNombre').val(nodo ? nodo.nombre : '');
+    $('#guNodoDescripcion').val(nodo ? (nodo.descripcion || '') : '');
+    $('#guNodoError').hide().text('');
+
+    $('#modalNodo').modal('show');
+    setTimeout(function () { $('#guNodoNombre').focus(); }, 400);
+}
+
+function GuardarNodo() {
+    var tipo = $('#guNodoTipo').val();
+    var id = $('#guNodoId').val();
+    var nombre = $('#guNodoNombre').val();
+    var descripcion = $('#guNodoDescripcion').val();
+    var idPadre = $('#guNodoIdPadre').val();
+
+    if (!nombre || nombre.trim() === '') {
+        $('#guNodoError').text('El Nombre es obligatorio.').show();
+        return;
+    }
+
+    var esLocal = tipo === 'local';
+    var url;
+    var data;
+
+    if (id) {
+        url = baseUrl + 'ctUbicaciones/' + (esLocal ? 'ModificarLocal' : 'ModificarPuestoTrabajo');
+        data = esLocal
+            ? { idLocal: id, nombre: nombre, descripcion: descripcion }
+            : { idPuesto: id, nombre: nombre, descripcion: descripcion };
+    } else {
+        url = baseUrl + 'ctUbicaciones/' + (esLocal ? 'GuardarLocal' : 'GuardarPuestoTrabajo');
+        data = esLocal
+            ? { nombre: nombre, descripcion: descripcion, idCentroCosto: idPadre }
+            : { nombre: nombre, descripcion: descripcion, idLocal: idPadre };
+    }
+
+    $('#btnGuardarNodo').prop('disabled', true);
+
+    $.ajax({
+        url: url,
+        method: 'POST',
+        data: data,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+        },
+        success: function (respuesta) {
+            $('#btnGuardarNodo').prop('disabled', false);
+            if (respuesta.siNo) {
+                MiApp.Mensajes.mostrarNotificacion("success", respuesta.objMensaje);
+                $('#modalNodo').modal('hide');
+                RecargarRamaPadre(esLocal, idPadre);
+            } else {
+                $('#guNodoError').text(respuesta.objMensaje).show();
+            }
+        },
+        error: function (error) {
+            $('#btnGuardarNodo').prop('disabled', false);
+            $('#guNodoError').text('Ocurrió un error al guardar. Revise la consola.').show();
+            console.log(error);
+        }
+    });
+}
+
+function ConfirmarEliminarNodo(tipo, nodo, $li) {
+    var esLocal = tipo === 'local';
+    var tipoTexto = esLocal ? 'Local' : 'Puesto de Trabajo';
+
+    $.confirm({
+        title: '!Confirmar eliminaci&oacute;n!',
+        content: '&iquest;Est&aacute; seguro de que desea eliminar el ' + tipoTexto + ' <b>' + nodo.nombre + '</b>?',
+        icon: 'fa fa-warning',
+        type: 'orange',
+        theme: 'light',
+        animation: 'news',
+        closeAnimation: 'news',
+        buttons: {
+            eliminar: {
+                text: 'Eliminar',
+                btnClass: 'btn-orange',
+                action: function () {
+                    EjecutarEliminarNodo(tipo, nodo, $li);
+                }
+            },
+            cancelar: {
+            }
+        }
+    });
+}
+
+function EjecutarEliminarNodo(tipo, nodo, $li) {
+    var esLocal = tipo === 'local';
+    var $padre = $li.parent().closest('.gu-nodo');
+    var idPadre = $padre.length ? $padre.data('nodo').id : null;
+    var idNodo = nodo.id;
+
+    $.ajax({
+        url: baseUrl + 'ctUbicaciones/' + (esLocal ? 'EliminarLocal' : 'EliminarPuestoTrabajo'),
+        method: 'POST',
+        data: esLocal ? { idLocal: idNodo } : { idPuesto: idNodo },
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
+        },
+        success: function (respuesta) {
+            if (!respuesta.siNo) {
+                MiApp.Mensajes.mostrarNotificacion("error", respuesta.objMensaje);
+                return;
+            }
+
+            MiApp.Mensajes.mostrarNotificacion("success", respuesta.objMensaje);
+
+            var nodoSeleccionadoEsEste = nodoSeleccionado && nodoSeleccionado.id === idNodo;
+            if (nodoSeleccionadoEsEste) {
+                nodoSeleccionado = null;
+                $('#tituloNivel').text('Seleccione una ubicaci&oacute;n');
+                CargarGridAFT([]);
+            }
+
+            if (idPadre) {
+                RecargarRamaPadre(esLocal, idPadre);
+            } else {
+                RecargarArbolYGrid();
+            }
+        },
+        error: function (error) {
+            MiApp.Mensajes.mostrarNotificacion("error", error);
+        }
+    });
+}
+
+function RecargarRamaPadre(esLocal, idPadre) {
+    if (!idPadre) {
+        RecargarArbolYGrid();
+        return;
+    }
+
+    var selector = esLocal
+        ? '.gu-nodo[data-tipo="centroCosto"][data-id="' + idPadre + '"]'
+        : '.gu-nodo[data-tipo="local"][data-id="' + idPadre + '"]';
+
+    var $li = $(selector).first();
+    if ($li.length === 0) {
+        RecargarArbolYGrid();
+        return;
+    }
+
+    var $hijos = $li.children('ul').first();
+    if ($hijos.length === 0) {
+        $li.data('nodo').tieneHijos = true;
+        ActualizarToggle($li, true);
+        CargarHijos($li, ActualizarContadoresArbol);
+    } else {
+        $hijos.remove();
+        CargarHijos($li, ActualizarContadoresArbol);
+    }
+}
+
+function ActualizarToggle($li, abierta) {
+    var $toggle = $li.children('.gu-nodo-linea').first().find('.gu-toggle').first();
+    if (abierta) {
+        $toggle.addClass('gu-abierta');
+    } else {
+        $toggle.removeClass('gu-abierta');
+    }
+}
+
+function SincronizarToggle($li) {
+    var $toggle = $li.children('.gu-nodo-linea').first().children('.gu-toggle').first();
+    if ($toggle.length === 0) {
+        return;
+    }
+    var nodo = $li.data('nodo');
+    var visible = nodo && nodo.tipo === 'local' && nodo.tieneHijos;
+    $toggle.css('visibility', visible ? 'visible' : 'hidden');
 }
 
 function SeleccionarNodo(nodo) {
@@ -511,9 +776,10 @@ function CargarSelectPuestos(idLocal) {
     });
 }
 
-/* ==================== Drag & Drop Grid -> Ãrbol ==================== */
+/* ==================== Drag & Drop Grid -> Árbol ==================== */
 
 var arrastreActivo = null;
+var instanteFinArrastre = 0;
 
 function InicializarArrastreAFT() {
     $('#jqxGridAFTUbicacion').on('mousedown', '.jqx-grid-cell', function (e) {
@@ -600,6 +866,8 @@ function FinalizarArrastre(x, y, filas) {
     $('#guDragGhost').remove();
     $('body').removeClass('gu-arrastrando');
     $('.gu-nodo-linea').removeClass('gu-drop-objetivo').removeClass('gu-drop-sobre');
+
+    instanteFinArrastre = new Date().getTime();
 
     var $bajo = $(document.elementFromPoint(x, y)).closest('.gu-nodo-linea');
     var $nodo = $bajo.closest('.gu-nodo');
@@ -716,7 +984,7 @@ function ejecutarQuitarUbicacion(noInventarios) {
 function HacerSolicitudHistorial() {
     var filas = ObtenerNoInventariosSeleccionados();
     if (filas.length !== 1) {
-        MiApp.Mensajes.mostrarNotificacion("error", "Seleccione un Ãºnico AFT para ver su historial.");
+        MiApp.Mensajes.mostrarNotificacion("error", "Seleccione un único AFT para ver su historial.");
         return;
     }
 

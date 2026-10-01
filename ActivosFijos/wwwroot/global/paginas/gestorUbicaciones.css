@@ -119,6 +119,37 @@
     flex-shrink: 0;
 }
 
+.gu-acciones {
+    margin-left: 6px;
+    display: inline-flex;
+    gap: 2px;
+    flex-shrink: 0;
+    visibility: hidden;
+}
+
+.gu-nodo-linea:hover .gu-acciones,
+.gu-nodo-linea.gu-activo .gu-acciones {
+    visibility: visible;
+}
+
+.gu-accion {
+    border: none;
+    background: transparent;
+    color: #7a8699;
+    padding: 0 4px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.gu-accion:hover {
+    color: #3598dc;
+}
+
+.gu-accion.gu-accion-peligro:hover {
+    color: #e7504a;
+}
+
 .gu-nodo-linea.gu-activo .gu-badge {
     background-color: #3598dc;
     color: #fff;
