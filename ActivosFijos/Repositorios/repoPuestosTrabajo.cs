@@ -8,9 +8,11 @@ namespace ActivosFijos.Repositorios
     public class repoPuestosTrabajo
     {
         private aftContext _context;
-        public repoPuestosTrabajo(aftContext context)
+        private readonly ILogger<repoPuestosTrabajo> _logger;
+        public repoPuestosTrabajo(aftContext context, ILogger<repoPuestosTrabajo> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         public async Task<List<PuestoTrabajo>> ObtenerListadoPuestos()
         {
@@ -70,16 +72,31 @@ namespace ActivosFijos.Repositorios
         {
             if (puestoTrabajo == null)
                 return new clResponse<PuestoTrabajo>() { SiSatisfactorio = false, Mensaje = "El Puesto de Trabajo a eliminar no existe." };
+            _context.Database.BeginTransaction();
             try
             {
+                await _context.HistorialUbicacionAFTs
+                    .Where(h => h.PuestoOrigen == puestoTrabajo.IdPuesto)
+                    .ExecuteUpdateAsync(s => s.SetProperty(h => h.PuestoOrigen, (Guid?)null)).ConfigureAwait(false);
+                await _context.HistorialUbicacionAFTs
+                    .Where(h => h.PuestoDestino == puestoTrabajo.IdPuesto)
+                    .ExecuteUpdateAsync(s => s.SetProperty(h => h.PuestoDestino, (Guid?)null)).ConfigureAwait(false);
+
                 _context.PuestosTrabajo.Remove(puestoTrabajo);
                 await _context.SaveChangesAsync().ConfigureAwait(false);
+                _context.Database.CommitTransaction();
                 return new clResponse<PuestoTrabajo>() { SiSatisfactorio = true, Mensaje = "El Puesto de Trabajo ha sido eliminado satisfactoriamente." };
             }
             catch (Exception ex)
             {
+                _context.Database.RollbackTransaction();
+                _logger.LogError(ex, "No se pudo eliminar el Puesto de Trabajo {IdPuesto}.", puestoTrabajo.IdPuesto);
                 return new clResponse<PuestoTrabajo>() { SiSatisfactorio = false, Mensaje = $"Ha ocurrido el siguiente error: {ex.Message}. Contacte con el Administrador." };
             }
+        }
+        public async Task<bool> SiTieneActivosFijosAsignados(Guid idPuesto)
+        {
+            return await _context.ActFijos.AnyAsync(a => a.PuestoTrabajo == idPuesto).ConfigureAwait(false);
         }
         public bool SiExisteNombreDelPuesto(string nombre, Guid idLocal)
         {

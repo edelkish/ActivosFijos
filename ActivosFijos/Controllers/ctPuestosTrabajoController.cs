@@ -206,6 +206,16 @@ namespace ActivosFijos.Controllers
             try
             {
                 var puestoTrabajo = await puestoTrabajoRepositorio.SeleccionarPuestoPorID(id).ConfigureAwait(false);
+                if (puestoTrabajo == null)
+                {
+                    return Json(new { siNo = false, objMensaje = "El Puesto de Trabajo a eliminar no existe." });
+                }
+
+                if (await puestoTrabajoRepositorio.SiTieneActivosFijosAsignados(id).ConfigureAwait(false))
+                {
+                    return Json(new { siNo = false, objMensaje = "No se puede eliminar el Puesto de Trabajo porque tiene activos fijos asignados. Desasigne primero los activos." });
+                }
+
                 var resultado = await puestoTrabajoRepositorio.EliminarPuestoTrabajo(puestoTrabajo).ConfigureAwait(false);
                 var result = new
                 {
