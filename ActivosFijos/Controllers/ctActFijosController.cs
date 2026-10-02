@@ -1495,7 +1495,39 @@ namespace ActivosFijos.Controllers
 
             ViewData["tiposMovimiento"] = (await _repoTipoMovimiento.ObtenerListadoDeTiposMovimientoActivos()).Select(t => new SelectListItem() { Text = t.Nombre, Value = t.Nombre, Selected = t.Nombre == "Traslado Interno" }).ToList();
             ViewData["usuarios"] = (await _context.Usuarios.ToListAsync()).Select(u => new SelectListItem() { Text = (u.Nombre ?? "") + " " + (u.Apellidos ?? ""), Value = (u.Nombre ?? "") + " " + (u.Apellidos ?? "") }).ToList();
-            ViewData["cargos"] = (await _context.Cargos.ToListAsync()).Select(c => new SelectListItem() { Text = c.Nombre ?? "", Value = c.Nombre ?? "" }).ToList();
+
+            List<SelectListItem> cargosBase = (await _context.Cargos.ToListAsync()).Select(c => new SelectListItem() { Text = c.Nombre ?? "", Value = c.Nombre ?? "" }).ToList();
+            ViewData["cargos"] = cargosBase;
+
+            // Valores por defecto del Anexo 3. Se resuelven aqui para que los selectes
+            // del modal lleguen precargados, en lugar de completarse en el POST.
+            Responsable director = await _repoResponsables.ObtenerInfoDirector();
+            Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
+            string nombreUsuarioActual = NombreDelUsuarioConectado();
+
+            string nombreDirector = director != null ? director.Nombre + " " + director.Apellidos : string.Empty;
+            string nombreEncargado = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : string.Empty;
+            // El usuario logueado viene de la tabla Usuario, que no tiene cargo asociado.
+            string cargoHechoPorDefecto = string.Empty;
+            string cargoAprobadoPorDefecto = director?.CargoNavigation?.Nombre ?? string.Empty;
+            string cargoAutorizadoPorDefecto = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty;
+
+            List<string> nombresResponsables = (await _repoResponsables.ObtenerListadoResponsables(fechaParametro))
+                .Where(r => r.Nombre != "<<S/R>>")
+                .Select(r => r.Nombre + " " + r.Apellidos)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(nombreUsuarioActual) && !nombresResponsables.Contains(nombreUsuarioActual))
+                nombresResponsables.Insert(0, nombreUsuarioActual);
+
+            ViewData["responsablesHechoPor"] = ArmarListaSeleccion(nombresResponsables, nombreUsuarioActual);
+            ViewData["responsablesAprobadoPor"] = ArmarListaSeleccion(nombresResponsables, nombreDirector);
+            ViewData["responsablesAutorizadoPor"] = ArmarListaSeleccion(nombresResponsables, nombreEncargado);
+            ViewData["responsablesTransportador"] = ArmarListaSeleccion(nombresResponsables, null);
+            ViewData["cargosHechoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoHechoPorDefecto);
+            ViewData["cargosAprobadoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoAprobadoPorDefecto);
+            ViewData["cargosAutorizadoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoAutorizadoPorDefecto);
+            ViewData["cargosTransportador"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), null);
 
             ViewData["respuesta"] = new clResponse<mdActas>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
@@ -1506,7 +1538,7 @@ namespace ActivosFijos.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerarAnexosMovimientos(mdActas model, string tipoMovimiento, string fundamentacion, string informeTecnico, string nombreTecnico, string cargoTecnico, string comprobante)
+        public async Task<IActionResult> GenerarAnexosMovimientos(mdActas model, mdAnexo3 datos)
         {
             try
             {
@@ -1526,16 +1558,33 @@ namespace ActivosFijos.Controllers
                     return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
                 }
 
-                mdAnexo3 datos = new mdAnexo3
+                datos.TipoMovimiento = string.IsNullOrEmpty(datos.TipoMovimiento) ? "Traslado Interno" : datos.TipoMovimiento;
+
+                if (string.IsNullOrWhiteSpace(datos.HechoPor))
+                    datos.HechoPor = NombreDelUsuarioConectado();
+
+                // Los roles con cargo predefined solo se resuelven si el modal los dejo vacios,
+                // para que lo que el usuario elija en pantalla tenga prioridad.
+                if (string.IsNullOrWhiteSpace(datos.AprobadoPor))
                 {
-                    TipoMovimiento = string.IsNullOrEmpty(tipoMovimiento) ? "Traslado Interno" : tipoMovimiento,
-                    Fundamentacion = fundamentacion ?? string.Empty,
-                    InformeTecnico = informeTecnico ?? string.Empty,
-                    NombreTecnico = nombreTecnico ?? string.Empty,
-                    CargoTecnico = cargoTecnico ?? string.Empty,
-                    Comprobante = comprobante ?? string.Empty,
-                    HechoPor = User.Identity.IsAuthenticated ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value ?? string.Empty : string.Empty
-                };
+                    Responsable director = await _repoResponsables.ObtenerInfoDirector();
+                    datos.AprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>";
+                    if (string.IsNullOrWhiteSpace(datos.CargoAprobadoPor))
+                        datos.CargoAprobadoPor = director?.CargoNavigation?.Nombre ?? string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(datos.AutorizadoPor))
+                {
+                    Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
+                    datos.AutorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>";
+                    if (string.IsNullOrWhiteSpace(datos.CargoAutorizadoPor))
+                        datos.CargoAutorizadoPor = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty;
+                }
+
+                datos.Entidad = string.Empty;
+                datos.Direccion = string.Empty;
+                datos.UEB = string.Empty;
+                datos.DireccionUEB = string.Empty;
 
                 Parametro paramEntidad = await _repoParametro.SeleccionarParametroPorNombre("Entidad");
                 Parametro paramDireccion = await _repoParametro.SeleccionarParametroPorNombre("Dirección");
@@ -1546,11 +1595,6 @@ namespace ActivosFijos.Controllers
                 datos.Direccion = paramDireccion?.Valor ?? string.Empty;
                 datos.UEB = paramUEB?.Valor ?? string.Empty;
                 datos.DireccionUEB = paramDireccionUEB?.Valor ?? string.Empty;
-
-                Responsable director = await _repoResponsables.ObtenerInfoDirector();
-                Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
-                datos.AprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>";
-                datos.AutorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>";
 
                 MemoryStream msZIP = new MemoryStream();
                 using (var zip = new ZipArchive(msZIP, ZipArchiveMode.Create, true))
@@ -1879,6 +1923,23 @@ namespace ActivosFijos.Controllers
                     doc.MainDocumentPart.Document.Body.Append(table);
                 }
             }
+        }
+
+        private string NombreDelUsuarioConectado()
+        {
+            return User.Identity != null && User.Identity.IsAuthenticated
+                ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value ?? string.Empty
+                : string.Empty;
+        }
+
+        private static List<SelectListItem> ArmarListaSeleccion(List<string> valores, string? porDefecto)
+        {
+            return valores.Select(v => new SelectListItem
+            {
+                Text = v,
+                Value = v,
+                Selected = !string.IsNullOrWhiteSpace(porDefecto) && v == porDefecto
+            }).ToList();
         }
 
         private List<clBreadCumb> LlenarBreadsCumbs(string titulo)

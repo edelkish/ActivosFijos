@@ -15,5 +15,10 @@ namespace ActivosFijos.Models.Auxiliar
         public string HechoPor { get; set; } = string.Empty;
         public string AprobadoPor { get; set; } = string.Empty;
         public string AutorizadoPor { get; set; } = string.Empty;
+        public string CargoHechoPor { get; set; } = string.Empty;
+        public string CargoAprobadoPor { get; set; } = string.Empty;
+        public string CargoAutorizadoPor { get; set; } = string.Empty;
+        public string TransportadorReceptor { get; set; } = string.Empty;
+        public string CargoTransportadorReceptor { get; set; } = string.Empty;
     }
 }

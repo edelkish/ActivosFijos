@@ -253,6 +253,153 @@
                                 <label class="control-label">Comprobante No.:</label>
                                 <input type="text" class="form-control" name="comprobante" autocomplete="off" />
                             </div>
+                            <hr />
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Hecho por:</label>
+                                        <select class="form-control select2me" id="HechoPor" name="hechoPor">
+                                            <option value="">Seleccione el nombre</option>
+                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesHechoPor"])
+                                            {
+                                                if (res.Selected)
+                                                {
+                                                    <option value="@res.Text" selected="selected">@res.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@res.Text">@res.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Cargo:</label>
+                                        <select class="form-control select2me" id="CargoHechoPor" name="cargoHechoPor">
+                                            <option value="">Seleccione el cargo</option>
+                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosHechoPor"])
+                                            {
+                                                if (cargo.Selected)
+                                                {
+                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@cargo.Text">@cargo.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Aprobado por:</label>
+                                        <select class="form-control select2me" id="AprobadoPor" name="aprobadoPor">
+                                            <option value="">Seleccione el nombre</option>
+                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesAprobadoPor"])
+                                            {
+                                                if (res.Selected)
+                                                {
+                                                    <option value="@res.Text" selected="selected">@res.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@res.Text">@res.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Cargo:</label>
+                                        <select class="form-control select2me" id="CargoAprobadoPor" name="cargoAprobadoPor">
+                                            <option value="">Seleccione el cargo</option>
+                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosAprobadoPor"])
+                                            {
+                                                if (cargo.Selected)
+                                                {
+                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@cargo.Text">@cargo.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Autorizado por:</label>
+                                        <select class="form-control select2me" id="AutorizadoPor" name="autorizadoPor">
+                                            <option value="">Seleccione el nombre</option>
+                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesAutorizadoPor"])
+                                            {
+                                                if (res.Selected)
+                                                {
+                                                    <option value="@res.Text" selected="selected">@res.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@res.Text">@res.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Cargo:</label>
+                                        <select class="form-control select2me" id="CargoAutorizadoPor" name="cargoAutorizadoPor">
+                                            <option value="">Seleccione el cargo</option>
+                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosAutorizadoPor"])
+                                            {
+                                                if (cargo.Selected)
+                                                {
+                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@cargo.Text">@cargo.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Transportador o Receptor:</label>
+                                        <select class="form-control select2me" id="TransportadorReceptor" name="transportadorReceptor">
+                                            <option value="">Seleccione el nombre</option>
+                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesTransportador"])
+                                            {
+                                                <option value="@res.Text">@res.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">Cargo:</label>
+                                        <select class="form-control select2me" id="CargoTransportadorReceptor" name="cargoTransportadorReceptor">
+                                            <option value="">Seleccione el cargo</option>
+                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosTransportador"])
+                                            {
+                                                <option value="@cargo.Text">@cargo.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn default" data-dismiss="modal">Cancelar</button>
@@ -491,6 +638,22 @@
                 theme: "bootstrap",
                 placeholder: "Seleccione el cargo",
                 width: null
+            });
+
+            ['#HechoPor', '#AprobadoPor', '#AutorizadoPor', '#TransportadorReceptor'].forEach(function (sel) {
+                $(sel).select2({
+                    theme: "bootstrap",
+                    placeholder: "Seleccione el nombre",
+                    width: null
+                });
+            });
+
+            ['#CargoHechoPor', '#CargoAprobadoPor', '#CargoAutorizadoPor', '#CargoTransportadorReceptor'].forEach(function (sel) {
+                $(sel).select2({
+                    theme: "bootstrap",
+                    placeholder: "Seleccione el cargo",
+                    width: null
+                });
             });
         });
     </script>

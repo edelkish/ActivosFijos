@@ -563,7 +563,7 @@ namespace ActivosFijos.Repositorios
         }
         public async Task<Responsable> ObtenerInfoDirector()
         {
-            return await _context.Responsables.Include(res => res.CargoNavigation).SingleOrDefaultAsync(c => c.CargoNavigation.Nombre.ToLower().Equals("Director UEB ATI Aplicaciones"));
+            return await _context.Responsables.Include(res => res.CargoNavigation).FirstOrDefaultAsync(c => c.CargoNavigation.Nombre.ToLower().Equals("Director UEB ATI Aplicaciones"));
         }
         public async Task<Responsable> ObtenerInfoEncargadoEconomia()
         {

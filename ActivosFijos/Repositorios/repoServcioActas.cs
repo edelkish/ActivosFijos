@@ -1678,6 +1678,8 @@ namespace ActivosFijos.Repositorios
                 new MemoryStream(templateBytes).CopyTo(ms);
                 using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
                 {
+                    VerificarMarcadoresDelAnexo(doc, new[] { "CARGOHECHOPOR_", "CARGOAPROBADOPOR_", "CARGOAUTORIZADOPOR_" });
+
                     Dictionary<string, string> reemplazos = new Dictionary<string, string>
                     {
                         { "ENTIDAD_", datos.Entidad },
@@ -1694,14 +1696,18 @@ namespace ActivosFijos.Repositorios
                         { "NOMBRE_", datos.NombreTecnico },
                         { "CARGO_", datos.CargoTecnico },
                         { "HECHOPOR_", datos.HechoPor },
+                        { "CARGOHECHOPOR_", datos.CargoHechoPor },
                         { "APROBADOPOR_", datos.AprobadoPor },
-                        { "AUTORIZADOPOR_", datos.AutorizadoPor }
+                        { "CARGOAPROBADOPOR_", datos.CargoAprobadoPor },
+                        { "AUTORIZADOPOR_", datos.AutorizadoPor },
+                        { "CARGOAUTORIZADOPOR_", datos.CargoAutorizadoPor }
                     };
 
                     ReemplazarMarcadores(doc, reemplazos);
                     MarcarTipoMovimiento(doc, datos.TipoMovimiento);
                     LlenarCeldaDelAnexo(doc, "Valor $", (mv.ValorContable ?? 0).ToString("#,##0.00"), true);
                     LlenarCeldaDelAnexo(doc, "Comprobante de operaciones No.", datos.Comprobante, false);
+                    LlenarTransportadorReceptor(doc, datos.TransportadorReceptor, datos.CargoTransportadorReceptor);
                 }
             }
             catch (Exception ex)
@@ -1717,6 +1723,22 @@ namespace ActivosFijos.Repositorios
             else
             {
                 return null;
+            }
+        }
+
+        private void VerificarMarcadoresDelAnexo(WordprocessingDocument doc, string[] marcadores)
+        {
+            // Sin este chequeo, un marcador ausente en la plantilla se reemplaza por nada
+            // y el anexo se genera con el cargo en blanco sin avisar.
+            string texto = string.Concat(doc.MainDocumentPart.Document.Descendants<Text>().Select(t => t.Text));
+            List<string> faltantes = marcadores.Where(m => !texto.Contains(m, StringComparison.Ordinal)).ToList();
+
+            if (faltantes.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    "La plantilla del Anexo 3 no tiene los marcadores: " + string.Join(", ", faltantes) +
+                    ". Agreguelos en la plantilla, cada uno en una linea nueva debajo de " +
+                    "HECHOPOR_, APROBADOPOR_ y AUTORIZADOPOR_ respectivamente, y guarde el archivo.");
             }
         }
 
@@ -1844,6 +1866,11 @@ namespace ActivosFijos.Repositorios
             if (p == null)
                 return;
 
+            EscribirTextoEnParrafo(p, texto);
+        }
+
+        private void EscribirTextoEnParrafo(Paragraph p, string texto)
+        {
             var runs = p.Elements<Run>().ToList();
             Run run = runs.FirstOrDefault();
             if (run == null)
@@ -1863,6 +1890,60 @@ namespace ActivosFijos.Repositorios
                 Text t = extra.GetFirstChild<Text>();
                 if (t != null)
                     t.Text = string.Empty;
+            }
+        }
+
+        private void LlenarTransportadorReceptor(WordprocessingDocument doc, string nombre, string cargo)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+                return;
+
+            // La etiqueta del anexo dice "Transportador o   Receptor (firma)" con varios
+            // espacios internos, y Normalizar no los colapsa, asi que se busca solo "Transportador".
+            const string etiqueta = "Transportador";
+
+            TableCell celdaEtiqueta = doc.MainDocumentPart.Document.Descendants<TableCell>()
+                .FirstOrDefault(c => Normalizar(string.Concat(c.Descendants<Text>().Select(t => t.Text))).Contains(etiqueta));
+
+            if (celdaEtiqueta == null)
+                return;
+
+            if (!(celdaEtiqueta.Parent is TableRow filaEtiqueta))
+                return;
+
+            if (!(filaEtiqueta.Parent is Table tabla))
+                return;
+
+            List<TableRow> filas = tabla.Elements<TableRow>().ToList();
+            int indiceFila = filas.IndexOf(filaEtiqueta);
+            if (indiceFila < 0 || indiceFila + 1 >= filas.Count)
+                return;
+
+            // El valor va en la celda de la fila siguiente que esta en la misma columna
+            // que la etiqueta, para que quede justo debajo y no desalineado a la izquierda.
+            int columna = filaEtiqueta.Elements<TableCell>().ToList().IndexOf(celdaEtiqueta);
+            List<TableCell> celdasDestino = filas[indiceFila + 1].Elements<TableCell>().ToList();
+            if (columna < 0 || columna >= celdasDestino.Count)
+                return;
+
+            TableCell destino = celdasDestino[columna];
+            if (!string.IsNullOrWhiteSpace(string.Concat(destino.Descendants<Text>().Select(t => t.Text))))
+                return;
+
+            Paragraph primero = destino.Descendants<Paragraph>().FirstOrDefault();
+            if (primero == null)
+                return;
+
+            // Se clona el parrafo vacio antes de escribir, para que la copia conserve
+            // el formato original y quede como segunda linea del cargo.
+            Paragraph segundo = string.IsNullOrWhiteSpace(cargo) ? null : (Paragraph)primero.CloneNode(true);
+
+            EscribirTextoEnParrafo(primero, nombre);
+
+            if (segundo != null)
+            {
+                primero.Parent.Append(segundo);
+                EscribirTextoEnParrafo(segundo, cargo);
             }
         }
 
