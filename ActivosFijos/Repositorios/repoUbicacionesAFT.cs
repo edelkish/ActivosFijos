@@ -84,7 +84,10 @@ namespace ActivosFijos.Repositorios
                     descripcion = a.Descripcion ?? "",
                     clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
                     localActual = a.LocalNavigation != null ? a.LocalNavigation.Nombre : "",
-                    puestoActual = ""
+                    puestoActual = "",
+                    responsable = a.ResponsableNavigation != null ? (a.ResponsableNavigation.Nombre + " " + a.ResponsableNavigation.Apellidos) : "",
+                    centroCostoActivo = a.CentroCostoNavigation != null ? a.CentroCostoNavigation.Nombre ?? "" : "",
+                    area = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre ?? "" : ""
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
@@ -103,7 +106,10 @@ namespace ActivosFijos.Repositorios
                     descripcion = a.Descripcion ?? "",
                     clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
                     localActual = a.LocalNavigation != null ? a.LocalNavigation.Nombre : "",
-                    puestoActual = a.PuestoTrabajoNavigation != null ? a.PuestoTrabajoNavigation.Nombre : ""
+                    puestoActual = a.PuestoTrabajoNavigation != null ? a.PuestoTrabajoNavigation.Nombre : "",
+                    responsable = a.ResponsableNavigation != null ? (a.ResponsableNavigation.Nombre + " " + a.ResponsableNavigation.Apellidos) : "",
+                    centroCostoActivo = a.CentroCostoNavigation != null ? a.CentroCostoNavigation.Nombre ?? "" : "",
+                    area = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre ?? "" : ""
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
@@ -122,7 +128,10 @@ namespace ActivosFijos.Repositorios
                     descripcion = a.Descripcion ?? "",
                     clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
                     localActual = a.PuestoTrabajoNavigation != null && a.PuestoTrabajoNavigation.LocalNavigation != null ? a.PuestoTrabajoNavigation.LocalNavigation.Nombre : "",
-                    puestoActual = a.PuestoTrabajoNavigation != null ? a.PuestoTrabajoNavigation.Nombre : ""
+                    puestoActual = a.PuestoTrabajoNavigation != null ? a.PuestoTrabajoNavigation.Nombre : "",
+                    responsable = a.ResponsableNavigation != null ? (a.ResponsableNavigation.Nombre + " " + a.ResponsableNavigation.Apellidos) : "",
+                    centroCostoActivo = a.CentroCostoNavigation != null ? a.CentroCostoNavigation.Nombre ?? "" : "",
+                    area = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre ?? "" : ""
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
@@ -141,7 +150,10 @@ namespace ActivosFijos.Repositorios
                     descripcion = a.Descripcion ?? "",
                     clasificador = a.ClasificadorNavigation != null ? a.ClasificadorNavigation.Nombre : "",
                     localActual = "",
-                    puestoActual = ""
+                    puestoActual = "",
+                    responsable = a.ResponsableNavigation != null ? (a.ResponsableNavigation.Nombre + " " + a.ResponsableNavigation.Apellidos) : "",
+                    centroCostoActivo = a.CentroCostoNavigation != null ? a.CentroCostoNavigation.Nombre ?? "" : "",
+                    area = a.AreaResponsabilidadNavigation != null ? a.AreaResponsabilidadNavigation.Nombre ?? "" : ""
                 })
                 .ToListAsync().ConfigureAwait(false);
         }

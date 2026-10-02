@@ -22,6 +22,9 @@ namespace ActivosFijos.Models.Auxiliar
         public string clasificador { get; set; } = string.Empty;
         public string localActual { get; set; } = string.Empty;
         public string puestoActual { get; set; } = string.Empty;
+        public string responsable { get; set; } = string.Empty;
+        public string centroCostoActivo { get; set; } = string.Empty;
+        public string area { get; set; } = string.Empty;
     }
 
     public class mdHistorialUbicacion

@@ -489,9 +489,11 @@ function CargarGridAFT(rows) {
             [
                 { name: 'noInventario', type: 'number' },
                 { name: 'descripcion', type: 'string' },
-                { name: 'clasificador', type: 'string' },
                 { name: 'localActual', type: 'string' },
-                { name: 'puestoActual', type: 'string' }
+                { name: 'puestoActual', type: 'string' },
+                { name: 'responsable', type: 'string' },
+                { name: 'centroCostoActivo', type: 'string' },
+                { name: 'area', type: 'string' }
             ],
         datatype: "array"
     };
@@ -535,10 +537,12 @@ function CargarGridAFT(rows) {
             },
             columns: [
                 { text: 'No. Inventario', datafield: 'noInventario', width: 120, filtercondition: 'contains', cellsrenderer: rendererNoInv },
-                { text: 'Descripci&oacute;n', datafield: 'descripcion', width: 380, filtercondition: 'contains', cellsrenderer: rendererNoInv },
-                { text: 'Clasificador', datafield: 'clasificador', width: 180, filtercondition: 'contains', cellsrenderer: rendererNoInv },
-                { text: 'Local', datafield: 'localActual', width: 160, filtercondition: 'contains', cellsrenderer: rendererNoInv },
-                { text: 'Puesto', datafield: 'puestoActual', width: 160, filtercondition: 'contains', cellsrenderer: rendererNoInv }
+                { text: 'Descripci&oacute;n', datafield: 'descripcion', width: 320, filtercondition: 'contains', cellsrenderer: rendererNoInv },
+                { text: 'Responsable', datafield: 'responsable', width: 170, filtercondition: 'contains', cellsrenderer: rendererNoInv },
+                { text: 'CC del activo', datafield: 'centroCostoActivo', width: 190, filtercondition: 'contains', cellsrenderer: rendererNoInv },
+                { text: 'Area', datafield: 'area', width: 170, filtercondition: 'contains', cellsrenderer: rendererNoInv },
+                { text: 'Local', datafield: 'localActual', width: 150, filtercondition: 'contains', cellsrenderer: rendererNoInv },
+                { text: 'Puesto', datafield: 'puestoActual', width: 150, filtercondition: 'contains', cellsrenderer: rendererNoInv }
             ]
         });
 
