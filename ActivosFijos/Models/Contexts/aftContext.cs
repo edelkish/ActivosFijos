@@ -19,6 +19,7 @@ namespace ActivosFijos.Models.Contexts
 
         public virtual DbSet<ActFijo> ActFijos { get; set; } = null!;
         public virtual DbSet<AreaDeResponsabilidad> AreaDeResponsabilidads { get; set; } = null!;
+        public virtual DbSet<Anexo3Firmas> Anexo3Firmas { get; set; } = null!;
         public virtual DbSet<Cargo> Cargos { get; set; } = null!;
         public virtual DbSet<CentroCosto> CentroCostos { get; set; } = null!;
         public virtual DbSet<Clasificador> Clasificadors { get; set; } = null!;
@@ -103,7 +104,21 @@ namespace ActivosFijos.Models.Contexts
                 // entity.Property(e => e.Nombre).UseCollation("SQL_Latin1_General_CP1_CI_AI");
             });
 
-            modelBuilder.Entity<Cargo>(entity =>
+            modelBuilder.Entity<Anexo3Firmas>(entity =>
+            {
+                entity.HasKey(e => new { e.NoInventario, e.SubNumero, e.FechaSubmayor });
+
+                entity.Property(e => e.NoInventario).ValueGeneratedNever();
+                entity.Property(e => e.SubNumero).ValueGeneratedNever();
+                entity.Property(e => e.FechaSubmayor).ValueGeneratedNever();
+
+                // Debe coincidir con ActFijo.FechaSubmayor, que es datetime y no datetime2.
+                entity.Property(e => e.FechaSubmayor).HasColumnType("datetime");
+
+                entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
+            });
+
+        modelBuilder.Entity<Cargo>(entity =>
             {
                 entity.Property(e => e.IdCargo).ValueGeneratedNever();
             });
@@ -218,6 +233,18 @@ namespace ActivosFijos.Models.Contexts
                     .HasForeignKey(d => d.Responsable)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_TrasladosAFT_Responsable");
+
+                entity.HasOne(d => d.TipoMovimientoNavigation)
+                    .WithMany()
+                    .HasForeignKey(d => d.TipoMovimiento)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_TrasladosAFT_TipoMovimientoAFT");
+
+                entity.HasOne(d => d.AreaDestinoNavigation)
+                    .WithMany()
+                    .HasForeignKey(d => d.AreaDestino)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_TrasladosAFT_AreaDeResponsabilidad");
             });
 
             modelBuilder.Entity<Usuario>(entity =>

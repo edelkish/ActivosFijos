@@ -98,6 +98,109 @@ namespace ActivosFijos.Migrations
                     b.ToTable("ActFijo");
                 });
 
+            modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.Anexo3Firmas", b =>
+                {
+                    b.Property<long>("NoInventario")
+                        .HasColumnType("bigint")
+                        .HasColumnName("NoInventario");
+
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int")
+                        .HasColumnName("SubNumero");
+
+                    b.Property<DateTime>("FechaSubmayor")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaSubmayor");
+
+                    b.Property<string>("CargoHechoPor")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("CargoHechoPor");
+
+                    b.Property<string>("CargoTecnico")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("CargoTecnico");
+
+                    b.Property<string>("CargoTransportadorReceptor")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("CargoTransportadorReceptor");
+
+                    b.Property<string>("Comprobante")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Comprobante");
+
+                    b.Property<string>("DireccionReceptor")
+                        .HasMaxLength(300)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("DireccionReceptor");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("FechaRegistro")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Fundamentacion")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("Fundamentacion");
+
+                    b.Property<string>("HechoPor")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("HechoPor");
+
+                    b.Property<string>("InformeTecnico")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("InformeTecnico");
+
+                    b.Property<string>("NombreTecnico")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("NombreTecnico");
+
+                    b.Property<string>("ReceptorArea")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("ReceptorArea");
+
+                    b.Property<string>("ReceptorNombre")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("ReceptorNombre");
+
+                    b.Property<string>("TipoMovimiento")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("TipoMovimiento");
+
+                    b.Property<string>("TransportadorReceptor")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("TransportadorReceptor");
+
+                    b.HasKey("NoInventario", "SubNumero", "FechaSubmayor");
+
+                    b.ToTable("Anexo3Firmas");
+                });
+
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.AreaDeResponsabilidad", b =>
                 {
                     b.Property<Guid>("IdArea")
@@ -747,6 +850,10 @@ namespace ActivosFijos.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("(newid())");
 
+                    b.Property<Guid>("AreaDestino")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("areaDestino");
+
                     b.Property<DateTime>("Desde")
                         .HasColumnType("datetime")
                         .HasColumnName("desde");
@@ -769,9 +876,21 @@ namespace ActivosFijos.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("responsable");
 
+                    b.Property<int>("SubNumero")
+                        .HasColumnType("int")
+                        .HasColumnName("subNumero");
+
+                    b.Property<Guid>("TipoMovimiento")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("tipoMovimiento");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("AreaDestino");
+
                     b.HasIndex("Responsable");
+
+                    b.HasIndex("TipoMovimiento");
 
                     b.ToTable("TrasladosAFT");
                 });
@@ -1070,13 +1189,29 @@ namespace ActivosFijos.Migrations
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.TrasladosAft", b =>
                 {
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.AreaDeResponsabilidad", "AreaDestinoNavigation")
+                        .WithMany()
+                        .HasForeignKey("AreaDestino")
+                        .IsRequired()
+                        .HasConstraintName("FK_TrasladosAFT_AreaDeResponsabilidad");
+
                     b.HasOne("ActivosFijos.Models.EntidadesBD.Responsable", "ResponsableNavigation")
                         .WithMany("TrasladosAfts")
                         .HasForeignKey("Responsable")
                         .IsRequired()
                         .HasConstraintName("FK_TrasladosAFT_Responsable");
 
+                    b.HasOne("ActivosFijos.Models.EntidadesBD.TipoMovimientoAFT", "TipoMovimientoNavigation")
+                        .WithMany()
+                        .HasForeignKey("TipoMovimiento")
+                        .IsRequired()
+                        .HasConstraintName("FK_TrasladosAFT_TipoMovimientoAFT");
+
+                    b.Navigation("AreaDestinoNavigation");
+
                     b.Navigation("ResponsableNavigation");
+
+                    b.Navigation("TipoMovimientoNavigation");
                 });
 
             modelBuilder.Entity("ActivosFijos.Models.EntidadesBD.UtilesHerramienta", b =>

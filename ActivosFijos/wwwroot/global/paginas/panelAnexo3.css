@@ -1,0 +1,296 @@
+/* ===== Panel lateral de firmas del Anexo 3 ===== */
+
+.ax3-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 40, 55, .55);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, visibility .25s ease;
+}
+
+.ax3-overlay.ax3-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ax3-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 520px;
+    max-width: 100vw;
+    background: #fff;
+    z-index: 1051;
+    box-shadow: -4px 0 18px rgba(30, 40, 55, .25);
+    transform: translateX(100%);
+    transition: transform .3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.ax3-panel.ax3-abierto {
+    transform: translateX(0);
+}
+
+.ax3-panel-header {
+    padding: 14px 16px;
+    background-color: #444d58;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.ax3-panel-header .close {
+    color: #fff;
+    opacity: .85;
+    font-size: 18px;
+}
+
+.ax3-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.ax3-instruccion {
+    font-size: 12.5px;
+    color: #6c7686;
+    background-color: #f4f6f8;
+    border-left: 3px solid #3598dc;
+    padding: 8px 10px;
+    margin: 0 0 12px;
+}
+
+.ax3-panel-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e5e8ec;
+    flex-shrink: 0;
+}
+
+/* Datos fijos del anexo */
+.ax3-fijos {
+    border: 1px solid #e5e8ec;
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    background-color: #fbfcfd;
+}
+
+.ax3-fijo {
+    display: flex;
+    align-items: baseline;
+    padding: 6px 0;
+}
+
+.ax3-fijo-label {
+    width: 130px;
+    font-size: 12.5px;
+    color: #7a8699;
+    flex-shrink: 0;
+}
+
+.ax3-fijo-valor {
+    font-weight: 600;
+    color: #444d58;
+}
+
+.ax3-fijo-cargo {
+    font-size: 12px;
+    color: #8b95a5;
+    margin-left: 6px;
+}
+
+.ax3-receptor {
+    border-top: 1px dashed #d6dbe1;
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+.ax3-receptor-titulo {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #8b95a5;
+    margin-bottom: 4px;
+}
+
+/* La direccion del receptor solo es editable en traslado externo y enviado a reparar */
+.ax3-fijo-dato {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Nombre, Area y Direccion del receptor se editan dentro del bloque */
+#ax3ReceptorNombre select,
+#ax3ReceptorArea input,
+#ax3ReceptorDireccion textarea {
+    font-size: 12.5px;
+}
+
+.ax3-receptor-direccion {
+    font-size: 12.5px;
+}
+
+/* Cargo derivado del responsable: se muestra como texto, separado del select */
+.ax3-par-cargo { flex: 1; min-width: 0; }
+
+.ax3-cargo-derivable {
+    display: block;
+    margin-top: 14px;
+    font-weight: 600;
+    color: #444d58;
+}
+
+/* Barra de seleccion multiple */
+.ax3-bulk {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #e5e8ec;
+    font-size: 12.5px;
+    color: #6c7686;
+}
+
+/* Eleccion de generacion: un anexo por activo o uno solo con reverso */
+.ax3-modo {
+    border: 1px solid #e5e8ec;
+    border-radius: 3px;
+    background-color: #fbfcfd;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    font-size: 12.5px;
+}
+
+.ax3-modo-titulo {
+    display: block;
+    font-weight: 600;
+    color: #444d58;
+    margin-bottom: 4px;
+}
+
+.ax3-modo-opcion {
+    display: inline-block;
+    margin: 0 14px 0 0;
+    font-weight: 400;
+    color: #444d58;
+    cursor: pointer;
+}
+
+.ax3-modo-ayuda {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: #8b95a5;
+}
+
+/* Navegacion entre los movimientos marcados */
+.ax3-navegacion {
+    border: 1px solid #e5e8ec;
+    border-radius: 3px;
+    background-color: #fbfcfd;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+}
+
+.ax3-nav-botones {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ax3-nav-botones .btn {
+    flex-shrink: 0;
+}
+
+.ax3-posicion {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #444d58;
+    text-align: center;
+    flex: 1;
+}
+
+.ax3-nav-movimiento {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eef0f2;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.ax3-nav-no {
+    font-weight: 600;
+    color: #444d58;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ax3-nav-desc {
+    color: #6c7686;
+    font-size: 12.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+/* Formulario del movimiento visible */
+.ax3-form {
+    border: 1px solid #e5e8ec;
+    border-radius: 3px;
+    padding: 16px;
+}
+
+.ax3-seccion {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #8b95a5;
+    border-bottom: 1px solid #eef0f2;
+    padding-bottom: 5px;
+    margin: 18px 0 12px;
+}
+
+.ax3-seccion:first-child {
+    margin-top: 0;
+}
+
+.ax3-par { display: flex; gap: 16px; margin-bottom: 18px; }
+.ax3-par > div { flex: 1; min-width: 0; }
+.ax3-par label { display: block; font-size: 12.5px; color: #6c7686; margin-bottom: 6px; }
+.ax3-par textarea { min-height: 54px; resize: vertical; }
+
+/* Etiquetas que cuelgan directo del formulario, sin par (Informe, Comprobante). */
+.ax3-form > label {
+    display: block;
+    font-size: 12.5px;
+    color: #6c7686;
+    margin-bottom: 6px;
+}
+
+.ax3-acciones-rapidas { margin-top: 18px; }
+
+.ax3-cargando {
+    color: #8b95a5;
+    font-style: italic;
+    padding: 10px 0;
+    font-size: 12.5px;
+}
+
+.ax3-campo {
+    margin-bottom: 10px;
+}

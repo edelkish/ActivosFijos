@@ -1,10 +1,14 @@
 ﻿@model IEnumerable<ActivosFijos.Models.AuxBD.ActivosFijosConMovimientos>
 @{
     DateTime fechaSubmayor = ViewBag.FechaSubmayor;
+    var firmasCargadas = ViewBag.FirmasCargadas as System.Collections.Generic.HashSet<string> ?? new System.Collections.Generic.HashSet<string>();
+    var movimientosDeclarados = ViewBag.MovimientosDeclarados as System.Collections.Generic.Dictionary<string, ActivosFijos.Models.EntidadesBD.TrasladosAft> ?? new System.Collections.Generic.Dictionary<string, ActivosFijos.Models.EntidadesBD.TrasladosAft>();
 }
 <table class="table table-striped table-bordered table-hover" id="tablaActivosFijos">
     <thead style="background-color: #444d58 !important; color: #ced5de">
         <tr>
+            <th scope="col" style="text-align:center;min-width:45px" width="45px">
+            </th>
             <th scope="col" style="text-align:justify;min-width:75px" width="75px">
                 No. Inv.
             </th>
@@ -23,12 +27,24 @@
             <th scope="col" style="text-align:justify;min-width:200px" width="225px">
                 Responsable actual
             </th>
+            <th scope="col" style="text-align:center;min-width:95px" width="95px">
+                Declarado
+            </th>
+            <th scope="col" style="text-align:center;min-width:110px" width="110px">
+                Coincide
+            </th>
+            <th scope="col" style="text-align:center;min-width:90px" width="90px">
+                Firmas
+            </th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {                          
-            <tr data-info="@item.NoInventario" data-fecha="@fechaSubmayor.ToString("yyyy-MM-dd")">
+            <tr data-info="@item.NoInventario" data-subnumero="@item.SubNumero" data-fecha="@fechaSubmayor.ToString("yyyy-MM-dd")">
+                <td style="text-align:center">
+                    <input type="checkbox" class="chkMovimientoAnexo3" />
+                </td>
                 <td style="text-align:justify">
                     @(item.SubNumero != 0 ? item.NoInventario + "-" + item.SubNumero : item.NoInventario.ToString())
                 </td style="text-align:justify">
@@ -46,7 +62,47 @@
                 </td>
                 <td style="text-align:justify">
                     @Html.DisplayFor(modelItem => item.ResponsableActual)
-                </td>   
+                </td>
+                @{
+                    string claveDeclarada = item.NoInventario + "|" + item.SubNumero;
+                    ActivosFijos.Models.EntidadesBD.TrasladosAft movimientoDeclarado;
+                    bool siDeclarado = movimientosDeclarados.TryGetValue(claveDeclarada, out movimientoDeclarado);
+                    bool siCoincide = siDeclarado && (movimientoDeclarado.Responsable == item.idResponsableActual) && (movimientoDeclarado.AreaDestino == item.idAreaActual);
+                }
+                <td style="text-align:center">
+                    @if (siDeclarado)
+                    {
+                        <span class="label label-success">S&iacute;</span>
+                    }
+                    else
+                    {
+                        <span class="label label-default">Sin declarar</span>
+                    }
+                </td>
+                <td style="text-align:center">
+                    @if (!siDeclarado)
+                    {
+                        <span class="label label-default">-</span>
+                    }
+                    else if (siCoincide)
+                    {
+                        <span class="label label-success">S&iacute;</span>
+                    }
+                    else
+                    {
+                        <span class="label label-warning">No coincide</span>
+                    }
+                </td>
+                <td style="text-align:center" data-firmas="@item.NoInventario|@item.SubNumero">
+                    @if (firmasCargadas.Contains(item.NoInventario + "|" + item.SubNumero))
+                    {
+                        <span class="label label-success">Cargadas</span>
+                    }
+                    else
+                    {
+                        <span class="label label-default">Sin cargar</span>
+                    }
+                </td>
             </tr>
         }
     </tbody>

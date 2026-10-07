@@ -1663,11 +1663,15 @@ namespace ActivosFijos.Repositorios
             return nomMesAnno;
         }
 
-        public byte[] ExportarAnexo3(out bool result, out string msg, ActivosFijosAnexo3 mv, DateTime fecha, mdAnexo3 datos)
+        public byte[] ExportarAnexo3(out bool result, out string msg, ActivosFijosAnexo3 mv, DateTime fecha, mdAnexo3 datos, List<mdAnexo3Detalle>? reverso = null)
         {
             result = true;
             msg = "";
             MemoryStream ms = new MemoryStream();
+
+            // Con reverso el anexo agrupa varios activos: la primera pagina no nombra a
+            // ninguno y el detalle completo va en la segunda.
+            bool agrupado = reverso != null && reverso.Count > 0;
 
             try
             {
@@ -1678,25 +1682,32 @@ namespace ActivosFijos.Repositorios
                 new MemoryStream(templateBytes).CopyTo(ms);
                 using (WordprocessingDocument doc = WordprocessingDocument.Open(ms, true))
                 {
-                    VerificarMarcadoresDelAnexo(doc, new[] { "CARGOHECHOPOR_", "CARGOAPROBADOPOR_", "CARGOAUTORIZADOPOR_" });
+                    // El bloque "Hecho por" de la plantilla no tiene campo de cargo, asi que no se exige
+                    // ningun marcador para el. Aprobado y Autorizado si llevan "(Cargo y firma)".
+                    VerificarMarcadoresDelAnexo(doc, new[] { "CARGOAPROBADOPOR_", "CARGOAUTORIZADOPOR_" });
 
                     Dictionary<string, string> reemplazos = new Dictionary<string, string>
                     {
                         { "ENTIDAD_", datos.Entidad },
                         { "DIRECCION_", datos.Direccion },
                         { "AREA_", string.IsNullOrEmpty(mv.AreaAnterior) ? "<<S/D>>" : mv.AreaAnterior },
-                        { "DESCRIPCION_", mv.Descripcion },
-                        { "NOINVENTARIO_", mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString() },
+                        { "DESCRIPCION_", agrupado ? string.Empty : mv.Descripcion },
+                        { "NOINVENTARIO_", agrupado
+                            ? string.Empty
+                            : (mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString()) },
                         { "UEB_", datos.UEB },
                         { "DIRECCION_UEB_", datos.DireccionUEB },
-                        { "AREARECEP_", string.IsNullOrEmpty(mv.AreaActual) ? "<<S/D>>" : mv.AreaActual },
-                        { "NOMBRERECEP_", string.IsNullOrEmpty(mv.ResponsableActual) ? "<<S/D>>" : mv.ResponsableActual },
+                        { "AREARECEP_", string.IsNullOrEmpty(datos.ReceptorArea)
+                            ? (string.IsNullOrEmpty(mv.AreaActual) ? "<<S/D>>" : mv.AreaActual)
+                            : datos.ReceptorArea },
+                        { "NOMBRERECEP_", string.IsNullOrEmpty(datos.ReceptorNombre)
+                            ? (string.IsNullOrEmpty(mv.ResponsableActual) ? "<<S/D>>" : mv.ResponsableActual)
+                            : datos.ReceptorNombre },
                         { "FUNDAMENTACIONOPE_", datos.Fundamentacion },
                         { "INFORMETECNICO_", datos.InformeTecnico },
                         { "NOMBRE_", datos.NombreTecnico },
                         { "CARGO_", datos.CargoTecnico },
                         { "HECHOPOR_", datos.HechoPor },
-                        { "CARGOHECHOPOR_", datos.CargoHechoPor },
                         { "APROBADOPOR_", datos.AprobadoPor },
                         { "CARGOAPROBADOPOR_", datos.CargoAprobadoPor },
                         { "AUTORIZADOPOR_", datos.AutorizadoPor },
@@ -1705,7 +1716,15 @@ namespace ActivosFijos.Repositorios
 
                     ReemplazarMarcadores(doc, reemplazos);
                     MarcarTipoMovimiento(doc, datos.TipoMovimiento);
-                    LlenarCeldaDelAnexo(doc, "Valor $", (mv.ValorContable ?? 0).ToString("#,##0.00"), true);
+                    if (agrupado)
+                    {
+                        // La primera pagina deja el valor en blanco: cada activo trae el suyo.
+                        InyectarReverso(doc, reverso!);
+                    }
+                    else
+                    {
+                        LlenarCeldaDelAnexo(doc, "Valor $", (mv.ValorContable ?? 0).ToString("#,##0.00"), true);
+                    }
                     LlenarCeldaDelAnexo(doc, "Comprobante de operaciones No.", datos.Comprobante, false);
                     LlenarTransportadorReceptor(doc, datos.TransportadorReceptor, datos.CargoTransportadorReceptor);
                 }
@@ -1724,6 +1743,38 @@ namespace ActivosFijos.Repositorios
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Agrega la segunda pagina con el detalle de todos los activos que comparten el
+        /// anexo. Va antes del sectPr final, que es el ultimo hijo del body: insertarlo
+        /// despues romperia el documento porque ese elemento cierra la seccion.
+        /// </summary>
+        private void InyectarReverso(WordprocessingDocument doc, List<mdAnexo3Detalle> detalles)
+        {
+            Body body = doc.MainDocumentPart!.Document.Body!;
+            SectionProperties? sectPr = body.Elements<SectionProperties>().LastOrDefault();
+
+            var fragmento = new List<OpenXmlElement>
+            {
+                new Paragraph(new Run(new Break { Type = BreakValues.Page })),
+                new Paragraph(new Run(new Text("REVERSO - Detalle de los activos del Anexo 3")))
+            };
+
+            foreach (var d in detalles)
+            {
+                fragmento.Add(new Paragraph(new Run(new Text(d.NoInventario + " - " + d.Descripcion + " - " + d.Valor))));
+            }
+
+            foreach (var p in fragmento)
+            {
+                if (sectPr != null)
+                    body.InsertBefore(p, sectPr);
+                else
+                    body.AppendChild(p);
+            }
+
+            doc.MainDocumentPart.Document.Save();
         }
 
         private void VerificarMarcadoresDelAnexo(WordprocessingDocument doc, string[] marcadores)
@@ -1807,7 +1858,8 @@ namespace ActivosFijos.Repositorios
             "Traspaso efect.",
             "Ajuste Baja",
             "Enviado a reparar",
-            "Ocioso Activo"
+            "Ocioso Activo",
+            "Traslado externo"
         };
 
         private void LlenarCeldaDelAnexo(WordprocessingDocument doc, string textoEtiqueta, string valor, bool llenarLaPrimeraVacia = true)

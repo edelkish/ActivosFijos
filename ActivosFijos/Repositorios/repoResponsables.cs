@@ -569,6 +569,20 @@ namespace ActivosFijos.Repositorios
         {
             return await _context.Responsables.Include(res => res.CargoNavigation).OrderBy(c => c.Nombre).FirstOrDefaultAsync(c => c.ResponsableDeEconomia);
         }
+        /// <summary>
+        /// Quien firma como "Autorizado por" es el jefe del area de Economia, no el que tenga
+        /// la bandera de ResponsableDeEconomia: son dos personas distintas en la base.
+        /// </summary>
+        public async Task<Responsable> ObtenerAutorizadoPor()
+        {
+            Responsable jefeDeEconomia = await _context.Responsables
+                .Include(res => res.CargoNavigation)
+                .OrderBy(c => c.Nombre)
+                .FirstOrDefaultAsync(c => c.ResponsableDelArea && c.AreaResponsabilidadNavigation!.Nombre.ToLower().Contains("econom"))
+                .ConfigureAwait(false);
+
+            return jefeDeEconomia ?? await ObtenerInfoEncargadoEconomia().ConfigureAwait(false);
+        }
         public async Task<Responsable> SeleccionarResponsablePorArea(Guid area, Guid resp)
         {
             var responsable = await _context.Responsables

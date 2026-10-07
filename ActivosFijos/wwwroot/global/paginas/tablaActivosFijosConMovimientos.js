@@ -42,6 +42,12 @@ function CargarTablaActivosFijosConMovimientos(fecha) {
                     });
 
                     $('#tablaActivosFijos').on('click', 'tr', function () {
+                        // El checkbox de seleccion para el Anexo 3 gestiona su propia fila
+                        // y no debe disparar la seleccion de un solo registro.
+                        if ($(event.target).hasClass('chkMovimientoAnexo3')) {
+                            return;
+                        }
+
                         if ($(this).hasClass('selected')) {
                             $(this).removeClass('selected');
                             idFilaSeleccionada = null;
@@ -55,6 +61,10 @@ function CargarTablaActivosFijosConMovimientos(fecha) {
                             idFilaSeleccionadaAux = $(this).data('fecha');
                             //document.getElementById('editar').removeAttribute('disabled');
                         }
+                    });
+
+                    $('#tablaActivosFijos').on('change', '.chkMovimientoAnexo3', function () {
+                        $(this).closest('tr').toggleClass('selected', this.checked);
                     });
                 }
 

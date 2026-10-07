@@ -14,12 +14,18 @@ namespace ActivosFijos.Models.EntidadesBD
         public Guid Id { get; set; }
         [Column("noInventario")]
         public long NoInventario { get; set; }
+        [Column("subNumero")]
+        public int SubNumero { get; set; }
         [Column("desde", TypeName = "datetime")]
         public DateTime Desde { get; set; }
         [Column("hasta", TypeName = "datetime")]
         public DateTime? Hasta { get; set; }
         [Column("responsable")]
         public Guid Responsable { get; set; }
+        [Column("tipoMovimiento")]
+        public Guid TipoMovimiento { get; set; }
+        [Column("areaDestino")]
+        public Guid AreaDestino { get; set; }
         [Column("motivo")]
         [StringLength(1000)]
         [Unicode(false)]
@@ -28,5 +34,11 @@ namespace ActivosFijos.Models.EntidadesBD
         [ForeignKey("Responsable")]
         [InverseProperty("TrasladosAfts")]
         public virtual Responsable ResponsableNavigation { get; set; } = null!;
+
+        [ForeignKey("TipoMovimiento")]
+        public virtual TipoMovimientoAFT TipoMovimientoNavigation { get; set; } = null!;
+
+        [ForeignKey("AreaDestino")]
+        public virtual AreaDeResponsabilidad AreaDestinoNavigation { get; set; } = null!;
     }
 }

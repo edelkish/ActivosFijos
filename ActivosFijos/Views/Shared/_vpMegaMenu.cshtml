@@ -72,7 +72,7 @@
                         <li aria-haspopup="true" class=" @Html.IsSelected("ctActFijos", "ExportarAFTClasificados")">
                             <a asp-action="ExportarAFTClasificados" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctActFijos", "ExportarAFTClasificados")"> Exportar Clasificados </a>
                         </li>
-                        <li aria-haspopup="true" class="dropdown-submenu @Html.IsSelectedAcc(new List<string> { "ActivosFijos", "DetallesDeMovimientos" })">
+                        <li aria-haspopup="true" class="dropdown-submenu @Html.IsSelectedAcc(new List<string> { "ActivosFijos", "DetallesDeMovimientos", "RegistrarMovimientos" })">
                             <a href="javascript:;" class="nav-link nav-toggle ">
                                 Generar Actas
                                 <span class="arrow"></span>
@@ -83,6 +83,9 @@
                                 </li>
                                 <li aria-haspopup="true" class=" @Html.IsSelected("ctActFijos", "DetallesDeMovimientos")">
                                     <a asp-action="DetallesDeMovimientos" asp-controller="ctActFijos" class="nav-link @Html.IsSelected("ctActFijos", "DetallesDeMovimientos")"> Movimientos Mensuales </a>
+                                </li>
+                                <li aria-haspopup="true" class=" @Html.IsSelected("ctMovimientos", "RegistrarMovimientos")">
+                                    <a asp-action="RegistrarMovimientos" asp-controller="ctMovimientos" class="nav-link @Html.IsSelected("ctMovimientos", "RegistrarMovimientos")"> Declarar Movimientos </a>
                                 </li>
                             </ul>
                         </li>

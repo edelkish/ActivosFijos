@@ -43,6 +43,8 @@ namespace ActivosFijos.Controllers
         private readonly repoClasificador _repoClasificador;
         private readonly repoTipoMovimiento _repoTipoMovimiento;
         private readonly repoParametro _repoParametro;
+        private readonly repoAnexo3Firmas _repoAnexo3Firmas;
+        private readonly repoTrasladosAFT _repoTrasladosAFT;
         private readonly IWebHostEnvironment _env;
 
         private class SelectListResponsable
@@ -60,7 +62,8 @@ namespace ActivosFijos.Controllers
 
         public ctActFijosController(aftContext context, repoActivosFijos repoActivosFijos, repoAreasDeResponsabilidad repoAreas, repoResponsables repoResponsables,
             repoCentrosDeCosto repoCentroDeCostos, repoValidaciones repoValidaciones, repoServcioActas repoServcioActas, repoClasificador repoClasificador,
-            repoTipoMovimiento repoTipoMovimiento, repoParametro repoParametro,
+            repoTipoMovimiento repoTipoMovimiento, repoParametro repoParametro, repoAnexo3Firmas repoAnexo3Firmas,
+            repoTrasladosAFT repoTrasladosAFT,
             IWebHostEnvironment env)
         {
             _context = context;
@@ -73,6 +76,8 @@ namespace ActivosFijos.Controllers
             _repoClasificador = repoClasificador;
             _repoTipoMovimiento = repoTipoMovimiento;
             _repoParametro = repoParametro;
+            _repoAnexo3Firmas = repoAnexo3Firmas;
+            _repoTrasladosAFT = repoTrasladosAFT;
             _env = env;
         }
 
@@ -256,6 +261,16 @@ namespace ActivosFijos.Controllers
             }
 
             ViewData["FechaSubmayor"] = fecha;
+
+            HashSet<string> firmasCargadas = (await _repoAnexo3Firmas.ObtenerPorFecha(fecha).ConfigureAwait(false))
+                .Select(f => f.NoInventario + "|" + f.SubNumero)
+                .ToHashSet();
+            ViewBag.FirmasCargadas = firmasCargadas;
+
+            Dictionary<string, TrasladosAft> movimientosDeclarados = (await _repoTrasladosAFT.ObtenerPorMes(fecha).ConfigureAwait(false))
+                .GroupBy(t => t.NoInventario + "|" + t.SubNumero)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.Desde).First());
+            ViewBag.MovimientosDeclarados = movimientosDeclarados;
 
             return PartialView("_vpTablaActivosFijosConMovimientos", actFijosList.OrderBy(act => act.AreaActual).ThenBy(act => act.ResponsableActual).ThenBy(act => act.NoInventario));
         }
@@ -1467,7 +1482,10 @@ namespace ActivosFijos.Controllers
             List<SelectListItem> areas = new List<SelectListItem>();
             List<SelectListItem> responsables = new List<SelectListItem>();
 
-            DateTime fechaParametro = fecha == null ? DateTime.Today : fecha.Value;
+            // El periodo no se elige libremente: se trabaja sobre el ultimo submayor importado.
+            // Antes el default era el mes anterior al de hoy, que no coincide con el submayor
+            // que realmente esta en la base y dejaba la pantalla sin movimientos.
+            DateTime fechaParametro = fecha ?? await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
 
             if (area == null || area == Guid.Empty)
             {
@@ -1493,126 +1511,299 @@ namespace ActivosFijos.Controllers
 
             ViewData["breadsC"] = LlenarBreadsCumbs("Listado de Movimientos");
 
-            ViewData["tiposMovimiento"] = (await _repoTipoMovimiento.ObtenerListadoDeTiposMovimientoActivos()).Select(t => new SelectListItem() { Text = t.Nombre, Value = t.Nombre, Selected = t.Nombre == "Traslado Interno" }).ToList();
-            ViewData["usuarios"] = (await _context.Usuarios.ToListAsync()).Select(u => new SelectListItem() { Text = (u.Nombre ?? "") + " " + (u.Apellidos ?? ""), Value = (u.Nombre ?? "") + " " + (u.Apellidos ?? "") }).ToList();
-
-            List<SelectListItem> cargosBase = (await _context.Cargos.ToListAsync()).Select(c => new SelectListItem() { Text = c.Nombre ?? "", Value = c.Nombre ?? "" }).ToList();
-            ViewData["cargos"] = cargosBase;
-
-            // Valores por defecto del Anexo 3. Se resuelven aqui para que los selectes
-            // del modal lleguen precargados, en lugar de completarse en el POST.
-            Responsable director = await _repoResponsables.ObtenerInfoDirector();
-            Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
-            string nombreUsuarioActual = NombreDelUsuarioConectado();
-
-            string nombreDirector = director != null ? director.Nombre + " " + director.Apellidos : string.Empty;
-            string nombreEncargado = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : string.Empty;
-            // El usuario logueado viene de la tabla Usuario, que no tiene cargo asociado.
-            string cargoHechoPorDefecto = string.Empty;
-            string cargoAprobadoPorDefecto = director?.CargoNavigation?.Nombre ?? string.Empty;
-            string cargoAutorizadoPorDefecto = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty;
-
-            List<string> nombresResponsables = (await _repoResponsables.ObtenerListadoResponsables(fechaParametro))
-                .Where(r => r.Nombre != "<<S/R>>")
-                .Select(r => r.Nombre + " " + r.Apellidos)
-                .ToList();
-
-            if (!string.IsNullOrWhiteSpace(nombreUsuarioActual) && !nombresResponsables.Contains(nombreUsuarioActual))
-                nombresResponsables.Insert(0, nombreUsuarioActual);
-
-            ViewData["responsablesHechoPor"] = ArmarListaSeleccion(nombresResponsables, nombreUsuarioActual);
-            ViewData["responsablesAprobadoPor"] = ArmarListaSeleccion(nombresResponsables, nombreDirector);
-            ViewData["responsablesAutorizadoPor"] = ArmarListaSeleccion(nombresResponsables, nombreEncargado);
-            ViewData["responsablesTransportador"] = ArmarListaSeleccion(nombresResponsables, null);
-            ViewData["cargosHechoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoHechoPorDefecto);
-            ViewData["cargosAprobadoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoAprobadoPorDefecto);
-            ViewData["cargosAutorizadoPor"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), cargoAutorizadoPorDefecto);
-            ViewData["cargosTransportador"] = ArmarListaSeleccion(cargosBase.Select(c => c.Text).ToList(), null);
-
             ViewData["respuesta"] = new clResponse<mdActas>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
 
-            return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fecha == null ? DateTime.Today.AddMonths(-1) : new DateTime(fecha.Value.Year, fecha.Value.Month, fecha.Value.Day) });
+            return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fechaParametro });
+        }
+
+        /// <summary>
+        /// Movimientos del mes con sus firmas ya cargadas, mas los datos fijos del anexo
+        /// (Aprobado por y Autorizado por) y los listados que necesita el panel lateral.
+        /// </summary>
+        [HttpPost]
+        public async Task<JsonResult> ListadoFirmasAnexo3(DateTime fecha, string area, string responsable)
+        {
+            try
+            {
+                List<ActivosFijosConMovimientos> movimientos = await _repoActivosFijos.ListadoActivosFijosConMovimientos(fecha).ConfigureAwait(false);
+
+                // Guid.Empty significa "Todos", asi que en ese caso no se filtra.
+                if (Guid.TryParse(area, out Guid idArea) && idArea != Guid.Empty)
+                {
+                    movimientos = movimientos.Where(c => c.idAreaAnterior.Equals(idArea) || c.idAreaActual.Equals(idArea)).ToList();
+                }
+
+                if (Guid.TryParse(responsable, out Guid idResponsable) && idResponsable != Guid.Empty)
+                {
+                    movimientos = movimientos.Where(c => c.idResponsableAnterior.Equals(idResponsable) || c.idResponsableActual.Equals(idResponsable)).ToList();
+                }
+
+                List<Anexo3Firmas> guardadas = await _repoAnexo3Firmas.ObtenerPorFecha(fecha).ConfigureAwait(false);
+
+                Dictionary<string, TrasladosAft> movimientosDeclaradosDict = (await _repoTrasladosAFT.ObtenerPorMes(fecha).ConfigureAwait(false))
+                    .GroupBy(t => t.NoInventario + "|" + t.SubNumero)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.Desde).First());
+
+                List<mdAnexo3Movimiento> resultado = movimientos
+                    .OrderBy(m => m.AreaActual).ThenBy(m => m.ResponsableActual).ThenBy(m => m.NoInventario)
+                    .Select(m =>
+                    {
+                        Anexo3Firmas? f = guardadas.FirstOrDefault(g => g.NoInventario == m.NoInventario && g.SubNumero == m.SubNumero);
+                        TrasladosAft movimientoDeclarado;
+                        bool siDeclarado = movimientosDeclaradosDict.TryGetValue(m.NoInventario + "|" + m.SubNumero, out movimientoDeclarado);
+                        return new mdAnexo3Movimiento
+                        {
+                            NoInventario = m.NoInventario,
+                            SubNumero = m.SubNumero,
+                            Descripcion = m.Descripcion ?? string.Empty,
+                            AreaAnterior = m.AreaAnterior ?? string.Empty,
+                            AreaActual = m.AreaActual ?? string.Empty,
+                            ResponsableAnterior = m.ResponsableAnterior ?? string.Empty,
+                            ResponsableActual = m.ResponsableActual ?? string.Empty,
+                            SiFirmasCargadas = f != null,
+                            TipoDeclarado = siDeclarado && movimientoDeclarado.TipoMovimientoNavigation != null ? movimientoDeclarado.TipoMovimientoNavigation.Nombre : string.Empty,
+                            Firmas = f == null
+                                ? new mdAnexo3Firmas { NoInventario = m.NoInventario, SubNumero = m.SubNumero, TipoMovimiento = siDeclarado && movimientoDeclarado.TipoMovimientoNavigation != null ? movimientoDeclarado.TipoMovimientoNavigation.Nombre : "Traslado Interno" }
+                                : new mdAnexo3Firmas
+                                {
+                                    NoInventario = m.NoInventario,
+                                    SubNumero = m.SubNumero,
+                                    TipoMovimiento = f.TipoMovimiento ?? string.Empty,
+                                    Fundamentacion = f.Fundamentacion ?? string.Empty,
+                                    InformeTecnico = f.InformeTecnico ?? string.Empty,
+                                    NombreTecnico = f.NombreTecnico ?? string.Empty,
+                                    CargoTecnico = f.CargoTecnico ?? string.Empty,
+                                    HechoPor = f.HechoPor ?? string.Empty,
+                                    CargoHechoPor = f.CargoHechoPor ?? string.Empty,
+                                    TransportadorReceptor = f.TransportadorReceptor ?? string.Empty,
+                                    CargoTransportadorReceptor = f.CargoTransportadorReceptor ?? string.Empty,
+                                    Comprobante = f.Comprobante ?? string.Empty,
+                                    DireccionReceptor = f.DireccionReceptor ?? string.Empty,
+                                    ReceptorNombre = f.ReceptorNombre ?? string.Empty,
+                                    ReceptorArea = f.ReceptorArea ?? string.Empty
+                                }
+                        };
+                    }).ToList();
+
+                Responsable director = await _repoResponsables.ObtenerInfoDirector().ConfigureAwait(false);
+                Responsable encargadoEconomia = await _repoResponsables.ObtenerAutorizadoPor().ConfigureAwait(false);
+
+// Sin filtro por mes: este desplegable es "quien firma", no "quien tuvo Activos en el mes".
+// Filtrar por mes dejaba la lista vacia en meses sin ActFijos y los selects quedaban sin opciones.
+// El cargo viaja con el responsable: si no tiene cargo asociado, el panel lo deja elegir.
+List<mdResponsableCargo> listaResponsables = (await _repoResponsables.ObtenerListadoResponsables().ConfigureAwait(false))
+    .Where(r => r.Nombre != "<<S/R>>" && !string.IsNullOrWhiteSpace(r.Nombre))
+    .Select(r => new mdResponsableCargo
+    {
+        Nombre = (r.Nombre + " " + r.Apellidos).Trim(),
+        Cargo = r.CargoNavigation?.Nombre ?? string.Empty,
+        Area = r.AreaResponsabilidadNavigation?.Nombre ?? string.Empty
+    })
+    .Where(r => r.Nombre != string.Empty)
+    .GroupBy(r => r.Nombre)
+    .Select(g => g.First())
+    .ToList();
+
+List<string> listaCargos = (await _context.Cargos.ToListAsync().ConfigureAwait(false))
+    .Select(c => c.Nombre ?? string.Empty)
+    .Where(c => c != string.Empty)
+    .Distinct()
+    .ToList();
+
+if (!string.IsNullOrWhiteSpace(NombreDelUsuarioConectado()) && !listaResponsables.Any(r => r.Nombre == NombreDelUsuarioConectado()))
+    listaResponsables.Insert(0, new mdResponsableCargo { Nombre = NombreDelUsuarioConectado(), Cargo = string.Empty });
+
+// El bloque Receptor muestra la direccion de la UEB, que esta en la tabla de parametros.
+Parametro paramDireccionUEB = await _repoParametro.SeleccionarParametroPorNombre("Dirección UEB").ConfigureAwait(false);
+
+return Json(new
+                {
+                    movimientos = resultado,
+                    aprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>",
+                    cargoAprobadoPor = director?.CargoNavigation?.Nombre ?? string.Empty,
+                    autorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>",
+                    cargoAutorizadoPor = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty,
+                    direccionUEB = paramDireccionUEB?.Valor ?? string.Empty,
+                    tiposMovimiento = (await _repoTipoMovimiento.ObtenerListadoDeTiposMovimientoActivos().ConfigureAwait(false)).Select(t => t.Nombre).ToList(),
+                    responsables = listaResponsables,
+                    cargos = listaCargos
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { siNo = false, objMensaje = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> FirmasAnexo3(DateTime fecha, string firmas)
+        {
+            try
+            {
+                List<mdAnexo3Firmas>? lista = string.IsNullOrWhiteSpace(firmas)
+                    ? null
+                    : System.Text.Json.JsonSerializer.Deserialize<List<mdAnexo3Firmas>>(firmas);
+
+                if (lista == null)
+                    return Json(new { siNo = false, objMensaje = "No se recibieron firmas para guardar." });
+
+                var resultado = await _repoAnexo3Firmas.Upsert(fecha, lista).ConfigureAwait(false);
+                return Json(new { siNo = resultado.SiSatisfactorio, objMensaje = resultado.Mensaje });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { siNo = false, objMensaje = ex.Message });
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerarAnexosMovimientos(mdActas model, mdAnexo3 datos)
+        public async Task<IActionResult> GenerarAnexosMovimientos(mdActas model, string movimientos, string modo)
         {
             try
             {
                 string nombreMes = repoServcioActas.GetNameMonth(model.Fecha.Month, model.Fecha.Year);
 
-                List<ActivosFijosAnexo3> movimientos = await _repoActivosFijos.ListadoActivosFijosAnexo3(model.Fecha);
+                List<ActivosFijosAnexo3> todos = await _repoActivosFijos.ListadoActivosFijosAnexo3(model.Fecha).ConfigureAwait(false);
 
                 if (model.Area != Guid.Empty)
-                    movimientos = movimientos.Where(m => m.idAreaAnterior.Equals(model.Area) || m.idAreaActual.Equals(model.Area)).ToList();
+                    todos = todos.Where(m => m.idAreaAnterior.Equals(model.Area) || m.idAreaActual.Equals(model.Area)).ToList();
                 if (model.Responsable != Guid.Empty)
-                    movimientos = movimientos.Where(m => m.idResponsableAnterior.Equals(model.Responsable) || m.idResponsableActual.Equals(model.Responsable)).ToList();
+                    todos = todos.Where(m => m.idResponsableAnterior.Equals(model.Responsable) || m.idResponsableActual.Equals(model.Responsable)).ToList();
 
-                if (movimientos.Count == 0)
+                if (todos.Count == 0)
                 {
                     clGlobal.siNo = false;
                     clGlobal.objMensaje = "No existen movimientos en la fecha seleccionada.";
                     return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
                 }
 
-                datos.TipoMovimiento = string.IsNullOrEmpty(datos.TipoMovimiento) ? "Traslado Interno" : datos.TipoMovimiento;
+                List<mdClaveMovimiento>? claves = string.IsNullOrWhiteSpace(movimientos)
+                    ? null
+                    : System.Text.Json.JsonSerializer.Deserialize<List<mdClaveMovimiento>>(movimientos);
 
-                if (string.IsNullOrWhiteSpace(datos.HechoPor))
-                    datos.HechoPor = NombreDelUsuarioConectado();
+                List<ActivosFijosAnexo3> seleccionados = claves == null || claves.Count == 0
+                    ? todos
+                    : todos.Where(t => claves.Any(c => c.NoInventario == t.NoInventario && c.SubNumero == t.SubNumero)).ToList();
 
-                // Los roles con cargo predefined solo se resuelven si el modal los dejo vacios,
-                // para que lo que el usuario elija en pantalla tenga prioridad.
-                if (string.IsNullOrWhiteSpace(datos.AprobadoPor))
+                if (seleccionados.Count == 0)
                 {
-                    Responsable director = await _repoResponsables.ObtenerInfoDirector();
-                    datos.AprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>";
-                    if (string.IsNullOrWhiteSpace(datos.CargoAprobadoPor))
-                        datos.CargoAprobadoPor = director?.CargoNavigation?.Nombre ?? string.Empty;
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = "No hay movimientos seleccionados para generar.";
+                    return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
                 }
 
-                if (string.IsNullOrWhiteSpace(datos.AutorizadoPor))
-                {
-                    Responsable encargadoEconomia = await _repoResponsables.ObtenerInfoEncargadoEconomia();
-                    datos.AutorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>";
-                    if (string.IsNullOrWhiteSpace(datos.CargoAutorizadoPor))
-                        datos.CargoAutorizadoPor = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty;
-                }
+                List<Anexo3Firmas> firmas = await _repoAnexo3Firmas.ObtenerPorFecha(model.Fecha).ConfigureAwait(false);
 
-                datos.Entidad = string.Empty;
-                datos.Direccion = string.Empty;
-                datos.UEB = string.Empty;
-                datos.DireccionUEB = string.Empty;
+                // Un anexo por activo, o uno solo por cada grupo de activos que comparte
+                // tipo de movimiento y receptor. El cruce solo agrupa: no bloquea nada.
+                List<List<ActivosFijosAnexo3>> lotes = string.Equals(modo, "agrupado", StringComparison.OrdinalIgnoreCase)
+                    ? seleccionados
+                        .GroupBy(mv => ClaveDeAgrupacionDelAnexo(mv, firmas))
+                        .Select(g => g.OrderBy(x => x.NoInventario).ThenBy(x => x.SubNumero).ToList())
+                        .ToList()
+                    : seleccionados.Select(mv => new List<ActivosFijosAnexo3> { mv }).ToList();
 
-                Parametro paramEntidad = await _repoParametro.SeleccionarParametroPorNombre("Entidad");
-                Parametro paramDireccion = await _repoParametro.SeleccionarParametroPorNombre("Dirección");
-                Parametro paramUEB = await _repoParametro.SeleccionarParametroPorNombre("UEB");
-                Parametro paramDireccionUEB = await _repoParametro.SeleccionarParametroPorNombre("Dirección UEB");
+                Responsable director = await _repoResponsables.ObtenerInfoDirector().ConfigureAwait(false);
+                Responsable encargadoEconomia = await _repoResponsables.ObtenerAutorizadoPor().ConfigureAwait(false);
+                string nombreUsuarioConectado = NombreDelUsuarioConectado();
 
-                datos.Entidad = paramEntidad?.Valor ?? string.Empty;
-                datos.Direccion = paramDireccion?.Valor ?? string.Empty;
-                datos.UEB = paramUEB?.Valor ?? string.Empty;
-                datos.DireccionUEB = paramDireccionUEB?.Valor ?? string.Empty;
+                Parametro paramEntidad = await _repoParametro.SeleccionarParametroPorNombre("Entidad").ConfigureAwait(false);
+                Parametro paramDireccion = await _repoParametro.SeleccionarParametroPorNombre("Dirección").ConfigureAwait(false);
+                Parametro paramUEB = await _repoParametro.SeleccionarParametroPorNombre("UEB").ConfigureAwait(false);
+                Parametro paramDireccionUEB = await _repoParametro.SeleccionarParametroPorNombre("Dirección UEB").ConfigureAwait(false);
 
                 MemoryStream msZIP = new MemoryStream();
+                List<string> fallos = new List<string>();
+                int documentos = 0;
+
                 using (var zip = new ZipArchive(msZIP, ZipArchiveMode.Create, true))
                 {
-                    foreach (var mv in movimientos)
+                    foreach (var lote in lotes)
                     {
-                        byte[] docx = _repoServcioActas.ExportarAnexo3(out bool result, out string msg, mv, model.Fecha, datos);
-                        if (docx == null)
-                            continue;
+                        // Fundamentacion, informe, comprobante y firmas salen del primer activo
+                        // del grupo: es el que da la cara por todos.
+                        ActivosFijosAnexo3 mv = lote[0];
+                        string etiqueta = mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString();
 
-                        string tituloDoc = "Anexo3 - " + (mv.SubNumero != 0 ? mv.NoInventario.ToString() + "-" + mv.SubNumero.ToString() : mv.NoInventario.ToString()) + " (" + nombreMes.Replace('/', '-') + ").docx";
-                        var entry = zip.CreateEntry(tituloDoc);
-                        using (var fileStream = new MemoryStream(docx))
-                        using (var entryStream = entry.Open())
+                        Anexo3Firmas? f = firmas.FirstOrDefault(x => x.NoInventario == mv.NoInventario && x.SubNumero == mv.SubNumero);
+
+                        // El transportador solo tiene sentido en traslado externo y enviado a reparar.
+                        bool aplicaTransportador = f != null && EsMovimientoConTransportador(f.TipoMovimiento);
+
+                        mdAnexo3 datos = new mdAnexo3
                         {
-                            fileStream.CopyTo(entryStream);
+                            TipoMovimiento = string.IsNullOrWhiteSpace(f?.TipoMovimiento) ? "Traslado Interno" : f!.TipoMovimiento!,
+                            Fundamentacion = f?.Fundamentacion ?? string.Empty,
+                            InformeTecnico = f?.InformeTecnico ?? string.Empty,
+                            NombreTecnico = f?.NombreTecnico ?? string.Empty,
+                            CargoTecnico = f?.CargoTecnico ?? string.Empty,
+                            Comprobante = f?.Comprobante ?? string.Empty,
+                            HechoPor = string.IsNullOrWhiteSpace(f?.HechoPor) ? nombreUsuarioConectado : f!.HechoPor!,
+                            TransportadorReceptor = aplicaTransportador ? f!.TransportadorReceptor ?? string.Empty : string.Empty,
+                            CargoTransportadorReceptor = aplicaTransportador ? f!.CargoTransportadorReceptor ?? string.Empty : string.Empty,
+                            ReceptorNombre = f?.ReceptorNombre ?? string.Empty,
+                            ReceptorArea = f?.ReceptorArea ?? string.Empty,
+                            // Aprobado y Autorizado son fijos: el Director de la UEB y el jefe
+                            // del area de Economia.
+                            AprobadoPor = director != null ? director.Nombre + " " + director.Apellidos : "<<S/D>>",
+                            CargoAprobadoPor = director?.CargoNavigation?.Nombre ?? string.Empty,
+                            AutorizadoPor = encargadoEconomia != null ? encargadoEconomia.Nombre + " " + encargadoEconomia.Apellidos : "<<S/D>>",
+                            CargoAutorizadoPor = encargadoEconomia?.CargoNavigation?.Nombre ?? string.Empty,
+                            Entidad = paramEntidad?.Valor ?? string.Empty,
+                            Direccion = paramDireccion?.Valor ?? string.Empty,
+                            UEB = paramUEB?.Valor ?? string.Empty,
+                            // La direccion del receptor solo se captura en traslado externo y
+                            // enviado a reparar. En los demos tipos la del receptor es la de la UEB.
+                            DireccionUEB = aplicaTransportador && !string.IsNullOrWhiteSpace(f?.DireccionReceptor)
+                                ? f!.DireccionReceptor!
+                                : paramDireccionUEB?.Valor ?? string.Empty
+                        };
+
+                        // Con mas de un activo el anexo sale en dos caras y el detalle va al reverso.
+                        List<mdAnexo3Detalle>? reverso = lote.Count > 1
+                            ? lote.Select(x => new mdAnexo3Detalle
+                            {
+                                NoInventario = x.SubNumero != 0 ? x.NoInventario.ToString() + "-" + x.SubNumero.ToString() : x.NoInventario.ToString(),
+                                Descripcion = x.Descripcion,
+                                Valor = (x.ValorContable ?? 0).ToString("#,##0.00")
+                            }).ToList()
+                            : null;
+
+                        byte[] docx = _repoServcioActas.ExportarAnexo3(out bool result, out string msg, mv, model.Fecha, datos, reverso);
+                        if (docx == null)
+                        {
+                            // Antes se continuaba en silencio y el usuario se llevaba un ZIP vacio
+                            // sin saber que ningun documento se habia generado.
+                            fallos.Add(etiqueta + ": " + msg);
+                            continue;
                         }
+
+                        documentos++;
+                        string tituloDoc = "Anexo3 - " + (reverso != null
+                            ? lote.Count + " activos (inv. " + etiqueta + ")"
+                            : etiqueta) + " (" + nombreMes.Replace('/', '-') + ").docx";
+                        var entry = zip.CreateEntry(tituloDoc);
+                        using var fileStream = new MemoryStream(docx);
+                        using var entryStream = entry.Open();
+                        fileStream.CopyTo(entryStream);
                     }
+                }
+
+                if (documentos == 0)
+                {
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = "No se genero ningun anexo. " +
+                        (fallos.Count > 0 ? "Motivo: " + fallos[0] : "Vuelva a intentarlo.");
+                    return RedirectToAction(nameof(DetallesDeMovimientos), new { area = model.Area, responsable = model.Responsable, fecha = model.Fecha });
+                }
+
+                if (fallos.Count > 0)
+                {
+                    clGlobal.siNo = false;
+                    clGlobal.objMensaje = $"Se generaron {documentos} de {lotes.Count} anexos. No se pudieron generar {fallos.Count}: {fallos[0]}";
                 }
 
                 return File(msZIP.ToArray(), "application/zip", $"Anexos Movimientos ({nombreMes.Replace('/', '-')}).zip");
@@ -1925,21 +2116,40 @@ namespace ActivosFijos.Controllers
             }
         }
 
+        /// <summary>
+        /// El Transportador o Receptor solo se imprime, y por lo tanto solo se pide, en los
+        /// traslados externos y en los enviados a reparar.
+        /// </summary>
+        private static bool EsMovimientoConTransportador(string? tipoMovimiento)
+        {
+            if (string.IsNullOrWhiteSpace(tipoMovimiento))
+                return false;
+
+            string t = tipoMovimiento.Trim().ToLowerInvariant();
+            return t == "traslado externo" || t == "enviado a reparar";
+        }
+
+        /// <summary>
+        /// Dos activos van en el mismo Anexo 3 solo si comparten tipo de movimiento y
+        /// receptor. Sin firmas cargadas se usa lo que calculo el submayor, igual que al
+        /// imprimir, para que el agrupado y la vista previa digan lo mismo.
+        /// </summary>
+        private static string ClaveDeAgrupacionDelAnexo(ActivosFijosAnexo3 mv, List<Anexo3Firmas> firmas)
+        {
+            Anexo3Firmas? f = firmas.FirstOrDefault(x => x.NoInventario == mv.NoInventario && x.SubNumero == mv.SubNumero);
+
+            string tipo = string.IsNullOrWhiteSpace(f?.TipoMovimiento) ? "Traslado Interno" : f!.TipoMovimiento!;
+            string receptor = string.IsNullOrWhiteSpace(f?.ReceptorNombre) ? mv.ResponsableActual ?? string.Empty : f!.ReceptorNombre!;
+            string area = string.IsNullOrWhiteSpace(f?.ReceptorArea) ? mv.AreaActual ?? string.Empty : f!.ReceptorArea!;
+
+            return tipo.Trim().ToLowerInvariant() + "|" + receptor.Trim() + "|" + area.Trim();
+        }
+
         private string NombreDelUsuarioConectado()
         {
             return User.Identity != null && User.Identity.IsAuthenticated
                 ? User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value ?? string.Empty
                 : string.Empty;
-        }
-
-        private static List<SelectListItem> ArmarListaSeleccion(List<string> valores, string? porDefecto)
-        {
-            return valores.Select(v => new SelectListItem
-            {
-                Text = v,
-                Value = v,
-                Selected = !string.IsNullOrWhiteSpace(porDefecto) && v == porDefecto
-            }).ToList();
         }
 
         private List<clBreadCumb> LlenarBreadsCumbs(string titulo)

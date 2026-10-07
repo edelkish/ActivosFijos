@@ -21,13 +21,12 @@
         <link href="~/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css">
         <link rel="stylesheet" href="~/global/plugins/jquery-confirm/css/jquery-confirm.css">
 
-        <link href="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
-
         <link href="~/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
         <link href="~/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
     </environment>
 }
 @section Styles{
+    <link rel="stylesheet" href="~/global/paginas/panelAnexo3.css" type="text/css" />
     <style type="text/css">
         .mt-checkbox-list, .mt-radio-list {
             padding: 0 0;
@@ -88,13 +87,9 @@
                                 <div class="form-body">
                                     @Html.AntiForgeryToken()
                                     <div class="form-group">
-                                        <label class="control-label">Mes y A&ntilde;o:</label>
-                                        <div class='input-group date' id='datetimepickerImportar'>
-                                            <input type='text' class="form-control" asp-for="Fecha" />
-                                            <span class="input-group-addon">
-                                                <span class="glyphicon glyphicon-calendar"></span>
-                                            </span>
-                                        </div>
+                                        <label class="control-label" id="etiquetaPeriodo">Submayor:</label>
+                                        <input type="text" class="form-control" asp-for="Fecha" readonly="readonly" />
+                                        <span class="help-block" id="etiquetaSubmayor"></span>
                                     </div>
                                     <div id="selectAreas">
                                         <partial name="_vpAreas" model="Model" />
@@ -106,7 +101,7 @@
                                 <div class="form-actions">
                                     <div class="btn-set pull-left">
                                         <button type="submit" class="btn blue-hoki btn-outline sbold uppercase" id="generarActa"><i class="fa fa-file"></i> Generar Acta</button>
-                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="generarAnexo3"><i class="fa fa-file-text-o"></i> Generar Anexo 3</button>
+                                        <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="generarAnexo3"><i class="fa fa-file-text-o"></i> Firmas del Anexo 3</button>
                                     </div>
                                     <div class="btn-set pull-right">
                                         <button type="button" class="btn blue-hoki btn-outline sbold uppercase" id="mostrar"><i class="fa fa-search"></i> Mostrar Movimientos</button>
@@ -186,230 +181,110 @@
             </div>
         </div>
 
-        <div id="modalAnexo3" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <form asp-action="GenerarAnexosMovimientos" asp-controller="ctActFijos" method="post" id="formGenerarAnexo3">
-                        @Html.AntiForgeryToken()
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
-                            <h4 class="modal-title">Generar Anexo 3 (SC-1-01)</h4>
-                        </div>
-                        <div class="modal-body">
-                            <input type="hidden" name="Fecha" id="modalAnexo3Fecha" />
-                            <input type="hidden" name="Area" id="modalAnexo3Area" />
-                            <input type="hidden" name="Responsable" id="modalAnexo3Responsable" />
-                            <div class="form-group">
-                                <label class="control-label">Tipo de Movimiento:</label>
-                                <select class="form-control select2me" id="tipoMovimiento" name="tipoMovimiento">
-                                    @foreach (SelectListItem tm in (List<SelectListItem>)ViewData["tiposMovimiento"])
-                                    {
-                                        if (tm.Selected)
-                                        {
-                                            <option value="@tm.Value" selected="selected">@tm.Text</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@tm.Value">@tm.Text</option>
-                                        }
-                                    }
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="control-label">Fundamentaci&oacute;n:</label>
-                                <textarea class="form-control" name="fundamentacion" rows="2" autocomplete="off"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label class="control-label">Informe T&eacute;cnico:</label>
-                                <textarea class="form-control" name="informeTecnico" rows="2" autocomplete="off"></textarea>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Nombre:</label>
-                                        <select class="form-control select2me" id="NombreTecnico" name="nombreTecnico">
-                                            <option value="">Seleccione el nombre</option>
-                                            @foreach (SelectListItem usr in (List<SelectListItem>)ViewData["usuarios"])
-                                            {
-                                                <option value="@usr.Value">@usr.Text</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Cargo:</label>
-                                        <select class="form-control select2me" id="CargoTecnico" name="cargoTecnico">
-                                            <option value="">Seleccione el cargo</option>
-                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargos"])
-                                            {
-                                                <option value="@cargo.Value">@cargo.Text</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="control-label">Comprobante No.:</label>
-                                <input type="text" class="form-control" name="comprobante" autocomplete="off" />
-                            </div>
-                            <hr />
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Hecho por:</label>
-                                        <select class="form-control select2me" id="HechoPor" name="hechoPor">
-                                            <option value="">Seleccione el nombre</option>
-                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesHechoPor"])
-                                            {
-                                                if (res.Selected)
-                                                {
-                                                    <option value="@res.Text" selected="selected">@res.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@res.Text">@res.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Cargo:</label>
-                                        <select class="form-control select2me" id="CargoHechoPor" name="cargoHechoPor">
-                                            <option value="">Seleccione el cargo</option>
-                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosHechoPor"])
-                                            {
-                                                if (cargo.Selected)
-                                                {
-                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@cargo.Text">@cargo.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Aprobado por:</label>
-                                        <select class="form-control select2me" id="AprobadoPor" name="aprobadoPor">
-                                            <option value="">Seleccione el nombre</option>
-                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesAprobadoPor"])
-                                            {
-                                                if (res.Selected)
-                                                {
-                                                    <option value="@res.Text" selected="selected">@res.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@res.Text">@res.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Cargo:</label>
-                                        <select class="form-control select2me" id="CargoAprobadoPor" name="cargoAprobadoPor">
-                                            <option value="">Seleccione el cargo</option>
-                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosAprobadoPor"])
-                                            {
-                                                if (cargo.Selected)
-                                                {
-                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@cargo.Text">@cargo.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Autorizado por:</label>
-                                        <select class="form-control select2me" id="AutorizadoPor" name="autorizadoPor">
-                                            <option value="">Seleccione el nombre</option>
-                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesAutorizadoPor"])
-                                            {
-                                                if (res.Selected)
-                                                {
-                                                    <option value="@res.Text" selected="selected">@res.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@res.Text">@res.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Cargo:</label>
-                                        <select class="form-control select2me" id="CargoAutorizadoPor" name="cargoAutorizadoPor">
-                                            <option value="">Seleccione el cargo</option>
-                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosAutorizadoPor"])
-                                            {
-                                                if (cargo.Selected)
-                                                {
-                                                    <option value="@cargo.Text" selected="selected">@cargo.Text</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@cargo.Text">@cargo.Text</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Transportador o Receptor:</label>
-                                        <select class="form-control select2me" id="TransportadorReceptor" name="transportadorReceptor">
-                                            <option value="">Seleccione el nombre</option>
-                                            @foreach (SelectListItem res in (List<SelectListItem>)ViewData["responsablesTransportador"])
-                                            {
-                                                <option value="@res.Text">@res.Text</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="control-label">Cargo:</label>
-                                        <select class="form-control select2me" id="CargoTransportadorReceptor" name="cargoTransportadorReceptor">
-                                            <option value="">Seleccione el cargo</option>
-                                            @foreach (SelectListItem cargo in (List<SelectListItem>)ViewData["cargosTransportador"])
-                                            {
-                                                <option value="@cargo.Text">@cargo.Text</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn default" data-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn blue-hoki">Generar</button>
-                        </div>
-                    </form>
+        <!-- Panel lateral: firmas del Anexo 3 por movimiento -->
+<div class="ax3-overlay" id="ax3Overlay"></div>
+<div class="ax3-panel" id="ax3Panel">
+    <div class="ax3-panel-header">
+        <span id="ax3PanelTitulo">Anexo 3 (SC-1-01) - Firmas por movimiento</span>
+        <button type="button" class="close" id="ax3Cerrar" aria-label="Close">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+    <div class="ax3-panel-body">
+        <p class="ax3-instruccion">
+            Marc&aacute; un movimiento en la tabla para cargarle las firmas. Con varios marcados,
+            us&aacute; los botones para recorrerlos.
+        </p>
+        <form id="formGenerarAnexo3" asp-action="GenerarAnexosMovimientos" asp-controller="ctActFijos" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Fecha" id="ax3Fecha" />
+            <input type="hidden" name="Area" id="ax3Area" />
+            <input type="hidden" name="Responsable" id="ax3Responsable" />
+            <input type="hidden" name="movimientos" id="ax3Movimientos" />
+
+            <div class="alert alert-info">
+                <b>Aprobado por</b> y <b>Autorizado por</b> son fijos: el Director y el Encargado de Econom&iacute;a.
+                El resto se llena por movimiento.
+            </div>
+
+            <div class="ax3-fijos" id="ax3Fijos">
+                <div class="ax3-fijo">
+                    <span class="ax3-fijo-label">Aprobado por</span>
+                    <span class="ax3-fijo-valor" id="ax3AprobadoPor">-</span>
+                    <span class="ax3-fijo-cargo" id="ax3CargoAprobadoPor"></span>
+                </div>
+                <div class="ax3-fijo">
+                    <span class="ax3-fijo-label">Autorizado por</span>
+                    <span class="ax3-fijo-valor" id="ax3AutorizadoPor">-</span>
+                    <span class="ax3-fijo-cargo" id="ax3CargoAutorizadoPor"></span>
+                </div>
+
+                <!-- Receptor: depende del movimiento, por eso lo arma el JS al navegar.
+                     Nombre y Area son editables: el usuario puede cambiar quien recepciona
+                     sin depender de lo que el submayor calculo. -->
+                <div class="ax3-receptor" id="ax3Receptor" style="display:none">
+                    <div class="ax3-receptor-titulo">Receptor</div>
+                    <div class="ax3-fijo">
+                        <span class="ax3-fijo-label">Nombre</span>
+                        <span class="ax3-fijo-dato" id="ax3ReceptorNombre"></span>
+                    </div>
+                    <div class="ax3-fijo">
+                        <span class="ax3-fijo-label">Direcci&oacute;n</span>
+                        <span class="ax3-fijo-dato" id="ax3ReceptorDireccion">-</span>
+                    </div>
+                    <div class="ax3-fijo">
+                        <span class="ax3-fijo-label">&Aacute;rea</span>
+                        <span class="ax3-fijo-dato" id="ax3ReceptorArea"></span>
+                    </div>
                 </div>
             </div>
-        </div>
-        <!-- END PAGE CONTENT INNER -->
+
+            <div class="ax3-navegacion" id="ax3Navegacion" style="display:none">
+                <div class="ax3-nav-botones">
+                    <button type="button" class="btn btn-sm default" id="ax3Anterior" disabled>
+                        <i class="fa fa-arrow-left"></i> Anterior
+                    </button>
+                    <span class="ax3-posicion" id="ax3Posicion"></span>
+                    <button type="button" class="btn btn-sm default" id="ax3Siguiente">
+                        Siguiente <i class="fa fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="ax3-nav-movimiento">
+                    <span class="ax3-nav-no" id="ax3MovActual"></span>
+                    <span class="ax3-nav-desc" id="ax3DescActual"></span>
+                </div>
+            </div>
+
+            <div class="ax3-bulk">
+                <span id="ax3Contador">0 movimientos</span>
+                <div>
+                    <button type="button" class="btn btn-xs default" id="ax3MarcarTodos"><i class="fa fa-check"></i> Marcar todos</button>
+                    <button type="button" class="btn btn-xs default" id="ax3DesmarcarTodos"><i class="fa fa-unchecked"></i> Desmarcar</button>
+                </div>
+            </div>
+
+            <!-- Solo aparece si 2 o mas marcados comparten tipo de movimiento y receptor -->
+            <div class="ax3-modo" id="ax3ModoWrap" style="display:none">
+                <span class="ax3-modo-titulo">Generar</span>
+                <label class="ax3-modo-opcion">
+                    <input type="radio" name="modo" value="por-activo" checked="checked" />
+                    Un anexo por activo
+                </label>
+                <label class="ax3-modo-opcion">
+                    <input type="radio" name="modo" value="agrupado" />
+                    Un solo anexo con reverso
+                </label>
+                <span class="ax3-modo-ayuda">Junta los activos del mismo receptor en una sola plana.</span>
+            </div>
+
+            <div id="ax3Formulario"></div>
+        </form>
+    </div>
+    <div class="ax3-panel-footer">
+        <button type="button" class="btn btn-block btn-primary" id="ax3Generar"><i class="fa fa-file-text-o"></i> Generar Anexos de los marcados</button>
+    </div>
+</div>
+<!-- END PAGE CONTENT INNER -->
     </div>
 </div>
 <!-- END PAGE CONTENT BODY -->
@@ -423,8 +298,6 @@
         <script src="~/global/plugins/jquery-confirm/js/jquery-confirm.js"></script>
 
         <script type="text/javascript" src="~/global/plugins/moment/min/moment.min.js"></script>
-        <script type="text/javascript" src="~/global/plugins/moment/locale/es.js"></script>
-        <script src="~/global/plugins/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
 
         <script src="~/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
     </environment>
@@ -460,16 +333,13 @@
         InicializarSelect2("#Area", "Seleccione el área");
         InicializarSelect2("#Responsable", "Seleccione el responsable");
 
-        $('#datetimepickerImportar').datetimepicker({
-            format: 'MM/YYYY',
-            locale: 'es',
-            maxDate: moment().subtract(1, 'months'),
-            viewMode: 'months'
-        }).on('dp.change', function (event) {
-            var valueFecha = moment(new Date(event.date._d)).format("MM/YYYY");
-            CargarAreasPorFecha(valueFecha);
-            CargarResponsablesPorFecha(valueFecha);
-        });
+        // El periodo es fijo: el ultimo submayor importado. Por eso no se inicializa el
+        // datetimepicker de la fecha, que ademas estaba limitado al mes anterior al de hoy.
+        var MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+            'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        var partesFecha = fecha.split('/');
+        $('#etiquetaSubmayor').text('Submayor de ' + MESES[parseInt(partesFecha[1], 10) - 1] +
+            ' ' + partesFecha[0] + ' (último importado)');
 
         $('#mostrar').on('click', function () {
             var valueFecha = $('#Fecha').val();
@@ -524,138 +394,13 @@
                 width: null
             });
         }
-
-        function CargarAreasPorFecha(valueFecha) {
-            $.ajax({
-                url: baseUrl + 'ctActFijos/ListadoDeAreasPorFecha',
-                method: 'POST',
-                //async: false,
-                data: { fecha: valueFecha, siMovimientos: true },
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
-                },
-                success: function (data) {
-                    $('#selectAreas').html(data);
-
-                    InicializarSelect2("#Area", "Seleccione el área");
-
-                    $('#Area').on('change', function () {
-                        var areaResponsabilidad = $('#Area').val();
-
-                        $.ajax({
-                            url: baseUrl + 'ctActFijos/ListadoDeResponsablesPorFechaYArea',
-                            method: 'POST',
-                            //async: false,
-                            data: { fecha: $('#Fecha').val(), area: areaResponsabilidad, siMovimiento: true },
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
-                            },
-                            success: function (data) {
-                                $('#selectResponsables').html(data);
-
-                                InicializarSelect2("#Responsable", "Seleccione el responsable");
-                            },
-                            error: function (err) {
-                                console.log(err);
-                            }
-
-                        });
-
-                        $.ajax({
-                            url: baseUrl + 'ctActFijos/CargarInfoResponsableDelArea',
-                            method: 'POST',
-                            //async: false,
-                            data: { area: areaResponsabilidad },
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
-                            },
-                            success: function (data) {
-                                $('#labelResponsableDelArea').html(data);
-                            },
-                            error: function (err) {
-                                console.log(err);
-                            }
-
-                        });
-                    });
-                },
-                error: function (err) {
-                    console.log(err);
-                }
-
-            });
-        }
-
-        function CargarResponsablesPorFecha(valueFecha) {
-            $.ajax({
-                url: baseUrl + 'ctActFijos/ListadoDeResponsablesPorFecha',
-                method: 'POST',
-                //async: false,
-                data: { fecha: valueFecha, siMovimiento: true },
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("XSRF-TOKEN", $('#RequestVerificationToken').val());
-                },
-                success: function (data) {
-                    $('#selectResponsables').html(data);
-
-                    InicializarSelect2("#Responsable", "Seleccione el responsable");
-                },
-                error: function (err) {
-                    console.log(err);
-                }
-
-            });
-        }
     </script>
 
     <script type="text/javascript">
         $('#generarAnexo3').on('click', function () {
-            var valueFecha = $('#Fecha').val();
-            var partes = valueFecha.split('/');
-            var año = partes[1], mes = partes[0];
-
-            $('#modalAnexo3Fecha').val(año + '-' + mes + '-01');
-            $('#modalAnexo3Area').val(($('#Area').val() != null) ? $('#Area').val() : '');
-            $('#modalAnexo3Responsable').val(($('#Responsable').val() != null) ? $('#Responsable').val() : '');
-
-            $('#modalAnexo3').modal('show');
-        });
-
-        $('#modalAnexo3').on('shown.bs.modal', function () {
-            $('#tipoMovimiento').select2({
-                theme: "bootstrap",
-                placeholder: "Seleccione el tipo",
-                width: null
-            });
-
-            $('#NombreTecnico').select2({
-                theme: "bootstrap",
-                placeholder: "Seleccione el nombre",
-                width: null
-            });
-
-            $('#CargoTecnico').select2({
-                theme: "bootstrap",
-                placeholder: "Seleccione el cargo",
-                width: null
-            });
-
-            ['#HechoPor', '#AprobadoPor', '#AutorizadoPor', '#TransportadorReceptor'].forEach(function (sel) {
-                $(sel).select2({
-                    theme: "bootstrap",
-                    placeholder: "Seleccione el nombre",
-                    width: null
-                });
-            });
-
-            ['#CargoHechoPor', '#CargoAprobadoPor', '#CargoAutorizadoPor', '#CargoTransportadorReceptor'].forEach(function (sel) {
-                $(sel).select2({
-                    theme: "bootstrap",
-                    placeholder: "Seleccione el cargo",
-                    width: null
-                });
-            });
+            AbrirPanelAnexo3();
         });
     </script>
+    <script src="~/global/paginas/panelAnexo3.js" type="text/javascript"></script>
 }
 

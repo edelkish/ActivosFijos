@@ -77,10 +77,12 @@ builder.Services.AddScoped<repoUsuarios>();
 builder.Services.AddScoped<repoUtilesHerramientas>();
 builder.Services.AddScoped<repoClasificador>();
 builder.Services.AddScoped<repoLocales>();
+builder.Services.AddScoped<repoAnexo3Firmas>();
 builder.Services.AddScoped<repoBajasActivo>();
 builder.Services.AddScoped<repoPuestosTrabajo>();
 builder.Services.AddScoped<repoUbicacionesAFT>();
 builder.Services.AddScoped<repoTipoMovimiento>();
+builder.Services.AddScoped<repoTrasladosAFT>();
 builder.Services.AddScoped<repoParametro>();
 builder.Services.AddHttpContextAccessor();
 
