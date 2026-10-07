@@ -33,15 +33,12 @@ namespace ActivosFijos.Controllers
         // GET: ctMovimientos
         public async Task<IActionResult> RegistrarMovimientos(string fecha, Guid? id)
         {
-            DateTime periodo = ParsearPeriodo(fecha)
-                ?? await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
-
+            DateTime periodo = await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
             mdMovimientos model = await CargarModelo(periodo).ConfigureAwait(false);
-
+            ViewData["UltimoSubmayor"] = periodo;
             ViewData["respuesta"] = new clResponse<TrasladosAft>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-
             bool siEditar = (id != null) && (id != Guid.Empty);
             if (siEditar)
             {
@@ -56,7 +53,6 @@ namespace ActivosFijos.Controllers
                     model.Formulario = movimiento;
                 }
             }
-
             ViewData["breadsC"] = LlenarBreadsCumbs(siEditar ? "Editar Movimiento" : "Registrar Movimientos");
             return View("vRegistrarMovimientos", model);
         }
@@ -68,8 +64,7 @@ namespace ActivosFijos.Controllers
             [Bind("Id,NoInventario,SubNumero,TipoMovimiento,Responsable,Motivo")] TrasladosAft movimiento,
             string desde, string hasta, string fecha)
         {
-            DateTime periodo = ParsearPeriodo(fecha)
-                ?? await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
+            DateTime periodo = await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
             bool siNuevo = (movimiento == null) || (movimiento.Id == Guid.Empty);
 
             if (movimiento != null)
@@ -105,7 +100,7 @@ namespace ActivosFijos.Controllers
                 {
                     ModelState.AddModelError("NoInventario", "Debe indicar el No. de Inventario.");
                 }
-                else if (!await _context.ActFijos.AnyAsync(a => (a.NoInventario == movimiento.NoInventario) && (a.SubNumero == movimiento.SubNumero)).ConfigureAwait(false))
+                else if (!await _context.ActFijos.AnyAsync(a => (a.NoInventario == movimiento.NoInventario) && (a.SubNumero == movimiento.SubNumero) && a.FechaSubmayor == periodo).ConfigureAwait(false))
                 {
                     ModelState.AddModelError("NoInventario", "El Activo Fijo indicado no existe.");
                 }
@@ -147,7 +142,7 @@ namespace ActivosFijos.Controllers
                     clResponse<TrasladosAft> respuesta = await _repoTrasladosAFT.Guardar(movimiento).ConfigureAwait(false);
                     clGlobal.siNo = respuesta.SiSatisfactorio;
                     clGlobal.objMensaje = respuesta.Mensaje;
-                    return RedirectToAction(nameof(RegistrarMovimientos), new { fecha = periodo.ToString("MM/yyyy", CultureInfo.InvariantCulture) });
+                    return RedirectToAction(nameof(RegistrarMovimientos));
                 }
             }
 
@@ -157,6 +152,7 @@ namespace ActivosFijos.Controllers
                 model.Formulario = movimiento;
             }
 
+            ViewData["UltimoSubmayor"] = periodo;
             ViewData["respuesta"] = new clResponse<TrasladosAft>() { SiSatisfactorio = false, Mensaje = "Persisten errores en el movimiento a guardar." };
             ViewData["breadsC"] = LlenarBreadsCumbs(siNuevo ? "Registrar Movimientos" : "Editar Movimiento");
             return View("vRegistrarMovimientos", model);
@@ -170,7 +166,7 @@ namespace ActivosFijos.Controllers
             clResponse<int> respuesta = await _repoTrasladosAFT.Eliminar(id).ConfigureAwait(false);
             clGlobal.siNo = respuesta.SiSatisfactorio;
             clGlobal.objMensaje = respuesta.Mensaje;
-            return RedirectToAction(nameof(RegistrarMovimientos), new { fecha });
+            return RedirectToAction(nameof(RegistrarMovimientos));
         }
 
         private async Task<mdMovimientos> CargarModelo(DateTime periodo)

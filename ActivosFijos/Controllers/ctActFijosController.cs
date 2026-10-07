@@ -1481,12 +1481,7 @@ namespace ActivosFijos.Controllers
         {
             List<SelectListItem> areas = new List<SelectListItem>();
             List<SelectListItem> responsables = new List<SelectListItem>();
-
-            // El periodo no se elige libremente: se trabaja sobre el ultimo submayor importado.
-            // Antes el default era el mes anterior al de hoy, que no coincide con el submayor
-            // que realmente esta en la base y dejaba la pantalla sin movimientos.
-            DateTime fechaParametro = fecha ?? await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
-
+            DateTime fechaParametro = await _repoActivosFijos.UltimoSubmayor().ConfigureAwait(false);
             if (area == null || area == Guid.Empty)
             {
                 areas = _repoAreas.ListadoAreasDeResponsabilidad(fechaParametro).Result.Select(ar => new SelectListItem() { Text = ar.Nombre, Value = ar.IdArea.ToString() }).ToList();
@@ -1497,7 +1492,6 @@ namespace ActivosFijos.Controllers
                 areas = _repoAreas.ListadoAreasDeResponsabilidad(fechaParametro).Result.Select(ar => new SelectListItem() { Text = ar.Nombre, Value = ar.IdArea.ToString(), Selected = ar.IdArea.Equals(area) }).ToList();
                 areas.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString() });
             }
-
             if (responsable == null || responsable == Guid.Empty)
             {
                 responsables = _repoResponsables.ObtenerListadoResponsables(fechaParametro).Result.Select(res => new SelectListItem() { Text = res.Nombre != "<<S/R>>" ? res.Nombre + " " + res.Apellidos : res.Nombre, Value = res.IdResponsable.ToString() }).ToList();
@@ -1508,13 +1502,10 @@ namespace ActivosFijos.Controllers
                 responsables = _repoResponsables.ObtenerListadoResponsables(fechaParametro).Result.Select(res => new SelectListItem() { Text = res.Nombre != "<<S/R>>" ? res.Nombre + " " + res.Apellidos : res.Nombre, Value = res.IdResponsable.ToString(), Selected = res.IdResponsable.Equals(responsable) }).ToList();
                 responsables.Add(new SelectListItem() { Text = "Todos", Value = Guid.Empty.ToString() });
             }
-
             ViewData["breadsC"] = LlenarBreadsCumbs("Listado de Movimientos");
-
             ViewData["respuesta"] = new clResponse<mdActas>() { SiSatisfactorio = clGlobal.siNo, Mensaje = clGlobal.objMensaje };
             clGlobal.siNo = false;
             clGlobal.objMensaje = string.Empty;
-
             return View("vDetallesDeMovimientos", new mdActas() { Areas = areas, Responsables = responsables, Fecha = fechaParametro });
         }
 

@@ -1,4 +1,4 @@
-@using ActivosFijos.Clases
+﻿@using ActivosFijos.Clases
 @using System.Globalization
 @{
     ViewData["Title"] = "Registrar Movimientos";
@@ -70,18 +70,10 @@
                             </div>
                         </div>
                         <div class="portlet-body">
-                            <form asp-action="RegistrarMovimientos" asp-controller="ctMovimientos" method="get" class="form-inline">
-                                <div class="form-group">
-                                    <label class="control-label">Mes y A&ntilde;o:</label>
-                                    <div class="input-group date" id="datetimepickerPeriodo">
-                                        <input type="text" class="form-control" name="fecha" id="fechaPeriodo" value="@periodo" style="width:110px" />
-                                        <span class="input-group-addon">
-                                            <span class="glyphicon glyphicon-calendar"></span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn blue-hoki btn-outline sbold uppercase"><i class="fa fa-refresh"></i> Mostrar</button>
-                            </form>
+                            <div class="form-group">
+                                <label class="control-label">Ãšltimo submayor importado:</label>
+                                <span class="form-control-static" style="display:inline-block;margin-left:5px">@periodo</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -287,11 +279,6 @@
             MiApp.Mensajes.mostrarNotificacion("error", mensaje);
         }
 
-        $('#datetimepickerPeriodo').datetimepicker({
-            format: 'MM/YYYY',
-            locale: 'es',
-            viewMode: 'months'
-        });
 
         $.fn.select2.defaults.set("theme", "bootstrap");
         $('#Responsable').select2({
